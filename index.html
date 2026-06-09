@@ -820,6 +820,7 @@ function sellConsignAsset(id){
   if(sp!==null&&sp.trim()!=="")sold.soldAt=sp.trim().replace(/[^0-9.]/g,"");
   soldAssets.push(sold);
   consignAssets=consignAssets.filter(function(x){return x.id!==id;});
+  filtered=filtered.filter(function(x){return x.id!==id;});
   saveAll();render();toast("Moved to Sold Assets ✓","s");
 }
 function delConsignAsset(id){
@@ -900,11 +901,13 @@ function restoreAsset(btn){
   if(dest==="consign"){
     consignAssets.push(restored);
     soldAssets=soldAssets.filter(function(x){return x.id!==id;});
+    filtered=filtered.filter(function(x){return x.id!==id;});
     saveAll();render();toast("Restored to Consignment ✓");
   } else {
     var insertIdx=assets.findIndex(function(x){return (x.seq||0)>(restored.seq||0);});
     if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
     soldAssets=soldAssets.filter(function(x){return x.id!==id;});
+    filtered=filtered.filter(function(x){return x.id!==id;});
     saveAll();render();toast("Restored to Inventory ✓");
   }
 }
@@ -921,6 +924,7 @@ function restoreConsignToInventory(id){
   var insertIdx=assets.findIndex(function(x){return (x.seq||0)>(restored.seq||0);});
   if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
   consignAssets=consignAssets.filter(function(x){return x.id!==id;});
+  filtered=filtered.filter(function(x){return x.id!==id;});
   saveAll();render();toast("Restored to Inventory ✓");
 }
 function exportSoldCSV(){
@@ -1859,6 +1863,7 @@ function confirmConsign(){
   var c=Object.assign({},a);c.consignDate=today();c.status="consignment";c.source="inventory";
   consignAssets.push(c);
   assets=assets.filter(function(x){return x.id!==confirmId;});
+  filtered=filtered.filter(function(x){return x.id!==confirmId;});
   saveAll();closeM("mConfirm");
   render();
   toast("Moved to Consignment ✓","s");
@@ -1871,6 +1876,7 @@ function confirmSell(){
   if(soldPrice!==null&&soldPrice.trim()!=="")sold.soldAt=soldPrice.trim().replace(/[^0-9.]/g,"");
   soldAssets.push(sold);
   assets=assets.filter(function(x){return x.id!==confirmId;});
+  filtered=filtered.filter(function(x){return x.id!==confirmId;});
   saveAll();closeM("mConfirm");
   render();
   toast("Moved to Sold Assets ✓","s");
