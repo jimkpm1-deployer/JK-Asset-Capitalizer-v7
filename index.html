@@ -303,6 +303,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <button class="btn bg no-print" id="bBC"     style="display:none" onclick="printStickers()">🖨 Stickers</button>
       <button class="btn bg no-print" id="bBCpdf"  style="display:none" onclick="stickersPDF()">📄 PDF</button>
       <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾 Save</button>
+      <button class="btn bg no-print" id="bStickerList" style="display:none;font-size:11px;" onclick="printCurrentListStickers()">🏷 Stickers</button>
       <button class="btn bg no-print" id="bPrintAll" style="display:none;font-size:11px;" onclick="printAllLists()">🖨 All Lists</button>
       <button class="btn bp no-print" id="bNew" onclick="newAsset()">＋ New</button>
     </div>
@@ -658,6 +659,7 @@ function goTo(v){
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
   ["bPrint","bAddCol","bUnhide"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
   ["bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="list"?"":"none";});
+  var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign")?"":"none";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
   closeSB();render();
 }
@@ -944,10 +946,18 @@ function rDash(){
   const artN=assets.filter(a=>isArt(a.category)).length;
   const mx=Math.max(...CATS.map(c=>assets.filter(a=>a.category===c).length),1);
   let h='<div class="dash">';
-  h+='<div class="sc"><div class="sl">Total Assets</div><div class="sv">'+total+'<span style="font-size:11px;color:var(--mu)"> / 999</span></div></div>';
-  h+='<div class="sc"><div class="sl">Total Value</div><div class="sv ac">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc"><div class="sl">Artworks</div><div class="sv aw">'+artN+'</div></div>';
-  h+='<div class="sc"><div class="sl">Artwork Value</div><div class="sv" style="color:var(--ar)">$'+artV.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  var conTotal=consignAssets.length;
+  var conVal=consignAssets.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
+  var soldTotal=soldAssets.length;
+  var soldVal=soldAssets.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
+  var inPossession=total+conTotal;
+  var inPossessionVal=val+conVal;
+  h+='<div class="sc"><div class="sl">In Possession</div><div class="sv">'+inPossession+'<span style="font-size:10px;color:var(--mu)"> inv+con</span></div></div>';
+  h+='<div class="sc"><div class="sl">Possession Value</div><div class="sv ac">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc"><div class="sl">Inventory</div><div class="sv">'+total+'</div></div>';
+  h+='<div class="sc"><div class="sl">Consignment</div><div class="sv" style="color:#4a6b8a">'+conTotal+'</div></div>';
+  h+='<div class="sc"><div class="sl">Sold</div><div class="sv" style="color:#8a5a2e">'+soldTotal+'</div></div>';
+  h+='<div class="sc"><div class="sl">Sold Value</div><div class="sv" style="color:#8a5a2e">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
   // All 3 lists - inventory, consignment, sold
@@ -1834,11 +1844,11 @@ function showPhoto(src,e){
 function askDel(id){confirmId=id;var m=G("mConfirm");if(m)m.style.display="flex";}
 function confirmConsign(){
   var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
-  var c=Object.assign({},a);c.consignDate=today();c.status="consignment";
+  var c=Object.assign({},a);c.consignDate=today();c.status="consignment";c.source="inventory";
   consignAssets.push(c);
   assets=assets.filter(function(x){return x.id!==confirmId;});
   saveAll();closeM("mConfirm");
-  if(view==="detail")goTo("consign");else render();
+  goTo("consign");
   toast("Moved to Consignment ✓","s");
 }
 function confirmSell(){
@@ -1850,8 +1860,8 @@ function confirmSell(){
   soldAssets.push(sold);
   assets=assets.filter(function(x){return x.id!==confirmId;});
   saveAll();closeM("mConfirm");
-  if(view==="detail")goTo("list");else render();
-  toast("Moved to Sold Assets","s");
+  goTo("sold");
+  toast("Moved to Sold Assets ✓","s");
 }
 function confirmDel(){
   var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
@@ -1907,17 +1917,91 @@ window.addEventListener("appinstalled",function(){var ib=G("IB");if(ib)ib.style.
 function installApp(){if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;});}else toast("Android: Chrome menu → Install · Windows: install icon in address bar · iOS: Share → Add to Home Screen","i",5000);}
  
 // Init
-function printAllLists(){
+function printCurrentListStickers(){
+  var arr=view==="sold"?soldAssets:view==="consign"?consignAssets:assets;
+  if(hasFilter()&&filtered.length)arr=filtered;
+  if(!arr.length){toast("No assets to print","e");return;}
+  var from=prompt("Stickers FROM # (1-"+arr.length+"):","1");
+  if(from===null)return;
+  var to=prompt("TO # (1-"+arr.length+"):",""+arr.length);
+  if(to===null)return;
+  var f=Math.max(1,parseInt(from)||1),t=Math.min(arr.length,parseInt(to)||arr.length);
+  if(f>t){toast("Invalid range","e");return;}
+  var sl=arr.slice(f-1,t);
+  var bcDrw="function draw(id,seq){var cv=document.getElementById('bc_'+seq);if(!cv)return;var ctx=cv.getContext('2d'),val=id,W=cv.width,H=cv.height;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);var h=0;for(var i=0;i<val.length;i++)h=(h*31+val.charCodeAt(i))>>>0;var bC=42,bW=W/bC;for(var i=0;i<bC;i++){var s=(h^(i*2654435761))>>>0;ctx.fillStyle=s%3!==0?'#111':'#fff';ctx.fillRect(Math.floor(i*bW),0,Math.ceil(bW),H-8);}ctx.fillStyle='#111';ctx.font='5px monospace';ctx.textAlign='center';ctx.fillText(val,W/2,H-1);}";
+  var cards=sl.map(function(a){
+    var ph=a.photo||_photoCache[a.id]||"";
+    var phH=ph?'<img src="'+ph+'" style="width:38mm;height:20mm;object-fit:cover;border-radius:.5mm;display:block;margin:0 auto .5mm;"/>':(isArt(a.category)?'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;">&#128444;</div>':'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;">&#128230;</div>');
+    var sn=a.serialNumber||"";
+    return '<div class="card">'+phH+'<div class="nm">'+esc(a.name)+'</div><div class="id2">'+a.id+(sn?' | '+sn:'')+'</div><canvas id="bc_'+a.seq+'" width="148" height="26" class="bc"></canvas></div>';
+  }).join("");
+  var bcd=JSON.stringify(sl.map(function(a){return{id:a.id,seq:a.seq};}));
   var w=window.open("","_blank");
-  function tblHTML(arr,title,color){
-    var t='<h2 style="color:'+color+';margin:15px 0 5px;">'+title+' ('+arr.length+')</h2>';
-    if(!arr.length)return t+'<p>No items.</p>';
-    t+='<table><thead><tr><th>ID</th><th>Name</th><th>Artist</th><th>Category</th><th>Medium</th><th>Year</th><th>Value</th></tr></thead><tbody>';
-    arr.forEach(function(a){t+='<tr><td>'+(a.id||"")+'</td><td>'+(a.name||"")+'</td><td>'+(a.artist||"")+'</td><td>'+(a.category||"")+'</td><td>'+(a.medium||"")+'</td><td>'+(a.year||"")+'</td><td>$'+parseFloat(a.currentValue||0).toLocaleString()+'</td></tr>';});
-    return t+'</tbody></table>';
+  w.document.write('<!DOCTYPE html><html><head><title>Stickers</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}'
+    +'body{width:210mm;background:#fff;font-family:Arial,sans-serif;}'
+    +'.grid{display:grid;grid-template-columns:repeat(4,52.5mm);width:210mm;}'
+    +'.card{width:52.5mm;height:49.25mm;border:.3mm solid #ddd;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5mm 1mm 1mm;overflow:hidden;}'
+    +'.nm{font-size:6.5pt;font-weight:bold;text-align:center;width:50mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:.4mm;}'
+    +'.id2{font-size:4.8pt;color:#333;font-family:monospace;text-align:center;margin-bottom:.4mm;overflow:hidden;white-space:nowrap;width:50mm;}'
+    +'.bc{display:block;width:39mm;height:7mm;margin:0 auto;}'
+    +'.hint{position:fixed;top:0;left:0;right:0;background:#1a1a18;color:#e6e1d6;padding:10px;font-family:monospace;font-size:12px;text-align:center;z-index:9;}'
+    +'.hint button{background:#bf3a2b;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:13px;}'
+    +'@media print{.hint{display:none!important;}}'
+    +'</style></head><body>'
+    +'<div class="hint">Tap to save as PDF: <button onclick="window.print()">&#x1F4C4; Print / Save PDF</button></div>'
+    +'<div style="margin-top:44px;"><div class="grid">'+cards+'</div></div>'
+    +'<scr'+'ipt>var aa='+bcd+';'+bcDrw+'function go(){aa.forEach(function(a){draw(a.id,a.seq);});}window.onload=function(){go();setTimeout(function(){window.print();},600);};<\/sc'+'ript>'
+    +'</body></html>');
+  w.document.close();
+}
+function printAllLists(){
+  // Build a print window showing all 3 lists with their columns and photos
+  var cols=getTCols();
+  var soldCols=getSTCols();
+  var fds=allFDs();
+  var renames=LS.get("acap_renames_v3",{});
+  function colLbl(k){return k==="photo"?"Photo":k==="soldAt"?"Sold At":k==="soldDate"?"Sold Date":(renames[k]||(fds.find(function(f){return f.k===k;})||{lbl:k}).lbl);}
+  function makeRows(arr,colList){
+    var r="";
+    arr.forEach(function(a){
+      r+="<tr>";
+      colList.forEach(function(k){
+        if(k==="photo"){
+          var ph=a.photo||_photoCache[a.id]||"";
+          r+="<td>"+(ph?'<img src="'+ph+'" style="width:40px;height:30px;object-fit:cover;border-radius:2px;"/>':"-")+"</td>";
+        } else if(k==="soldAt"){
+          r+="<td>"+(a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"-")+"</td>";
+        } else {
+          var v=a[k]||"";
+          if(["purchasePrice","currentValue","insuredValue"].includes(k)&&v)v="$"+parseFloat(v).toLocaleString();
+          r+="<td>"+String(v).replace(/</g,"&lt;")+"</td>";
+        }
+      });
+      r+="</tr>";
+    });
+    return r;
   }
-  var content=tblHTML(assets,"Inventory","#333")+tblHTML(consignAssets,"Consignment","#4a6b8a")+tblHTML(soldAssets,"Sold","#8a5a2e");
-  w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>body{font-family:Arial,sans-serif;font-size:10pt;padding:15px;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:9pt;}th{background:#f5f5f5;font-weight:600;}@media print{.np{display:none!important;}}</style></head><body><div class="np" style="margin-bottom:12px;"><button onclick="window.print()">Print / Save PDF</button></div>'+content+'</body></html>');
+  function makeTable(arr,title,color,colList){
+    if(!arr.length)return '<h2 style="color:'+color+';margin:15px 0 5px;">'+title+' (0)</h2><p>No items.</p>';
+    var hdr=colList.map(function(k){return "<th>"+colLbl(k)+"</th>";}).join("");
+    return '<h2 style="color:'+color+';margin:15px 0 5px;">'+title+' ('+arr.length+')</h2>'
+      +'<table><thead><tr><th>ID</th>'+hdr+'</tr></thead><tbody>'+makeRows(arr,colList)+'</tbody></table>';
+  }
+  var w=window.open("","_blank");
+  var content=makeTable(assets,"Inventory","#333",cols)
+    +makeTable(consignAssets,"Consignment","#4a6b8a",cols)
+    +makeTable(soldAssets,"Sold","#8a5a2e",soldCols);
+  w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>'
+    +'body{font-family:Arial,sans-serif;font-size:9pt;padding:10px;}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:20px;}'
+    +'th,td{border:1px solid #ccc;padding:3px 5px;text-align:left;font-size:8pt;vertical-align:middle;}'
+    +'th{background:#f5f5f5;font-weight:600;white-space:nowrap;}'
+    +'img{display:block;}'
+    +'@media print{.np{display:none!important;}}'
+    +'</style></head><body>'
+    +'<div class="np" style="margin-bottom:12px;"><button onclick="window.print()">&#128424; Print / Save PDF</button></div>'
+    +content+'</body></html>');
   w.document.close();
 }
 document.addEventListener("DOMContentLoaded",function(){
