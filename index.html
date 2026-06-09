@@ -69,7 +69,8 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .topbar h2{font-family:var(--mo);font-size:12px;letter-spacing:.06em;font-weight:500;white-space:nowrap;}
 .srch{flex:1;min-width:80px;max-width:190px;}
 .srch input{width:100%;padding:5px 8px;border:1px solid var(--b);border-radius:var(--r);font-size:12px;font-family:var(--mo);background:var(--s2);outline:none;color:var(--tx);}
-.sel{padding:4px 6px;border:1px solid var(--b);border-radius:var(--r);font-size:11px;background:var(--s2);font-family:var(--mo);outline:none;cursor:pointer;max-width:115px;color:var(--tx);}
+.sel{padding:4px 6px;border:1px solid var(--b);border-radius:var(--r);font-size:11px;background:var(--s2);font-family:var(--mo);outline:none;cursor:pointer;max-width:115px;color:var(--tx);;transition:background .15s;}
+.sel.active-filter{background:#f5f0cc;border-color:#c8b840;}
 .sp{flex:1;}
 .btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border:none;border-radius:var(--r);font-size:11px;font-family:var(--mo);cursor:pointer;font-weight:500;white-space:nowrap;}
 .bp{background:var(--ac);color:#fff;}
@@ -105,7 +106,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .thlbl{flex:1;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--mu);font-weight:600;overflow:hidden;text-overflow:ellipsis;outline:none;cursor:text;}
 .colx{opacity:0;font-size:11px;cursor:pointer;color:var(--mu);flex-shrink:0;}
 .tbl th:hover .colx{opacity:1;}
-.colrsz{position:absolute;right:-4px;top:0;bottom:0;width:16px;cursor:col-resize;z-index:4;touch-action:none;background:transparent;}
+.colrsz{position:absolute;right:-6px;top:0;bottom:0;width:20px;cursor:col-resize;z-index:5;touch-action:none;background:transparent;}
 .colrsz:hover,.colrsz:active{background:var(--ac);opacity:.4;}
 .tbl th{position:relative;}
 .tbl th.cdrag{opacity:.35;}
@@ -283,6 +284,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <select class="sel" id="fCond" onchange="doFilter()" style="display:none"></select>
       <select class="sel" id="fLoc"  onchange="doFilter()" style="display:none"></select>
       <select class="sel" id="fAsgn" onchange="doFilter()" style="display:none"></select>
+      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="sold">Sold</option></select>
       <select class="sel" id="fMed" onchange="doFilter()" style="display:none"><option value="">All Mediums</option></select>
       <select class="sel" id="fYear" onchange="doFilter()" style="display:none"><option value="">All Years</option></select>
       <select class="sel" id="fSort" onchange="doFilter()" style="display:none">
@@ -301,6 +303,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <button class="btn bg no-print" id="bBC"     style="display:none" onclick="printStickers()">🖨 Stickers</button>
       <button class="btn bg no-print" id="bBCpdf"  style="display:none" onclick="stickersPDF()">📄 PDF</button>
       <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾 Save</button>
+      <button class="btn bg no-print" id="bPrintAll" style="display:none;font-size:11px;" onclick="printAllLists()">🖨 All Lists</button>
       <button class="btn bp no-print" id="bNew" onclick="newAsset()">＋ New</button>
     </div>
     <div class="content" id="CT"><div class="empty"><div class="big">⬡</div>Loading…</div></div>
@@ -651,9 +654,11 @@ function goTo(v){
   const t=G("pgTit");if(t)t.textContent=TITLES[v]||v;
   const isL=v==="list"||v==="table"||v==="sold"||v==="consign";
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear"].forEach(id=>{const el=G(id);if(el)el.style.display=isL?"":"none";});
+  var flEl=G("fList");if(flEl)flEl.style.display=v==="list"?"":"none";
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
   ["bPrint","bAddCol","bUnhide"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
   ["bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="list"?"":"none";});
+  var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
   closeSB();render();
 }
 function newAsset(){
@@ -700,12 +705,12 @@ function filterByCat(c){const el=G("fCat");if(el)el.value=c;goTo("list");}
 // Filtering
 function getFS(){
   function v(id){const el=G(id);return el?el.value:"";}
-  return{q:(v("srchIn")||"").trim(),cat:v("fCat"),cond:v("fCond"),loc:v("fLoc"),asgn:v("fAsgn"),med:v("fMed"),year:v("fYear"),sort:v("fSort")||"name"};
+  return{q:(v("srchIn")||"").trim(),cat:v("fCat"),cond:v("fCond"),loc:v("fLoc"),asgn:v("fAsgn"),med:v("fMed"),year:v("fYear"),list:v("fList"),sort:v("fSort")||"name"};
 }
 function hasFilter(){const f=getFS();return !!(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year);}
 function doFilter(){
   const f=getFS(),ql=f.q.toLowerCase();
-  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn){filtered=[];render();return;}
+  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year){filtered=[];render();return;}
   filtered=assets.filter(a=>{
     const ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(v=>v&&v.toLowerCase().includes(ql));
     var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.year||'').trim();
@@ -735,7 +740,8 @@ function render(){
   else if(view==="io")       ct.innerHTML=rIO();
   else if(view==="sold")     ct.innerHTML=rSold();
   else if(view==="consign")  ct.innerHTML=rConsign();
-}
+ 
+  ["fCat","fCond","fLoc","fAsgn","fMed","fYear","fList"].forEach(function(id){var el=G(id);if(el)el.classList.toggle("active-filter",!!(el.value));});var _si=G("srchIn");if(_si)_si.classList.toggle("active-filter",!!_si.value);}
  
 // Consignment
 function rConsign(){
@@ -792,7 +798,7 @@ function rConsign(){
       h+='<td><div class="tdin" style="height:'+rowH+'px;'+(isML?"align-items:flex-start;padding-top:5px;":"")+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?"normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical":"nowrap")+';">'+disp+'</span></div></td>';
     });
     h+='<td><div class="tdin"><div class="racts">';
-    h+='<button class="btn bg" style="font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')"  title="View">&#x1F441;</button>';
+    h+='<button class="btn bg" style="font-size:10px;" onclick="restoreConsignToInventory(\''+esc(a.id)+'\')"  title="Restore to Inventory">&#x21A9;</button>';
     h+='<button class="btn bp" style="font-size:10px;" onclick="sellConsignAsset(\''+esc(a.id)+'\')"  title="Sell">&#x1F4B0;</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="delConsignAsset(\''+esc(a.id)+'\')"  title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
@@ -808,7 +814,7 @@ function sellConsignAsset(id){
   var a=consignAssets.find(function(x){return x.id===id;});if(!a)return;
   var sp=prompt("Sold at price ($):\n(Leave blank to skip)","");
   var sold=Object.assign({},a);
-  sold.soldDate=today();sold.status="sold";sold.source="consignment";
+  sold.soldDate=today();sold.status="sold";sold.source="inventory";sold.source="consignment";
   if(sp!==null&&sp.trim()!=="")sold.soldAt=sp.trim().replace(/[^0-9.]/g,"");
   soldAssets.push(sold);
   consignAssets=consignAssets.filter(function(x){return x.id!==id;});
@@ -882,6 +888,49 @@ function rSold(){
   return h;
 }
  
+// Restore/delete sold and consign
+function restoreAsset(btn){
+  var id=btn.getAttribute('data-id');
+  var a=soldAssets.find(function(x){return x.id===id;});if(!a)return;
+  var dest=a.source==="consignment"?"consign":"inventory";
+  var restored=Object.assign({},a);
+  delete restored.soldDate;delete restored.soldAt;delete restored.status;delete restored.source;
+  if(dest==="consign"){
+    consignAssets.push(restored);
+    soldAssets=soldAssets.filter(function(x){return x.id!==id;});
+    saveAll();render();toast("Restored to Consignment ✓");
+  } else {
+    var insertIdx=assets.findIndex(function(x){return (x.seq||0)>(restored.seq||0);});
+    if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
+    soldAssets=soldAssets.filter(function(x){return x.id!==id;});
+    saveAll();render();toast("Restored to Inventory ✓");
+  }
+}
+function deleteSold(btn){
+  var id=btn.getAttribute('data-id');
+  if(!confirm("Permanently delete this sold asset?"))return;
+  soldAssets=soldAssets.filter(function(x){return x.id!==id;});
+  deletePhoto(id);saveAll();render();toast("Deleted","i");
+}
+function restoreConsignToInventory(id){
+  var a=consignAssets.find(function(x){return x.id===id;});if(!a)return;
+  var restored=Object.assign({},a);
+  delete restored.consignDate;delete restored.status;
+  var insertIdx=assets.findIndex(function(x){return (x.seq||0)>(restored.seq||0);});
+  if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
+  consignAssets=consignAssets.filter(function(x){return x.id!==id;});
+  saveAll();render();toast("Restored to Inventory ✓");
+}
+function exportSoldCSV(){
+  if(!soldAssets.length){toast("No sold assets","e");return;}
+  var cols=getSTCols().filter(function(k){return k!=="photo";});
+  var hdr="ID,"+cols.join(",");
+  var rows=soldAssets.map(function(a){return[a.id].concat(cols.map(function(k){
+    if(k==="soldAt")return a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"";
+    return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';
+  })).join(",");});
+  dl(hdr+"\n"+rows.join("\n"),"text/csv","sold_assets.csv");toast("Exported");
+}
 // Dashboard
 function rDash(){
   try {
@@ -901,7 +950,24 @@ function rDash(){
   h+='<div class="sc"><div class="sl">Artwork Value</div><div class="sv" style="color:var(--ar)">$'+artV.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
-  CATS.concat(getUserCats().filter(c=>!CATS.includes(c))).forEach(c=>{const n=assets.filter(a=>a.category===c).length;if(n===0)return;h+='<div class="crow"><span class="cname">'+(c==="Artworks"?"🖼 "+c:c)+'</span><div class="ctrack"><div class="cfill'+(c==="Artworks"?" aw":"")+'" style="width:'+(n/mx*100)+'%"></div></div><span class="ccount">'+n+'</span></div>';});
+  // All 3 lists - inventory, consignment, sold
+  var allListCats=getUserCats();
+  function makeCatBars(arr,accentClass){
+    var max2=Math.max.apply(null,allListCats.map(function(c){return arr.filter(function(a){return a.category===c;}).length;}).concat([1]));
+    var out='';
+    allListCats.forEach(function(c){
+      var n=arr.filter(function(a){return a.category===c;}).length;
+      if(n===0)return;
+      out+='<div class="crow"><span class="cname">'+(c==="Artworks"?"🖼 "+c:c)+'</span><div class="ctrack"><div class="cfill '+accentClass+'" style="width:'+(n/max2*100)+'%;"></div></div><span class="ccount">'+n+'</span></div>';
+    });
+    return out;
+  }
+  var invRows=makeCatBars(assets,'aw');
+  var conRows=makeCatBars(consignAssets,'');
+  var soldRows=makeCatBars(soldAssets,'');
+  if(invRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:4px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Inventory</div>'+invRows;
+  if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#4a6b8a;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
+  if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#7a5c2e;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
   h+='</div></div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Recent Assets</div>';
   assets.slice(-6).reverse().forEach(a=>{
@@ -921,42 +987,67 @@ function rDash(){
 // List
 function setLM(m){listMode=m;const g=G("vtG"),t=G("vtT");if(g)g.className=m==="grid"?"on":"";if(t)t.className=m==="tbl"?"on":"";render();}
 function rList(){
-  const list=hasFilter()?filtered:assets;
-  let h='<div style="margin-bottom:7px;font-family:var(--mo);font-size:11px;color:var(--mu);">'+(hasFilter()?list.length+' of '+assets.length+' assets':list.length+' assets')+'</div>';
-  if(!list.length)return h+'<div class="empty"><div class="big">📦</div>'+(hasFilter()?"No assets match.":"No assets yet.")+'</div>';
-  if(listMode==="tbl"){
-    h+='<div class="twrap"><table class="tbl" style="width:100%;"><thead><tr>';
-    ["ID","Name","Artist","Category","Condition","Location","Value",""].forEach((lbl,i)=>{
-      h+='<th'+(i===7?' class="no-print"':'')+' style="'+(i===0?"width:72px;":i===7?"width:66px;":"")+'">';
-      h+='<div class="thin"><span class="thlbl">'+lbl+'</span></div></th>';
+  var f=getFS();
+  // Build combined list from all 3 sources
+  var inv=assets.map(function(a){return Object.assign({},a,{_src:"inventory"});});
+  var con=consignAssets.map(function(a){return Object.assign({},a,{_src:"consign"});});
+  var sol=soldAssets.map(function(a){return Object.assign({},a,{_src:"sold"});});
+  var allItems=inv.concat(con).concat(sol);
+  // Apply list filter
+  if(f.list)allItems=allItems.filter(function(a){return a._src===f.list;});
+  // Apply other filters
+  if(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year){
+    var ql=f.q.toLowerCase();
+    allItems=allItems.filter(function(a){
+      var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
+      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.year||'').trim();
+      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
     });
-    h+='</tr></thead><tbody>';
-    list.forEach(a=>{
-      h+='<tr class="'+(isArt(a.category)?"artrow":"")+'" style="cursor:pointer;" onclick="viewDetail(\''+a.id+'\')">';
-      h+='<td><div class="tdin" style="font-family:var(--mo);font-size:10px;">'+a.id+'</div></td>';
-      h+='<td><div class="tdin" style="font-weight:500;">'+esc(a.name)+'</div></td>';
-      h+='<td><div class="tdin" style="color:var(--ar);font-size:11px;">'+esc(a.artist||"—")+'</div></td>';
-      h+='<td><div class="tdin"><span class="tag tcat'+(isArt(a.category)?" art":"")+'">'+esc(a.category)+'</span></div></td>';
-      h+='<td><div class="tdin">'+(a.condition?'<span class="tag tcond '+a.condition+'">'+a.condition+'</span>':"")+'</div></td>';
-      h+='<td><div class="tdin" style="color:var(--mu);">'+esc(a.location||"")+'</div></td>';
-      h+='<td><div class="tdin" style="font-family:var(--mo);color:var(--ac);font-weight:600;">$'+parseFloat(a.currentValue||0).toLocaleString()+'</div></td>';
-      h+='<td class="no-print"><div class="tdin"><div class="racts" onclick="event.stopPropagation()"><button class="btn bg" style="font-size:10px;" onclick="editAsset(\''+a.id+'\')">✏</button><button class="btn bd" style="font-size:10px;" onclick="askDel(\''+a.id+'\')">🗑</button></div></div></td>';
+  }
+  // Sort
+  allItems.sort(function(a,b){
+    if(f.sort==="val")return parseFloat(b.currentValue||0)-parseFloat(a.currentValue||0);
+    if(f.sort==="cat")return (a.category||"").localeCompare(b.category||"");
+    return (a.name||"").localeCompare(b.name||"");
+  });
+  var srcColors={inventory:"",consign:"border-left:3px solid #4a6b8a;",sold:"border-left:3px solid #8a5a2e;"};
+  var srcLabels={inventory:"",consign:'<span style="font-size:9px;font-family:var(--mo);color:#4a6b8a;text-transform:uppercase;margin-left:4px;">CON</span>',sold:'<span style="font-size:9px;font-family:var(--mo);color:#8a5a2e;text-transform:uppercase;margin-left:4px;">SOLD</span>'};
+  var total=allItems.length;
+  var h='<div style="margin-bottom:7px;font-family:var(--mo);font-size:11px;color:var(--mu);">'+total+' items'+(f.list?' ('+f.list+')':'')+' total</div>';
+  if(!total)return h+'<div class="empty"><div class="big">📦</div>No items match.</div>';
+  if(listMode==="tbl"){
+    h+='<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+    h+='<thead><tr style="background:var(--s2);"><th style="padding:5px 7px;text-align:left;">Name</th><th style="padding:5px 7px;text-align:left;">Artist</th><th style="padding:5px 7px;text-align:left;">Cat</th><th style="padding:5px 7px;text-align:left;">List</th><th style="padding:5px 7px;text-align:right;">Value</th></tr></thead><tbody>';
+    allItems.forEach(function(a){
+      h+='<tr style="border-bottom:1px solid var(--b);'+srcColors[a._src]+'" onclick="'+( a._src!=="sold"?"viewDetail('"+esc(a.id)+"')":'""')+'">';
+      h+='<td style="padding:5px 7px;font-weight:500;">'+esc(a.name)+'</td>';
+      h+='<td style="padding:5px 7px;color:var(--ar);">'+esc(a.artist||"")+'</td>';
+      h+='<td style="padding:5px 7px;">'+esc(a.category||"")+'</td>';
+      h+='<td style="padding:5px 7px;">'+srcLabels[a._src]+'</td>';
+      h+='<td style="padding:5px 7px;text-align:right;color:var(--ac);">$'+parseFloat(a.currentValue||0).toLocaleString()+'</td>';
       h+='</tr>';
     });
-    return h+'</tbody></table></div>';
+    h+='</tbody></table>';
+    return h;
   }
+  // Grid view
   h+='<div class="agrid">';
-  list.forEach(a=>{
-    h+='<div class="acard'+(isArt(a.category)?" isart":"")+'" onclick="viewDetail(\''+a.id+'\')">';
-    var _ap=a.photo||_photoCache[a.id]||'';h+='<div class="aphoto">'+(_ap?'<img src="'+_ap+'" alt="" onclick="showPhoto(this.src,event)" style="cursor:zoom-in;"/>':isArt(a.category)?'🖼':'📦')+'</div>';
-    h+='<div class="abody"><div class="aid">'+a.id+'</div><div class="aname">'+esc(a.name)+'</div>';
-    if(a.artist)h+='<div class="aartist">🖌 '+esc(a.artist)+'</div>';
-    h+='<div class="atags"><span class="tag tcat'+(isArt(a.category)?" art":"")+'">'+esc(a.category)+'</span>'+(a.condition?'<span class="tag tcond '+a.condition+'">'+a.condition+'</span>':"")+'</div>';
-    if(a.location)h+='<div style="font-size:11px;color:var(--mu);">📍 '+esc(a.location)+'</div>';
-    h+='<div class="aval">$'+parseFloat(a.currentValue||0).toLocaleString()+'</div></div></div>';
+  allItems.forEach(function(a){
+    var _ap=a.photo||_photoCache[a.id]||"";
+    var borderStyle=srcColors[a._src];
+    h+='<div class="ac'+(isArt(a.category)?' art':'')+' src-'+a._src+'" style="'+borderStyle+'" data-id="'+esc(a.id)+'" data-src="'+a._src+'" onclick="_listClick(this)">';
+    h+='<div class="aphoto">'+(_ap?'<img src="'+_ap+'" alt="" onclick="showPhoto(this.src,event)" style="cursor:zoom-in;"/>':isArt(a.category)?"🖼":"📦")+'</div>';
+    h+='<div class="abody"><div class="aid">'+esc(a.id)+srcLabels[a._src]+'</div>';
+    h+='<div class="aname">'+esc(a.name)+'</div>';
+    h+='<div class="aar">'+esc(a.artist||"")+'</div>';
+    h+='<div class="acat"><span class="tag tcat'+(isArt(a.category)?" art":"")+'">'+esc(a.category)+'</span></div>';
+    h+='<div class="aval">$'+parseFloat(a.currentValue||0).toLocaleString()+'</div>';
+    h+='</div></div>';
   });
-  return h+'</div>';
+  h+='</div>';
+  return h;
 }
+ 
  
 // Inventory Table
 function getSTCols(){
@@ -1454,17 +1545,7 @@ function rCols(){
   });
   h+='</div></div>';
   // Customize dropdown lists
-  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:11px;">';
-  h+='<div style="padding:9px 12px;background:var(--s2);border-bottom:1px solid var(--b);font-family:var(--mo);font-size:10px;font-weight:600;letter-spacing:.07em;">CUSTOMIZE DROPDOWN LISTS</div>';
-  h+='<div style="padding:12px;display:flex;flex-direction:column;gap:10px;">';
-  [{key:"cats",label:"Categories",sk:"acap_user_cats",def:CATS},{key:"conds",label:"Conditions",sk:"acap_user_conds",def:CONDS},{key:"meds",label:"Mediums",sk:"acap_user_meds",def:MEDS},{key:"framed",label:"Framed?",sk:"acap_user_framed",def:["Yes","Old","No","N/A"]}].forEach(function(cfg){
-    var vals=LS.get(cfg.sk,null)||cfg.def;
-    h+='<div><div style="font-size:11px;font-weight:600;margin-bottom:3px;">'+cfg.label+'</div>';
-    h+='<textarea id="dle_'+cfg.key+'" rows="3" style="width:100%;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:12px;font-family:var(--mo);color:var(--tx);-webkit-text-fill-color:var(--tx);background:var(--s);outline:none;resize:vertical;">'+vals.join("\n")+'</textarea>';
-    h+='<div style="display:flex;gap:6px;margin-top:3px;"><button class="btn bp" style="font-size:10px;" onclick="saveListEdit(this)">Save</button><button class="btn bg" style="font-size:10px;" onclick="resetListDef(this)">Default</button><span style="font-size:10px;color:var(--mu);line-height:2.4;">One per line</span></div></div>';
-  });
-  h+='</div></div>';
-    h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:7px;font-weight:600;">App Name</div>';
   h+='<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">';
   h+='<input type="text" id="anIn" value="'+esc(appName)+'" style="padding:6px 8px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);outline:none;flex:1;min-width:130px;color:var(--tx);"/>';
@@ -1564,8 +1645,8 @@ async function exportJSON(){
   var pm=await loadAllPhotos();
   var withPhotos=assets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
   var _leg=LS.get("acap_tbl_legend",""),_ps=LS.get("acap_tbl_ps","");
-  var _leg=LS.get("acap_tbl_legend",""),_ps=LS.get("acap_tbl_ps","");
-  dl(JSON.stringify({assets:withPhotos,soldAssets:soldAssets,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,colW:colW,rowH:rowH,legend:_leg,ps:_ps,legend:_leg,ps:_ps},null,2),"application/json","assets_backup.json");
+  var withConsign=consignAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
+  dl(JSON.stringify({assets:withPhotos,soldAssets:soldAssets,consignAssets:withConsign,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,colW:colW,rowH:rowH,legend:_leg,ps:_ps},null,2),"application/json","assets_backup.json");
   toast("JSON exported ("+assets.length+" assets)","s",4000);
 }
 function exportCSV(){
@@ -1613,6 +1694,8 @@ async function importJSON(inp){
       }
       if(d.legend!==undefined)LS.set("acap_tbl_legend",d.legend);
       if(d.ps!==undefined)LS.set("acap_tbl_ps",d.ps);
+      if(d.soldAssets&&Array.isArray(d.soldAssets)){soldAssets=d.soldAssets;localStorage.setItem("acap_sold_v3",JSON.stringify(soldAssets));}
+      if(d.consignAssets&&Array.isArray(d.consignAssets)){consignAssets=d.consignAssets;localStorage.setItem("acap_consign_v3",JSON.stringify(consignAssets));}
       await loadPhotosAndRender();
       goTo("list");toast("Restored "+assets.length+" assets + "+photosToSave.length+" photos","s",6000);
     }catch(e){toast("Import failed: "+e.message,"e",8000);}
@@ -1732,6 +1815,10 @@ function handleScan(raw){
 function manualScan(){var v=(G("scanIn")||{value:""}).value.trim();if(v)handleScan(v);}
  
 // Delete
+function _listClick(el){
+  var id=el.getAttribute("data-id"),src=el.getAttribute("data-src");
+  if(src!=="sold")viewDetail(id);
+}
 function showPhoto(src,e){
   if(e)e.stopPropagation();
   var lb=G("photoLB"),img=G("photoLBimg");
@@ -1820,6 +1907,19 @@ window.addEventListener("appinstalled",function(){var ib=G("IB");if(ib)ib.style.
 function installApp(){if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;});}else toast("Android: Chrome menu → Install · Windows: install icon in address bar · iOS: Share → Add to Home Screen","i",5000);}
  
 // Init
+function printAllLists(){
+  var w=window.open("","_blank");
+  function tblHTML(arr,title,color){
+    var t='<h2 style="color:'+color+';margin:15px 0 5px;">'+title+' ('+arr.length+')</h2>';
+    if(!arr.length)return t+'<p>No items.</p>';
+    t+='<table><thead><tr><th>ID</th><th>Name</th><th>Artist</th><th>Category</th><th>Medium</th><th>Year</th><th>Value</th></tr></thead><tbody>';
+    arr.forEach(function(a){t+='<tr><td>'+(a.id||"")+'</td><td>'+(a.name||"")+'</td><td>'+(a.artist||"")+'</td><td>'+(a.category||"")+'</td><td>'+(a.medium||"")+'</td><td>'+(a.year||"")+'</td><td>$'+parseFloat(a.currentValue||0).toLocaleString()+'</td></tr>';});
+    return t+'</tbody></table>';
+  }
+  var content=tblHTML(assets,"Inventory","#333")+tblHTML(consignAssets,"Consignment","#4a6b8a")+tblHTML(soldAssets,"Sold","#8a5a2e");
+  w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>body{font-family:Arial,sans-serif;font-size:10pt;padding:15px;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;font-size:9pt;}th{background:#f5f5f5;font-weight:600;}@media print{.np{display:none!important;}}</style></head><body><div class="np" style="margin-bottom:12px;"><button onclick="window.print()">Print / Save PDF</button></div>'+content+'</body></html>');
+  w.document.close();
+}
 document.addEventListener("DOMContentLoaded",function(){
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
   fOrder=fOrder.filter(function(k){return DORDER.includes(k)||customCols.find(function(c){return c.key===k;});});
