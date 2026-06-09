@@ -241,7 +241,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 body.app-locked .shell { pointer-events: none !important; }
 body.app-locked .shell * { pointer-events: none !important; }
 </style>
-
+ 
 <div class="shell" id="SHELL">
   <div class="sb" id="SB">
     <div class="sblogo">
@@ -431,13 +431,13 @@ const CFIELDS=[
 ];
 const DORDER=CFIELDS.map(f=>f.k);
 const AUTOFILL=["artist","location","assignedTo","manufacturer","department","appraiser"];
-
+ 
 // Storage
 const LS={
   get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){console.warn(e);}},
 };
-
+ 
 // IndexedDB photos
 let photoDB=null;
 function openPhotoDB(){
@@ -503,7 +503,7 @@ function compressPhoto(dataUrl){
     img.onerror=()=>res(dataUrl);img.src=dataUrl;
   });
 }
-
+ 
 // State
 function loadAssets(){
   for(const k of["acap_assets_v3","acap_assets_bak"]){
@@ -512,7 +512,7 @@ function loadAssets(){
   return[];
 }
 function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCodeAt(i);return(h>>>0).toString(36);}
-
+ 
 let assets=loadAssets();
 let _photoCache={}; // in-memory photo cache, survives renders
 let consignAssets=(function(){try{var r=localStorage.getItem("acap_consign_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return p;}}catch(e){}return[];})();
@@ -530,7 +530,7 @@ let camStream=null,scanStream=null,scanIv=null,lkTarget=null,cellPhotoId=null,de
 let colDragSrc=null,rsCol=null,rsX=0,rsW=0,fdDragIdx=null;
 let undoStack=[],undoTmr=null,undoCnt=null;
 let isAuth=false,sessTmr=null,pinEntry="";
-
+ 
 function saveAll(){
   // Save photos to IndexedDB; strip from localStorage to avoid quota
   const slim=assets.map(a=>{if(a.photo)savePhoto(a.id,a.photo);const{photo,...r}=a;return r;});
@@ -541,7 +541,7 @@ function saveAll(){
   localStorage.setItem("acap_has_data","1");
   const ss=G("sSave");if(ss){const d=new Date();ss.textContent="Saved "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0");}
 }
-
+ 
 // Auth
 function switchTab(t){
   G("tPW").className="atab"+(t==="pw"?" on":"");G("tPIN").className="atab"+(t==="pin"?" on":"");
@@ -597,7 +597,7 @@ async function loadPhotosAndRender(){
   soldAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
   render();
 }
-
+ 
 // Helpers
 function esc(s){if(s==null)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function G(id){return document.getElementById(id);}
@@ -622,7 +622,7 @@ function toast(msg,type,dur){
   el.textContent=msg;el.className="toast "+type;el.style.display="block";
   clearTimeout(toastTmr);toastTmr=setTimeout(()=>el.style.display="none",dur);
 }
-
+ 
 // Undo
 function pushUndo(action,data,msg){
   undoStack=[{action,data}];clearTimeout(undoTmr);clearInterval(undoCnt);
@@ -641,7 +641,7 @@ function doUndo(){
   else if(action==="cell"){const a=assets.find(x=>x.id===data.id);if(a)a[data.k]=data.old;}
   saveAll();render();toast("Undone","i");
 }
-
+ 
 // Navigation
 const TITLES={dash:"Dashboard",list:"All Assets",table:"Inventory Table",consign:"Consignment",sold:"Sold Assets",settings:"Field Order",cols:"Manage Columns",security:"Security",io:"Import / Export",detail:"Asset Detail"};
 function goTo(v){
@@ -664,7 +664,7 @@ function newAsset(){
 }
 function toggleSB(){const sb=G("SB");sb.classList.toggle("open");G("SOVL").style.display=sb.classList.contains("open")?"block":"none";}
 function closeSB(){const sb=G("SB");if(sb)sb.classList.remove("open");const o=G("SOVL");if(o)o.style.display="none";}
-
+ 
 function getUserCats(){return LS.get("acap_user_cats",null)||CATS;}
 function getUserConds(){return LS.get("acap_user_conds",null)||CONDS;}
 function getUserMeds(){return LS.get("acap_user_meds",null)||MEDS;}
@@ -696,7 +696,7 @@ function updSidebar(){
   if(fm&&_svm)fm.value=_svm;if(fy&&_svy)fy.value=_svy;
 }
 function filterByCat(c){const el=G("fCat");if(el)el.value=c;goTo("list");}
-
+ 
 // Filtering
 function getFS(){
   function v(id){const el=G(id);return el?el.value:"";}
@@ -719,7 +719,7 @@ function doFilter(){
   });
   render();
 }
-
+ 
 // Render
 function render(){
   updSidebar();
@@ -736,7 +736,7 @@ function render(){
   else if(view==="sold")     ct.innerHTML=rSold();
   else if(view==="consign")  ct.innerHTML=rConsign();
 }
-
+ 
 // Consignment
 function rConsign(){
   var f=getFS(),ql=f.q.toLowerCase();
@@ -826,7 +826,7 @@ function exportConsignCSV(){
   var rows=consignAssets.map(function(a){return[a.id].concat(cols.map(function(k){return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';})).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","consignment.csv");toast("Exported");
 }
-
+ 
 // Sold Assets
 function rSold(){
   var f=getFS(),ql=f.q.toLowerCase();
@@ -881,7 +881,7 @@ function rSold(){
   h+='</tbody></table></div></div>';
   return h;
 }
-
+ 
 // Dashboard
 function rDash(){
   try {
@@ -917,7 +917,7 @@ function rDash(){
   return h+'</div>';
   } catch(e) { return '<div class="empty" style="color:red;"><b>Dashboard error:</b><br>'+e.message+'<br><pre style="font-size:10px;text-align:left;">'+e.stack+'</pre></div>'; }
 }
-
+ 
 // List
 function setLM(m){listMode=m;const g=G("vtG"),t=G("vtT");if(g)g.className=m==="grid"?"on":"";if(t)t.className=m==="tbl"?"on":"";render();}
 function rList(){
@@ -957,7 +957,7 @@ function rList(){
   });
   return h+'</div>';
 }
-
+ 
 // Inventory Table
 function getSTCols(){
   // Sold table columns = same as inventory defaults + soldAt
@@ -970,7 +970,7 @@ function getTCols(){
 }
 function defW(k){if(k==="photo")return 54;if(k==="name")return 148;if(["description","notes","provenance","exhibitionHistory"].includes(k))return 165;if(["purchasePrice","currentValue","insuredValue"].includes(k))return 98;return 118;}
 function cw(k){return colW[k]||defW(k);}
-
+ 
 function rTable(){
   const tblA=hasFilter()?filtered:assets;
   const cols=getTCols(),fds=allFDs(),renames=LS.get("acap_renames_v3",{});
@@ -1044,13 +1044,13 @@ function rTable(){
 }
 function setRH(v){rowH=parseInt(v);var l=G("rhLbl");if(l)l.textContent=v+"px";LS.set("acap_rowh_v3",rowH);document.querySelectorAll("#MT td[style]").forEach(function(td){td.style.height=v+"px";});document.querySelectorAll("#MT .tdin[style*='height']").forEach(function(d){d.style.height=v+"px";});}
 function bindTbl(){}
-
+ 
 // Col drag
 function cdS(e,i){colDragSrc=i;e.currentTarget.classList.add("cdrag");}
 function cdO(e,i){e.preventDefault();document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrop");});e.currentTarget.classList.add("cdrop");var w=G("TW");if(w){var r=w.getBoundingClientRect();if(e.clientX-r.left<60)w.scrollLeft-=12;else if(r.right-e.clientX<60)w.scrollLeft+=12;}}
 function cdD(e,i){e.preventDefault();document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrop");t.classList.remove("cdrag");});if(colDragSrc===null||colDragSrc===i)return;var cols=getTCols();var m=cols.splice(colDragSrc,1)[0];cols.splice(i,0,m);tableCols=cols;colDragSrc=null;saveAll();render();}
 function cdE(){document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrag");t.classList.remove("cdrop");});}
-
+ 
 // Col resize
 function startRS(e,key,w0){
   e.preventDefault();e.stopPropagation();
@@ -1062,7 +1062,7 @@ function startRS(e,key,w0){
 function onRStouch(e){e.preventDefault();if(!rsCol)return;var nw=Math.max(34,rsW+(e.touches[0].clientX-rsX));colW[rsCol]=nw;var th=document.querySelector('[data-ck="'+rsCol+'"]');if(th)th.style.width=nw+"px";}
 function onRS(e){if(!rsCol)return;var nw=Math.max(34,rsW+(e.clientX-rsX));colW[rsCol]=nw;var th=document.querySelector('[data-ck="'+rsCol+'"]');if(th)th.style.width=nw+"px";}
 function endRS(){LS.set("acap_colw_v3",colW);rsCol=null;document.removeEventListener("pointermove",onRS);document.removeEventListener("pointerup",endRS);document.removeEventListener("touchmove",onRStouch);document.removeEventListener("touchend",endRS);}
-
+ 
 // Inline edit
 function startEdit(td,aid,key){
   if(td.querySelector("input,select,textarea"))return;
@@ -1109,7 +1109,7 @@ function commitCell(aid,key,val,old){
   var w2=G("TW");if(w2){w2.scrollLeft=sx;w2.scrollTop=sy;}
   toast("Saved");
 }
-
+ 
 // Cell photo
 function editCellPhoto(aid){
   cellPhotoId=aid;
@@ -1132,7 +1132,7 @@ function editCellPhoto(aid){
     };document.body.appendChild(inp);
   }inp.click();
 }
-
+ 
 // Hide/Unhide cols
 function hideCol(key){tableCols=getTCols().filter(function(k){return k!==key;});saveAll();render();toast("Hidden — tap 👁 Unhide to restore","i",10000);}
 function showUnhide(){
@@ -1162,7 +1162,7 @@ function addCol(){
   var key="cc_"+Date.now();customCols.push({key:key,label:lbl,type:(G("nColType")||{value:"text"}).value});
   var cols=getTCols();cols.push(key);tableCols=cols;saveAll();closeM("mAddCol");goTo("table");toast("Column added");
 }
-
+ 
 // Print
 function openPrintDlg(){var el=G("mPrint");if(el)el.style.display="flex";}
 function doPrint(){
@@ -1186,7 +1186,7 @@ function doPrint(){
   window.print();
   setTimeout(function(){if(ph)ph.style.display="none";if(sel)sel.textContent="";if(leg)leg.style.display="none";},800);
 }
-
+ 
 // Hyperlink
 function showLink(aid,key){
   lkTarget={aid:aid,key:key};var a=assets.find(function(x){return x.id===aid;});
@@ -1202,7 +1202,7 @@ function applyLink(){
   var old=a[lkTarget.key]||"";pushUndo("cell",{id:lkTarget.aid,k:lkTarget.key,old:old},"Link inserted");
   a[lkTarget.key]=JSON.stringify({text:text||url,url:url});a.updatedAt=today();saveAll();closeM("mLink");render();toast("Link inserted");
 }
-
+ 
 // Form
 function editAsset(id){
   editId=id;view="form";var t=G("pgTit");if(t)t.textContent="Edit Asset";
@@ -1300,7 +1300,7 @@ function submitForm(){
     toast("Saved ✓ ("+assets.length+" assets)");
   }
 }
-
+ 
 // Detail
 function viewDetail(id){
   detailId=id;view="detail";
@@ -1384,7 +1384,7 @@ function rDetail(){
   setTimeout(function(){drawBC(bcId,a.id,180,48);},50);
   return h;
 }
-
+ 
 // Settings
 function rSettings(){
   var fds=allFDs();
@@ -1409,4 +1409,488 @@ function rSettings(){
 function bindFDrag(){}
 function fdDrop(i){if(fdDragIdx===null||fdDragIdx===i)return;var m=fOrder.splice(fdDragIdx,1)[0];fOrder.splice(i,0,m);fdDragIdx=null;saveAll();render();}
 function nudgeF(i,d){var t=i+d;if(t<0||t>=fOrder.length)return;var tmp=fOrder[i];fOrder[i]=fOrder[t];fOrder[t]=tmp;saveAll();render();}
-function togFV(key,show){if(show)hiddenFlds=hiddenFlds.filter(function(k){return k!==key;});else if(!hiddenFlds.includes(key))hiddenFlds.push(key);saveAll();render
+function togFV(key,show){if(show)hiddenFlds=hiddenFlds.filter(function(k){return k!==key;});else if(!hiddenFlds.includes(key))hiddenFlds.push(key);saveAll();render();}
+function resetFO(){fOrder=DORDER.slice();hiddenFlds=[];saveAll();render();toast("Reset","i");}
+ 
+// Manage Columns
+function rCols(){
+  var allFds2=[{k:"photo",lbl:"Photo (thumbnail)",sec:""}].concat(allFDs());
+  var cols=getTCols();
+  var h='<div class="sw"><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);margin-bottom:11px;">';
+  h+='<div style="padding:10px 12px;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">';
+  h+='<div style="font-family:var(--mo);font-size:12px;font-weight:600;letter-spacing:.06em;">TABLE COLUMNS</div>';
+  h+='<button class="btn bg" style="font-size:11px;" onclick="resetTCols()">↺ Reset</button></div>';
+  allFds2.forEach(function(fd){
+    var vis=cols.includes(fd.k);
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--b);font-size:12px;">';
+    h+='<span style="flex:1;">'+esc(fd.lbl)+(fd.artOnly?'<span class="fibdg aw" style="margin-left:5px;">Artwork</span>':"")+'</span>';
+    h+='<span style="font-size:10px;color:var(--mu);font-family:var(--mo);width:76px;">'+esc(fd.sec||"")+'</span>';
+    h+='<label class="tog"><input type="checkbox" '+(vis?"checked":"")+' onchange="togTCol(\''+fd.k+'\',this.checked)"/><span class="tsl"></span></label></div>';
+  });
+  customCols.forEach(function(fd){
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--b);">';
+    h+='<input type="text" value="'+esc(fd.label)+'" onblur="renCC(\''+fd.key+'\',this.value)" style="flex:1;border:1px solid var(--b);border-radius:4px;padding:4px 7px;font-size:12px;font-family:var(--sa);outline:none;color:var(--tx);"/>';
+    h+='<span style="font-size:10px;color:var(--mu);font-family:var(--mo);width:76px;">Custom</span>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="delCC(\''+fd.key+'\')">✕</button></div>';
+  });
+  h+='</div>';
+  // Customize dropdown lists
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:11px;">';
+  h+='<div style="padding:9px 12px;background:var(--s2);border-bottom:1px solid var(--b);font-family:var(--mo);font-size:10px;font-weight:600;letter-spacing:.07em;">CUSTOMIZE DROPDOWN LISTS</div>';
+  h+='<div style="padding:12px;display:flex;flex-direction:column;gap:10px;">';
+  [{key:"cats",label:"Categories",sk:"acap_user_cats",def:CATS},
+   {key:"conds",label:"Conditions",sk:"acap_user_conds",def:CONDS},
+   {key:"meds",label:"Mediums",sk:"acap_user_meds",def:MEDS},
+   {key:"framed",label:"Framed?",sk:"acap_user_framed",def:["Yes","Old","No","N/A"]}
+  ].forEach(function(cfg){
+    var vals=LS.get(cfg.sk,null)||cfg.def;
+    h+='<div><div style="font-size:11px;font-weight:600;margin-bottom:3px;">'+cfg.label+'</div>';
+    h+='<textarea id="dle_'+cfg.key+'" rows="3" style="width:100%;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:12px;font-family:var(--mo);color:var(--tx);-webkit-text-fill-color:var(--tx);background:var(--s);outline:none;resize:vertical;">'+vals.join("\n")+'</textarea>';
+    h+='<div style="display:flex;gap:6px;margin-top:3px;">';
+    h+='<button class="btn bp" style="font-size:10px;" onclick="saveListEdit(this)">Save</button>';
+    h+='<button class="btn bg" style="font-size:10px;" onclick="resetListDef(this)">Default</button>';
+    h+='<span style="font-size:10px;color:var(--mu);line-height:2.4;">One per line</span>';
+    h+='</div></div>';
+  });
+  h+='</div></div>';
+  // Customize dropdown lists
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:11px;">';
+  h+='<div style="padding:9px 12px;background:var(--s2);border-bottom:1px solid var(--b);font-family:var(--mo);font-size:10px;font-weight:600;letter-spacing:.07em;">CUSTOMIZE DROPDOWN LISTS</div>';
+  h+='<div style="padding:12px;display:flex;flex-direction:column;gap:10px;">';
+  [{key:"cats",label:"Categories",sk:"acap_user_cats",def:CATS},{key:"conds",label:"Conditions",sk:"acap_user_conds",def:CONDS},{key:"meds",label:"Mediums",sk:"acap_user_meds",def:MEDS},{key:"framed",label:"Framed?",sk:"acap_user_framed",def:["Yes","Old","No","N/A"]}].forEach(function(cfg){
+    var vals=LS.get(cfg.sk,null)||cfg.def;
+    h+='<div><div style="font-size:11px;font-weight:600;margin-bottom:3px;">'+cfg.label+'</div>';
+    h+='<textarea id="dle_'+cfg.key+'" rows="3" style="width:100%;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:12px;font-family:var(--mo);color:var(--tx);-webkit-text-fill-color:var(--tx);background:var(--s);outline:none;resize:vertical;">'+vals.join("\n")+'</textarea>';
+    h+='<div style="display:flex;gap:6px;margin-top:3px;"><button class="btn bp" style="font-size:10px;" onclick="saveListEdit(this)">Save</button><button class="btn bg" style="font-size:10px;" onclick="resetListDef(this)">Default</button><span style="font-size:10px;color:var(--mu);line-height:2.4;">One per line</span></div></div>';
+  });
+  h+='</div></div>';
+    h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
+  h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:7px;font-weight:600;">App Name</div>';
+  h+='<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">';
+  h+='<input type="text" id="anIn" value="'+esc(appName)+'" style="padding:6px 8px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);outline:none;flex:1;min-width:130px;color:var(--tx);"/>';
+  h+='<button class="btn bp" style="font-size:11px;" onclick="saveAN()">Save</button></div></div></div>';
+  return h;
+}
+function togTCol(key,show){var cols=getTCols();if(show&&!cols.includes(key))cols.push(key);if(!show){var i=cols.indexOf(key);if(i>-1)cols.splice(i,1);}tableCols=cols;saveAll();render();}
+function resetTCols(){tableCols=null;saveAll();render();toast("Reset","i");}
+function renCC(key,lbl){var cc=customCols.find(function(c){return c.key===key;});if(cc)cc.label=lbl;saveAll();}
+function delCC(key){customCols=customCols.filter(function(c){return c.key!==key;});tableCols=getTCols().filter(function(k){return k!==key;});saveAll();render();toast("Removed","i");}
+function saveListEdit(btn){
+  var row=btn.parentElement;while(row&&!row.querySelector("textarea"))row=row.parentElement;
+  var ta=row?row.querySelector("textarea"):null;if(!ta)return;
+  var keyMap={"dle_cats":"acap_user_cats","dle_conds":"acap_user_conds","dle_meds":"acap_user_meds","dle_framed":"acap_user_framed"};
+  var sk=keyMap[ta.id];if(!sk){toast("Unknown list","e");return;}
+  var vals=ta.value.split("\n").map(function(v){return v.trim();}).filter(Boolean);
+  if(!vals.length){toast("List cannot be empty","e");return;}
+  LS.set(sk,vals);saveAll();render();toast("List saved ✓");
+}
+function resetListDef(btn){
+  var row=btn.parentElement;while(row&&!row.querySelector("textarea"))row=row.parentElement;
+  var ta=row?row.querySelector("textarea"):null;if(!ta)return;
+  var keyMap={"dle_cats":["acap_user_cats",CATS],"dle_conds":["acap_user_conds",CONDS],"dle_meds":["acap_user_meds",MEDS],"dle_framed":["acap_user_framed",["Yes","No","N/A"]]};
+  var km=keyMap[ta.id];if(!km)return;
+  localStorage.removeItem(km[0]);ta.value=km[1].join("\n");render();toast("Reset to default","i");
+}
+function saveAN(){appName=(G("anIn")||{value:"Asset Capitalizer"}).value.trim()||"Asset Capitalizer";saveAll();document.title=appName;toast("Saved");}
+ 
+// Security
+function rSecurity(){
+  var h='<div class="sw">';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:11px;">';
+  h+='<div style="padding:8px 12px;background:var(--s2);border-bottom:1px solid var(--b);font-family:var(--mo);font-size:11px;font-weight:600;letter-spacing:.06em;">CHANGE PASSWORD</div>';
+  h+='<div style="padding:13px;">';
+  h+='<div class="fr" style="border:none;padding:0;margin-bottom:8px;"><label>New Username</label><input type="text" id="nusr" placeholder="admin"/></div>';
+  h+='<div class="fr" style="border:none;padding:0;margin-bottom:8px;"><label>New Password (min 6)</label><input type="password" id="npw" placeholder="••••••••"/></div>';
+  h+='<div class="fr" style="border:none;padding:0;margin-bottom:11px;"><label>Confirm Password</label><input type="password" id="npw2" placeholder="••••••••"/></div>';
+  h+='<button class="btn bp" style="font-size:11px;" onclick="changePW()">Save Password</button>';
+  h+='<div id="pwMsg" style="font-size:12px;margin-top:6px;min-height:14px;"></div></div></div>';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:11px;">';
+  h+='<div style="padding:8px 12px;background:var(--s2);border-bottom:1px solid var(--b);font-family:var(--mo);font-size:11px;font-weight:600;letter-spacing:.06em;">CHANGE PIN</div>';
+  h+='<div style="padding:13px;">';
+  h+='<div class="fr" style="border:none;padding:0;margin-bottom:11px;"><label>New 4-digit PIN</label><input type="number" id="npin" placeholder="1234" style="max-width:108px;" min="0" max="9999"/></div>';
+  h+='<button class="btn bp" style="font-size:11px;" onclick="changePIN()">Save PIN</button>';
+  h+='<div id="pinMsg" style="font-size:12px;margin-top:6px;min-height:14px;"></div></div></div>';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
+  h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:7px;font-weight:600;">Session</div>';
+  h+='<div style="font-size:13px;color:var(--mu);margin-bottom:9px;line-height:1.6;">Auto-locks after 8 hours. Lock with 🔒 in the sidebar.</div>';
+  h+='<button class="btn bwn" style="font-size:11px;" onclick="doLogout()">🔒 Lock Now</button></div></div>';
+  return h;
+}
+function changePW(){
+  var u=(G("nusr")||{value:""}).value.trim(),p=(G("npw")||{value:""}).value,p2=(G("npw2")||{value:""}).value;
+  var msg=G("pwMsg");
+  if(!u){if(msg){msg.style.color="var(--ac)";msg.textContent="Username required.";}return;}
+  if(p.length<6){if(msg){msg.style.color="var(--ac)";msg.textContent="Min 6 characters.";}return;}
+  if(p!==p2){if(msg){msg.style.color="var(--ac)";msg.textContent="Passwords don't match.";}return;}
+  authCfg.u=hashStr(u);authCfg.p=hashStr(p);saveAll();
+  if(msg){msg.style.color="var(--ok)";msg.textContent="Updated ✓";}setTimeout(function(){if(G("pwMsg"))G("pwMsg").textContent="";},3000);
+}
+function changePIN(){
+  var pin=String((G("npin")||{value:""}).value||"").replace(/\D/g,"");
+  var msg=G("pinMsg");
+  if(pin.length!==4){if(msg){msg.style.color="var(--ac)";msg.textContent="Must be 4 digits.";}return;}
+  authCfg.pin=hashStr(pin);saveAll();
+  if(msg){msg.style.color="var(--ok)";msg.textContent="Updated ✓";}setTimeout(function(){if(G("pinMsg"))G("pinMsg").textContent="";},3000);
+}
+ 
+// Import/Export
+function rIO(){
+  var h='<div style="max-width:540px;margin:0 auto;">';
+  h+='<div style="background:#18180f;border-radius:var(--r);padding:16px;margin-bottom:11px;border:2px solid var(--ac);">';
+  h+='<div style="font-family:var(--mo);font-size:11px;color:#e6e1d6;margin-bottom:5px;font-weight:600;">💾 SAVE ALL DATA</div>';
+  h+='<div style="font-size:13px;color:#aaa;margin-bottom:11px;line-height:1.6;">Data auto-saves when you switch away. Tap to force-save now.</div>';
+  h+='<button class="btn bok" style="width:100%;font-size:13px;padding:10px;" onclick="saveAll();toast(\'All data saved\')">💾 Save Now</button></div>';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
+  h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:8px;">IMPORT</h3>';
+  h+='<div style="display:flex;gap:7px;flex-wrap:wrap;">';
+  h+='<button class="btn bs" onclick="G(\'jsonImp\').click()">📥 Restore JSON</button>';
+  h+='<button class="btn bg" onclick="G(\'csvImp\').click()">📊 Import CSV</button></div>';
+  h+='<input type="file" id="jsonImp" accept=".json" style="display:none" onchange="importJSON(this)"/>';
+  h+='<input type="file" id="csvImp" accept=".csv" style="display:none" onchange="importCSV(this)"/></div>';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
+  h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">EXPORT</h3>';
+  h+='<div style="font-size:13px;color:var(--mu);margin-bottom:11px;">'+assets.length+' assets. JSON includes photos.</div>';
+  h+='<div style="display:flex;gap:7px;flex-wrap:wrap;">';
+  h+='<button class="btn bp" onclick="exportJSON()">💾 JSON Backup</button>';
+  h+='<button class="btn bg" onclick="exportCSV()">📊 Export CSV</button></div></div>';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;">';
+  h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:7px;">INSTALL AS APP</h3>';
+  h+='<div style="font-size:13px;color:var(--mu);margin-bottom:9px;line-height:1.6;">Android Chrome: menu → Install app · Windows Edge: install icon in address bar · iOS: Share → Add to Home Screen</div>';
+  h+='<button class="btn bok" onclick="installApp()">📱 Install on This Device</button></div></div>';
+  return h;
+}
+async function exportJSON(){
+  toast("Preparing…","i",8000);
+  var pm=await loadAllPhotos();
+  var withPhotos=assets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
+  var _leg=LS.get("acap_tbl_legend",""),_ps=LS.get("acap_tbl_ps","");
+  var _leg=LS.get("acap_tbl_legend",""),_ps=LS.get("acap_tbl_ps","");
+  dl(JSON.stringify({assets:withPhotos,soldAssets:soldAssets,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,colW:colW,rowH:rowH,legend:_leg,ps:_ps,legend:_leg,ps:_ps},null,2),"application/json","assets_backup.json");
+  toast("JSON exported ("+assets.length+" assets)","s",4000);
+}
+function exportCSV(){
+  var fds=allFDs(),cols=fds.map(function(f){return f.k;}),renames=LS.get("acap_renames_v3",{});
+  var hdr=["ID","Created"].concat(cols.map(function(k){return renames[k]||(fds.find(function(f){return f.k===k;})||{lbl:k}).lbl;})).join(",");
+  var rows=assets.map(function(a){return[a.id,a.createdAt||""].concat(cols.map(function(c){var v=a[c]||"";if(c==="photo"&&v&&v.startsWith("data:"))v="[photo]";try{var lp=JSON.parse(v);if(lp.url)v=lp.url;}catch{}return'"'+String(v).replace(/"/g,'""')+'"';})).join(",");});
+  var leg2=LS.get("acap_tbl_legend",""),ps2=LS.get("acap_tbl_ps","");
+  var footer="";
+  if(leg2)footer+="\n\"Legend: "+leg2.replace(/"/g,'')+"\"";
+  if(ps2)footer+="\n\"PS: "+ps2.replace(/"/g,'')+"\"";
+  dl(hdr+"\n"+rows.join("\n")+footer,"text/csv","assets.csv");toast("CSV exported");
+}
+async function importJSON(inp){
+  var f=inp.files[0];if(!f)return;toast("Importing…","i",15000);
+  var r=new FileReader();
+  r.onload=async function(ev){
+    try{
+      var d=JSON.parse(ev.target.result);
+      if(!d.assets||!Array.isArray(d.assets)){toast("Invalid backup","e");return;}
+      var photosToSave=[];
+      // Normalize IDs to 3-digit format before processing
+      d.assets.forEach(function(a){
+        if(a.id&&a.id.length===8&&a.id.indexOf("AST-0")===0)a.id="AST-"+a.id.slice(5);
+      });
+      var slim=d.assets.map(function(a){
+        if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});
+        var r=Object.assign({},a);delete r.photo;return r;
+      });
+      localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_has_data","1");
+      try{localStorage.setItem("acap_assets_bak",localStorage.getItem("acap_assets_v3"));}catch{}
+      if(d.fOrder)LS.set("acap_order_v3",d.fOrder);
+      if(d.hiddenFlds)LS.set("acap_hidden_v3",d.hiddenFlds);
+      if(d.customCols)LS.set("acap_custom_v3",d.customCols);
+      if(d.appName)LS.set("acap_name_v3",d.appName);
+      if(d.colW)LS.set("acap_colw_v3",d.colW);
+      if(d.rowH)LS.set("acap_rowh_v3",d.rowH);
+      assets=d.assets;
+      if(d.fOrder)fOrder=d.fOrder;if(d.hiddenFlds)hiddenFlds=d.hiddenFlds;
+      if(d.customCols)customCols=d.customCols;if(d.appName){appName=d.appName;document.title=appName;}
+      if(d.colW)colW=d.colW;if(d.rowH)rowH=d.rowH;
+      // Recompress all photos to fit in localStorage (400px/0.45 quality)
+      for(var i=0;i<photosToSave.length;i++){
+        var compressed=await compressPhoto(photosToSave[i].photo);
+        await savePhoto(photosToSave[i].id,compressed);
+      }
+      if(d.legend!==undefined)LS.set("acap_tbl_legend",d.legend);
+      if(d.ps!==undefined)LS.set("acap_tbl_ps",d.ps);
+      await loadPhotosAndRender();
+      goTo("list");toast("Restored "+assets.length+" assets + "+photosToSave.length+" photos","s",6000);
+    }catch(e){toast("Import failed: "+e.message,"e",8000);}
+  };
+  r.readAsText(f);inp.value="";
+}
+function importCSV(inp){
+  var f=inp.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(ev){
+    try{
+      var lines=ev.target.result.split("\n").filter(Boolean);
+      var hdrs=lines[0].split(",").map(function(h){return h.replace(/^"|"$/g,"").trim().toLowerCase().replace(/ /g,"");});
+      var imp=lines.slice(1).map(function(line,i){
+        var vals=line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(function(v){return v.replace(/^"|"$/g,"").replace(/""/g,'"');});
+        var obj={};hdrs.forEach(function(h,idx){obj[h]=vals[idx]||"";});
+        var base=CFIELDS.reduce(function(o,fd){o[fd.k]="";return o;},{photo:"",category:"Electronics"});
+        return Object.assign(base,obj,{id:obj.id||genId(assets.length+i+1),seq:assets.length+i+1,createdAt:obj.createdat||today(),updatedAt:today()});
+      });
+      assets=assets.concat(imp);saveAll();goTo("list");toast("Imported "+imp.length+" assets");
+    }catch(e){toast("CSV error: "+e.message,"e");}
+  };
+  r.readAsText(f);inp.value="";
+}
+function dl(content,mime,name){var blob=new Blob([content],{type:mime});var url=URL.createObjectURL(blob);Object.assign(document.createElement("a"),{href:url,download:name}).click();URL.revokeObjectURL(url);}
+ 
+// Camera
+async function openCam(){
+  var cm=G("CAM");if(cm)cm.style.display="flex";
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:"environment"},width:{ideal:640},height:{ideal:480}}}).catch(function(){return navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:640},height:{ideal:480}}});});
+    var v=G("camVid");if(v){v.srcObject=camStream;await v.play();}
+  }catch{toast("Camera unavailable — use Upload","e");closeCam();}
+}
+function closeCam(){if(camStream){camStream.getTracks().forEach(function(t){t.stop();});camStream=null;}var cm=G("CAM");if(cm)cm.style.display="none";}
+async function snapPhoto(){
+  var v=G("camVid");if(!v)return;
+  var cv=document.createElement("canvas");var MAX=600;var w=v.videoWidth,h=v.videoHeight;
+  if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+  cv.width=w;cv.height=h;cv.getContext("2d").drawImage(v,0,0,w,h);
+  var data=await compressPhoto(cv.toDataURL("image/jpeg",.7));
+  var pd=G("pdata");if(pd)pd.value=data;
+  var pp=G("pprev");if(pp)pp.innerHTML='<img src="'+data+'" alt=""/>';
+  closeCam();toast("Photo captured");
+}
+function pickFile(inp){
+  var f=inp.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    compressPhoto(e.target.result).then(function(c){
+      var pd=G("pdata");if(pd)pd.value=c;
+      var pp=G("pprev");if(pp)pp.innerHTML='<img src="'+c+'" alt=""/>';
+    });
+  };
+  r.readAsDataURL(f);
+  // Keep value so browser remembers folder, but allow same file again
+  setTimeout(function(){},100);
+}
+function clearPhoto(){var pd=G("pdata");if(pd)pd.value="";var pp=G("pprev");if(pp)pp.innerHTML="📷";}
+ 
+// Scanner
+async function openScanner(){
+  var sc=G("SCAN");if(sc)sc.style.display="flex";
+  var si=G("scanIn");if(si)si.value="";
+  var stat=G("scanStat");if(stat)stat.textContent="Starting camera...";
+  navigator.mediaDevices.getUserMedia({
+    video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}
+  }).then(function(stream){
+    scanStream=stream;
+    var v=G("scanVid");
+    if(!v)return;
+    v.srcObject=stream;
+    v.play().then(function(){
+      if(stat)stat.textContent="Camera ready...";
+      if(!("BarcodeDetector"in window)){
+        if(stat)stat.textContent="Auto-scan not supported — type asset ID below";
+        return;
+      }
+      var bd=new BarcodeDetector({formats:["code_128","code_39","qr_code","ean_13","ean_8","upc_a","upc_e","data_matrix","aztec","pdf417"]});
+      if(stat)stat.textContent="Scanning — point camera at barcode";
+      var active=true;
+      window._stopScan=function(){active=false;};
+      function scan(){
+        if(!active||!scanStream)return;
+        bd.detect(v).then(function(codes){
+          if(codes&&codes.length>0){
+            active=false;
+            handleScan(codes[0].rawValue);
+          }else{
+            requestAnimationFrame(scan);
+          }
+        }).catch(function(){
+          requestAnimationFrame(scan);
+        });
+      }
+      requestAnimationFrame(scan);
+    });
+  }).catch(function(err){
+    if(stat)stat.textContent="Camera unavailable — type asset ID below";
+  });
+}
+ 
+function closeScanner(){
+  if(window._stopScan){window._stopScan();window._stopScan=null;}
+  clearInterval(scanIv);scanIv=null;
+  if(scanStream){scanStream.getTracks().forEach(function(t){t.stop();});scanStream=null;}
+  var sc=G("SCAN");if(sc)sc.style.display="none";
+}
+function handleScan(raw){
+  closeScanner();
+  var id=raw.trim().toUpperCase();
+  var found=assets.find(function(a){return a.id===id;});
+  if(!found){try{var u=new URL(raw);var p=u.searchParams.get("asset");if(p)found=assets.find(function(a){return a.id===p;});}catch{}}
+  if(!found)found=assets.find(function(a){return a.id.includes(id)||id.includes(a.id);});
+  if(found){viewDetail(found.id);toast("Found: "+found.name);}
+  else{var si=G("srchIn");if(si)si.value=raw;doFilter();goTo("list");toast("No match — showing search results","i");}
+}
+function manualScan(){var v=(G("scanIn")||{value:""}).value.trim();if(v)handleScan(v);}
+ 
+// Delete
+function showPhoto(src,e){
+  if(e)e.stopPropagation();
+  var lb=G("photoLB"),img=G("photoLBimg");
+  if(!lb||!img||!src)return;
+  img.src=src;lb.style.display="flex";
+}
+function showPhoto(src,e){
+  if(e){e.stopPropagation();e.preventDefault();}
+  var lb=G("photoLB"),img=G("photoLBimg");
+  if(!lb||!img||!src)return;
+  img.src=src;lb.style.display="flex";
+}
+function askDel(id){confirmId=id;var m=G("mConfirm");if(m)m.style.display="flex";}
+function confirmConsign(){
+  var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
+  var c=Object.assign({},a);c.consignDate=today();c.status="consignment";
+  consignAssets.push(c);
+  assets=assets.filter(function(x){return x.id!==confirmId;});
+  saveAll();closeM("mConfirm");
+  if(view==="detail")goTo("consign");else render();
+  toast("Moved to Consignment ✓","s");
+}
+function confirmSell(){
+  var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
+  var soldPrice=prompt("Sold at price ($):\n(Leave blank to skip)","");
+  var sold=Object.assign({},a);
+  sold.soldDate=today();sold.status="sold";
+  if(soldPrice!==null&&soldPrice.trim()!=="")sold.soldAt=soldPrice.trim().replace(/[^0-9.]/g,"");
+  soldAssets.push(sold);
+  assets=assets.filter(function(x){return x.id!==confirmId;});
+  saveAll();closeM("mConfirm");
+  if(view==="detail")goTo("list");else render();
+  toast("Moved to Sold Assets","s");
+}
+function confirmDel(){
+  var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
+  pushUndo("del",Object.assign({},a),"Deleted — undo available");
+  assets=assets.filter(function(x){return x.id!==confirmId;});deletePhoto(confirmId);saveAll();closeM("mConfirm");
+  if(view==="detail")goTo("list");else render();toast("Deleted","i");
+}
+ 
+// Barcodes / Stickers
+function printBC(id){
+  var a=assets.find(function(x){return x.id===id;});if(!a)return;
+  var sn=a.serialNumber||"";
+  var ph=a.photo||_photoCache[a.id]||"";
+  var phHtml=ph?'<img src="'+ph+'" style="width:38mm;height:20mm;object-fit:cover;border-radius:0.5mm;display:block;margin:0 auto 0.5mm;"/>':(a.category==="Artworks"?'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;margin:0 auto 0.5mm;">&#128444;</div>':'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;margin:0 auto 0.5mm;">&#128230;</div>');
+  var bcDrw="function draw(){var cv=document.getElementById('bc1');if(!cv)return;var ctx=cv.getContext('2d'),val=cv.getAttribute('data-id'),W=148,H=26;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);var h=0;for(var i=0;i<val.length;i++)h=(h*31+val.charCodeAt(i))>>>0;var bC=42,bW=W/bC;for(var i=0;i<bC;i++){var s=(h^(i*2654435761))>>>0;ctx.fillStyle=s%3!==0?'#111':'#fff';ctx.fillRect(Math.floor(i*bW),0,Math.ceil(bW),H-8);}ctx.fillStyle='#111';ctx.font='5px monospace';ctx.textAlign='center';ctx.fillText(val,W/2,H-1);}";
+  var w=window.open("","_blank");
+  w.document.write('<!DOCTYPE html><html><head><title>'+esc(a.id)+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}'
+    +'body{background:#fff;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}'
+    +'.card{width:52.5mm;height:49.25mm;border:0.3mm solid #ddd;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5mm 1mm 1mm;overflow:hidden;}'
+    +'.nm{font-size:6.5pt;font-weight:bold;text-align:center;width:50mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:0.4mm;}'
+    +'.id2{font-size:4.8pt;color:#333;font-family:monospace;text-align:center;margin-bottom:0.4mm;overflow:hidden;white-space:nowrap;width:50mm;}'
+    +'.bc{display:block;width:39mm;height:7mm;margin:0 auto;}'
+    +'</style></head>'
+    +'<body onload="draw();window.print();">'
+    +'<div class="card">'+phHtml
+    +'<div class="nm">'+esc(a.name)+'</div>'
+    +'<div class="id2">'+esc(a.id)+(sn?' | '+esc(sn):'')+'</div>'
+    +'<canvas id="bc1" data-id="'+esc(a.id)+'" width="148" height="26" class="bc"></canvas>'
+    +'</div>'
+    +'<scr'+'ipt>'+bcDrw+'<\/sc'+'ript>'
+    +'</body></html>');
+  w.document.close();
+}
+ 
+function stickersPDF(){toast("In print dialog → choose Save as PDF","i",6000);setTimeout(printStickers,400);}
+function printStickers(){
+  var w=window.open("","_blank");
+  var bcDraw="function draw(id,seq){var cv=document.getElementById('bc_'+seq);if(!cv)return;var ctx=cv.getContext('2d'),val=id,W=cv.width,H=cv.height;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);var h=0;for(var i=0;i<val.length;i++)h=(h*31+val.charCodeAt(i))>>>0;var bC=42,bW=W/bC;for(var i=0;i<bC;i++){var s=(h^(i*2654435761))>>>0;ctx.fillStyle=s%3!==0?'#111':'#fff';ctx.fillRect(Math.floor(i*bW),0,Math.ceil(bW),H-8);}ctx.fillStyle='#111';ctx.font='5px monospace';ctx.textAlign='center';ctx.fillText(val,W/2,H-1);}";
+  var cards=assets.map(function(a){
+    var serial=a.serialNumber||"";
+    var ph=a.photo?'<img src="'+a.photo+'" style="width:38mm;height:20mm;object-fit:cover;border-radius:0.5mm;display:block;margin:0 auto 0.5mm;"/>':(isArt(a.category)?'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;margin:0 auto 0.5mm;border-radius:0.5mm;">&#128444;</div>':'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;margin:0 auto 0.5mm;border-radius:0.5mm;">&#128230;</div>');
+    return'<div class="card">'+ph+'<div class="name">'+esc(a.name)+'</div><div class="id">'+a.id+(serial?' | '+serial:'')+'</div><canvas id="bc_'+a.seq+'" width="148" height="26" class="bc"></canvas></div>';
+  }).join('');
+  var bcData=JSON.stringify(assets.map(function(a){return{id:a.id,seq:a.seq};}));
+  w.document.write('<!DOCTYPE html><html><head><title>Stickers</title><style>*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}body{width:210mm;background:#fff;font-family:Arial,sans-serif;}.grid{display:grid;grid-template-columns:repeat(4,52.5mm);width:210mm;}.card{width:52.5mm;height:49.25mm;border:0.3mm solid #ddd;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5mm 1mm 1mm;overflow:hidden;page-break-inside:avoid;}.name{font-size:6.5pt;font-weight:bold;text-align:center;width:50mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:0.4mm;}.id{font-size:4.8pt;color:#333;font-family:monospace;text-align:center;margin-bottom:0.4mm;overflow:hidden;white-space:nowrap;width:50mm;text-overflow:ellipsis;}.bc{display:block;width:39mm;height:7mm;margin:0 auto;}</style></head><body onload="go();window.print();"><div class="grid">'+cards+'</div><scr'+'ipt>var aa='+bcData+';'+bcDraw+'function go(){aa.forEach(function(a){draw(a.id,a.seq);});}<\/sc'+'ript></body></html>');
+  w.document.close();
+}
+ 
+// PWA
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredInstall=e;var ib=G("IB");if(ib)ib.style.display="flex";});
+window.addEventListener("appinstalled",function(){var ib=G("IB");if(ib)ib.style.display="none";toast("App installed! 🎉");});
+function installApp(){if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;});}else toast("Android: Chrome menu → Install · Windows: install icon in address bar · iOS: Share → Add to Home Screen","i",5000);}
+ 
+// Init
+document.addEventListener("DOMContentLoaded",function(){
+  DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
+  fOrder=fOrder.filter(function(k){return DORDER.includes(k)||customCols.find(function(c){return c.key===k;});});
+  document.title=appName;
+  if("serviceWorker"in navigator)
+  // Check persisted session
+  // Migrate 4-digit IDs to 3-digit (AST-0001 → AST-001)
+  var _m=false;
+  assets.forEach(function(a){if(a.id&&a.id.length===8&&a.id.indexOf("AST-0")===0){a.id="AST-"+a.id.slice(5);_m=true;}});
+  soldAssets.forEach(function(a){if(a.id&&a.id.length===8&&a.id.indexOf("AST-0")===0){a.id="AST-"+a.id.slice(5);_m=true;}});
+  if(_m)saveAll();
+  // Swipe left/right in detail view
+  (function(){var sx=0,sy=0;
+    document.addEventListener("touchstart",function(e){if(view==="detail"){sx=e.touches[0].clientX;sy=e.touches[0].clientY;}},{passive:true});
+    document.addEventListener("touchend",function(e){if(view!=="detail")return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>55)navDetail(dx<0?1:-1);},{passive:true});
+  })();
+  var t=LS.get("acap_auth_time",0);
+  if(t&&Date.now()-t<8*60*60*1000){
+    isAuth=true;
+    document.body.classList.remove("app-locked");
+    document.body.style.pointerEvents="";
+    G("LS").style.display="none";
+    var _ov2=G("SOVL");if(_ov2){_ov2.style.display="none";_ov2.style.visibility="hidden";_ov2.style.pointerEvents="none";}
+    G("SB").classList.remove("open");
+    view="dash";
+    var _ni=G("ni-dash");if(_ni){document.querySelectorAll(".sbi").forEach(function(e){e.classList.remove("on");});_ni.classList.add("on");}
+    var _pt=G("pgTit");if(_pt)_pt.textContent="Dashboard";
+    resetSess();loadPhotosAndRender();
+    var p=new URLSearchParams(location.search).get("asset");
+    if(p)setTimeout(function(){var a=assets.find(function(x){return x.id===p;});if(a)viewDetail(a.id);},500);
+  }
+});
+</script>
+<div id="LS">
+  <div class="lb">
+    <div style="font-size:38px;margin-bottom:10px;">⬡</div>
+    <h1>ASSET CAPITALIZER</h1>
+    <p>Secure Asset Management</p>
+    <div class="atabs">
+      <button class="atab on" id="tPW" onclick="switchTab('pw')">Password</button>
+      <button class="atab" id="tPIN" onclick="switchTab('pin')">PIN</button>
+    </div>
+    <div id="aPW">
+      <div class="lf"><label>Username</label><input type="text" id="lusr" placeholder="admin" autocomplete="username"/></div>
+      <div class="lf"><label>Password</label><input type="password" id="lpw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="lbtn" onclick="doLogin()">UNLOCK →</button>
+    </div>
+    <div id="aPIN" style="display:none">
+      <div class="pdots" id="pdots">
+        <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
+        <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+      </div>
+      <div class="ppad">
+        <button class="pk" onclick="pk(1)">1</button><button class="pk" onclick="pk(2)">2</button><button class="pk" onclick="pk(3)">3</button>
+        <button class="pk" onclick="pk(4)">4</button><button class="pk" onclick="pk(5)">5</button><button class="pk" onclick="pk(6)">6</button>
+        <button class="pk" onclick="pk(7)">7</button><button class="pk" onclick="pk(8)">8</button><button class="pk" onclick="pk(9)">9</button>
+        <button class="pk" onclick="pk('del')">⌫</button><button class="pk" onclick="pk(0)">0</button>
+        <button class="pk" onclick="pk('ok')" style="background:var(--ac);color:#fff">OK</button>
+      </div>
+    </div>
+    <div class="lerr" id="lerr"></div>
+    <div class="lhint">Default: admin / admin1234 &nbsp;·&nbsp; PIN: 1234</div>
+  </div>
+</div>
+<div id="IB">
+  <span>📱 Install <b>Asset Capitalizer</b> as an app</span>
+  <div style="display:flex;gap:6px;">
+    <button onclick="installApp()">Install</button>
+    <button onclick="this.parentElement.parentElement.style.display='none'" style="background:transparent;border:1px solid #555;color:#aaa;">✕</button>
+  </div>
+</div>
+<input type="file" id="fpick" accept="image/*" style="display:none" onchange="pickFile(this)"/>
+</body>
+</html>
