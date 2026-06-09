@@ -1860,7 +1860,7 @@ function confirmConsign(){
   consignAssets.push(c);
   assets=assets.filter(function(x){return x.id!==confirmId;});
   saveAll();closeM("mConfirm");
-  goTo("consign");
+  render();
   toast("Moved to Consignment ✓","s");
 }
 function confirmSell(){
@@ -1872,7 +1872,7 @@ function confirmSell(){
   soldAssets.push(sold);
   assets=assets.filter(function(x){return x.id!==confirmId;});
   saveAll();closeM("mConfirm");
-  goTo("sold");
+  render();
   toast("Moved to Sold Assets ✓","s");
 }
 function confirmDel(){
