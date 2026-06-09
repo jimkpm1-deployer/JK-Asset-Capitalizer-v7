@@ -692,14 +692,14 @@ function updSidebar(){
   const catList=getUserCats();
   if(fc)fc.innerHTML='<option value="">All Categories</option>'+catList.map(c=>'<option>'+esc(c)+'</option>').join("");
   if(fd)fd.innerHTML='<option value="">All Conditions</option>'+getUserConds().map(c=>'<option>'+esc(c)+'</option>').join("");
-  if(fl){const locs=[...new Set(assets.map(a=>a.location).filter(Boolean))].sort();fl.innerHTML='<option value="">All Locations</option>'+locs.map(l=>'<option>'+esc(l)+'</option>').join("");}
-  if(fa){const as=[...new Set(assets.map(a=>a.assignedTo).filter(Boolean))].sort();fa.innerHTML='<option value="">All Assigned</option>'+as.map(l=>'<option>'+esc(l)+'</option>').join("");}
+  if(fl){const locs=[...new Set(assets.map(a=>a.location).concat(consignAssets.map(a=>a.location)).concat(soldAssets.map(a=>a.location)).filter(Boolean))].sort();fl.innerHTML='<option value="">All Locations</option>'+locs.map(l=>'<option>'+esc(l)+'</option>').join("");}
+  if(fa){const as=[...new Set(assets.map(a=>a.assignedTo).concat(consignAssets.map(a=>a.assignedTo)).concat(soldAssets.map(a=>a.assignedTo)).filter(Boolean))].sort();fa.innerHTML='<option value="">All Assigned</option>'+as.map(l=>'<option>'+esc(l)+'</option>').join("");}
   if(fc&&_sv.cat)fc.value=_sv.cat;if(fd&&_sv.cond)fd.value=_sv.cond;
   if(fl&&_sv.loc)fl.value=_sv.loc;if(fa&&_sv.asgn)fa.value=_sv.asgn;
   var fm=G("fMed"),fy=G("fYear");
   var _svm=fm?fm.value:"",_svy=fy?fy.value:"";
-  if(fm){var meds=[...new Set(assets.map(a=>a.medium).concat(consignAssets.map(a=>a.medium)).filter(Boolean))].sort();fm.innerHTML='<option value="">All Mediums</option>'+meds.map(m=>'<option>'+esc(m)+'</option>').join("");}
-  if(fy){var yrs=[...new Set(assets.map(a=>a.yearCreated).concat(consignAssets.map(a=>a.yearCreated)).filter(Boolean))].sort((a,b)=>b-a);fy.innerHTML='<option value="">All Years</option>'+yrs.map(y=>'<option>'+esc(y)+'</option>').join("");}
+  if(fm){var meds=[...new Set(assets.map(a=>a.medium).concat(consignAssets.map(a=>a.medium)).concat(soldAssets.map(a=>a.medium)).filter(Boolean))].sort();fm.innerHTML='<option value="">All Mediums</option>'+meds.map(m=>'<option>'+esc(m)+'</option>').join("");}
+  if(fy){var yrs=[...new Set(assets.map(a=>a.yearCreated).concat(consignAssets.map(a=>a.yearCreated)).concat(soldAssets.map(a=>a.yearCreated)).filter(Boolean))].sort((a,b)=>b-a);fy.innerHTML='<option value="">All Years</option>'+yrs.map(y=>'<option>'+esc(y)+'</option>').join("");}
   if(fm&&_svm)fm.value=_svm;if(fy&&_svy)fy.value=_svy;
 }
 function filterByCat(c){const el=G("fCat");if(el)el.value=c;goTo("list");}
