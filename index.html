@@ -1009,7 +1009,9 @@ function showStorageDiag(){
   txt+='Total: '+(total/1024).toFixed(1)+'KB\n\n';
   keys.forEach(function(k){
     var v=localStorage.getItem(k);
-    txt+=k+': '+(v?((v.length/1024).toFixed(1)+'KB'):'MISSING')+'\n';
+    if(!v)txt+=k+': MISSING\n';
+    else if(v.length<10)txt+=k+': "'+v+'" ('+v.length+' bytes)\n';
+    else txt+=k+': '+(v.length/1024).toFixed(1)+'KB\n';
   });
   // Count txt keys
   var txtKeys=0;
@@ -2256,4 +2258,4 @@ document.addEventListener("DOMContentLoaded",function(){
 </div>
 <input type="file" id="fpick" accept="image/*" style="display:none" onchange="pickFile(this)"/>
 </body>
-</html>
+</html
