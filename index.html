@@ -515,7 +515,7 @@ function loadLongFields(arr){
   var LONG_FLDS=['notes','exhibitionHistory','provenance','description','dimensions'];
   arr.forEach(function(a){
     LONG_FLDS.forEach(function(k){
-      if(a[k]==='__ref__'){
+      if(a[k]==='__ref__;'||a[k]==='__ref__'){
         var val=localStorage.getItem('acap_txt_'+a.id+'_'+k);
         if(val)a[k]=val; else delete a[k];
       }
@@ -550,35 +550,54 @@ let undoStack=[],undoTmr=null,undoCnt=null;
 let isAuth=false,sessTmr=null,pinEntry="";
  
 function saveAll(){
-  // Save photos separately; strip from main data to save space
   const LONG_FLDS=['notes','exhibitionHistory','provenance','description','dimensions'];
+  // Build slim assets - no photos, save photos separately
   const slim=assets.map(a=>{
     if(a.photo)savePhoto(a.id,a.photo);
-    const{photo,...r}=a;
-    // Save long text fields separately to avoid quota
-    LONG_FLDS.forEach(function(k){
-      if(r[k]&&r[k].length>50){
-        try{localStorage.setItem('acap_txt_'+a.id+'_'+k,r[k]);}catch(e){}
-        r[k]='__ref__'; // placeholder
-      }
-    });
+    var r=Object.assign({},a);
+    delete r.photo;
     return r;
   });
-  var slimSold=soldAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
-  var slimConsign=consignAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
-  // Save each list individually with its own try/catch
-  try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_assets_bak",localStorage.getItem("acap_assets_v3"));}
-  catch(e){
-    // Try saving without long text fields if quota exceeded
-    var slim2=slim.map(function(a){var r=Object.assign({},a);if(r.notes&&r.notes.length>200)r.notes=r.notes.slice(0,200);if(r.provenance&&r.provenance.length>200)r.provenance=r.provenance.slice(0,200);if(r.exhibitionHistory&&r.exhibitionHistory.length>200)r.exhibitionHistory=r.exhibitionHistory.slice(0,200);return r;});
-    try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim2));}catch(e2){console.warn("saveAll assets failed",e2);}
+  // Save long text fields to separate keys for any asset that has them
+  assets.forEach(function(a){
+    LONG_FLDS.forEach(function(k){
+      if(a[k]&&a[k].length>50){
+        try{localStorage.setItem('acap_txt_'+a.id+'_'+k,a[k]);}catch(e){}
+      }
+    });
+  });
+  // Save main assets - try full, then progressively strip long fields
+  var saved=false;
+  var attempts=[slim];
+  // Attempt 2: replace long fields with __ref__
+  var slim2=slim.map(function(a){
+    var r=Object.assign({},a);
+    LONG_FLDS.forEach(function(k){if(r[k]&&r[k].length>50)r[k]='__ref__;'});
+    return r;
+  });
+  attempts.push(slim2);
+  for(var ai=0;ai<attempts.length;ai++){
+    try{
+      localStorage.setItem('acap_assets_v3',JSON.stringify(attempts[ai]));
+      localStorage.setItem('acap_assets_bak',localStorage.getItem('acap_assets_v3'));
+      saved=true;break;
+    }catch(e){console.warn('saveAll attempt '+ai+' failed',e);}
   }
-  try{localStorage.setItem("acap_sold_v3",JSON.stringify(slimSold));}catch(e){console.warn("saveAll sold",e);}
-  try{localStorage.setItem("acap_consign_v3",JSON.stringify(slimConsign));}catch(e){console.warn("saveAll consign",e);}
-  LS.set("acap_order_v3",fOrder);LS.set("acap_hidden_v3",hiddenFlds);LS.set("acap_custom_v3",customCols);
-  LS.set("acap_tcols_v3",tableCols);LS.set("acap_name_v3",appName);LS.set("acap_rowh_v3",rowH);LS.set("acap_colw_v3",colW);LS.set("acap_auth_v3",authCfg);
-  localStorage.setItem("acap_has_data","1");
-  const ss=G("sSave");if(ss){const d=new Date();ss.textContent="Saved "+d.getHours()+":"+String(d.getMinutes()).padStart(2,"0");}
+  if(!saved)console.error('saveAll: could not save assets');
+  // Save other lists
+  try{
+    var slimSold=soldAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+    localStorage.setItem('acap_sold_v3',JSON.stringify(slimSold));
+  }catch(e){console.warn('saveAll sold',e);}
+  try{
+    var slimConsign=consignAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+    localStorage.setItem('acap_consign_v3',JSON.stringify(slimConsign));
+  }catch(e){console.warn('saveAll consign',e);}
+  LS.set('acap_order_v3',fOrder);LS.set('acap_hidden_v3',hiddenFlds);LS.set('acap_custom_v3',customCols);
+  LS.set('acap_tcols_v3',tableCols);LS.set('acap_name_v3',appName);LS.set('acap_rowh_v3',rowH);
+  LS.set('acap_colw_v3',colW);LS.set('acap_auth_v3',authCfg);
+  localStorage.setItem('acap_has_data','1');
+  const ss=G('sSave');if(ss){const d=new Date();ss.textContent='Saved '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}
 }
  
 // Auth
@@ -1193,14 +1212,16 @@ function cdE(){document.querySelectorAll(".tbl th").forEach(function(t){t.classL
  
 // Col resize
 function startRS(e,key,w0){
-  e.preventDefault();e.stopPropagation();
+  if(e.preventDefault)e.preventDefault();
+  if(e.stopPropagation)e.stopPropagation();
   rsCol=key;
-  rsX=e.clientX!==undefined?e.clientX:(e.touches?e.touches[0].clientX:0);
+  rsX=(e.clientX!==undefined&&e.clientX!==0)?e.clientX:(e.touches&&e.touches[0]?e.touches[0].clientX:0);
   rsW=w0;
-  // Use both mouse and pointer events for maximum compatibility
-  window.addEventListener("mousemove",onRS);
+  document.body.style.cursor='col-resize';
+  document.body.style.userSelect='none';
+  window.addEventListener("mousemove",onRS,{passive:false});
   window.addEventListener("mouseup",endRS);
-  window.addEventListener("pointermove",onRS);
+  window.addEventListener("pointermove",onRS,{passive:false});
   window.addEventListener("pointerup",endRS);
   window.addEventListener("touchmove",onRStouch,{passive:false});
   window.addEventListener("touchend",endRS);
@@ -1232,6 +1253,8 @@ function onRS(e){
 }
 function endRS(){
   LS.set("acap_colw_v3",colW);rsCol=null;
+  document.body.style.cursor='';
+  document.body.style.userSelect='';
   window.removeEventListener("mousemove",onRS);
   window.removeEventListener("mouseup",endRS);
   window.removeEventListener("pointermove",onRS);
