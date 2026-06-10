@@ -515,7 +515,7 @@ function loadLongFields(arr){
   var LONG_FLDS=['notes','exhibitionHistory','provenance','description','dimensions'];
   arr.forEach(function(a){
     LONG_FLDS.forEach(function(k){
-      if(a[k]==='__ref__;'||a[k]==='__ref__'){
+      if(a[k]==='__ref__'){
         var val=localStorage.getItem('acap_txt_'+a.id+'_'+k);
         if(val)a[k]=val; else delete a[k];
       }
@@ -572,7 +572,7 @@ function saveAll(){
   // Attempt 2: replace long fields with __ref__
   var slim2=slim.map(function(a){
     var r=Object.assign({},a);
-    LONG_FLDS.forEach(function(k){if(r[k]&&r[k].length>50)r[k]='__ref__;'});
+    LONG_FLDS.forEach(function(k){if(r[k]&&r[k].length>50)r[k]='__ref__'});
     return r;
   });
   attempts.push(slim2);
@@ -1217,6 +1217,8 @@ function startRS(e,key,w0){
   rsCol=key;
   rsX=(e.clientX!==undefined&&e.clientX!==0)?e.clientX:(e.touches&&e.touches[0]?e.touches[0].clientX:0);
   rsW=w0;
+  var _tw=document.querySelector('.twrap');if(_tw)_tw.setAttribute('data-ov',_tw.style.overflow||'auto');
+  if(_tw)_tw.style.overflow='hidden';
   document.body.style.cursor='col-resize';
   document.body.style.userSelect='none';
   window.addEventListener("mousemove",onRS,{passive:false});
@@ -1253,6 +1255,7 @@ function onRS(e){
 }
 function endRS(){
   LS.set("acap_colw_v3",colW);rsCol=null;
+  var _tw2=document.querySelector('.twrap');if(_tw2){_tw2.style.overflow=_tw2.getAttribute('data-ov')||'auto';}
   document.body.style.cursor='';
   document.body.style.userSelect='';
   window.removeEventListener("mousemove",onRS);
@@ -1788,14 +1791,20 @@ async function importJSON(inp){
       // Also collect photos from soldAssets and consignAssets
       if(d.soldAssets)d.soldAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
       if(d.consignAssets)d.consignAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
-      // Load into memory first
+      // Load into memory
       assets=d.assets;
+      soldAssets=d.soldAssets&&Array.isArray(d.soldAssets)?d.soldAssets:soldAssets;
+      consignAssets=d.consignAssets&&Array.isArray(d.consignAssets)?d.consignAssets:consignAssets;
       if(d.fOrder)fOrder=d.fOrder;if(d.hiddenFlds)hiddenFlds=d.hiddenFlds;
       if(d.customCols)customCols=d.customCols;if(d.appName){appName=d.appName;document.title=appName;}
       if(d.colW)colW=d.colW;if(d.rowH)rowH=d.rowH;
-      // Use saveAll() which properly handles __ref__ for long fields
+      if(d.tableCols)tableCols=d.tableCols;
+      // saveAll handles __ref__ for long fields and saves everything
       saveAll();
-      localStorage.setItem("acap_has_data","1");
+      // After saveAll, reload long fields into memory so display is correct
+      loadLongFields(assets);
+      loadLongFields(soldAssets);
+      loadLongFields(consignAssets);
       // Clear ALL existing photo keys before import to avoid accumulation
       var keysToDelete=[];
       for(var ki=0;ki<localStorage.length;ki++){
