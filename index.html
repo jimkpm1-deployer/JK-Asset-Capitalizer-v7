@@ -107,9 +107,9 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .thlbl{flex:1;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--mu);font-weight:600;overflow:hidden;text-overflow:ellipsis;outline:none;cursor:text;}
 .colx{opacity:0;font-size:11px;cursor:pointer;color:var(--mu);flex-shrink:0;}
 .tbl th:hover .colx{opacity:1;}
- 
- 
- 
+
+
+
 .tbl th{position:relative;}
 .tbl th.cdrag{opacity:.35;}
 .tbl th.cdrop{box-shadow:inset -3px 0 0 var(--ac);}
@@ -247,7 +247,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 body.app-locked .shell { pointer-events: none !important; }
 body.app-locked .shell * { pointer-events: none !important; }
 </style>
- 
+
 <div class="shell" id="SHELL">
   <div class="sb" id="SB">
     <div class="sblogo">
@@ -442,13 +442,13 @@ const CFIELDS=[
 ];
 const DORDER=CFIELDS.map(f=>f.k);
 const AUTOFILL=["artist","location","assignedTo","manufacturer","department","appraiser"];
- 
+
 // Storage
 const LS={
   get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){console.warn(e);}},
 };
- 
+
 // IndexedDB photos
 let photoDB=null;
 function openPhotoDB(){
@@ -510,7 +510,7 @@ function compressPhoto(dataUrl){
     img.onerror=()=>res(dataUrl);img.src=dataUrl;
   });
 }
- 
+
 // State
 function loadLongFields(arr){
   // Restore long text fields that were saved separately
@@ -532,7 +532,7 @@ function loadAssets(){
   return[];
 }
 function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCodeAt(i);return(h>>>0).toString(36);}
- 
+
 let assets=loadAssets();
 let _photoCache={}; // in-memory photo cache, survives renders
 let consignAssets=(function(){try{var r=localStorage.getItem("acap_consign_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return loadLongFields(p);}}catch(e){}return[];})();
@@ -543,14 +543,14 @@ let customCols=LS.get("acap_custom_v3",[]);
 let tableCols=LS.get("acap_tcols_v3",null);
 let appName=LS.get("acap_name_v3","Asset Capitalizer");
 let rowH=LS.get("acap_rowh_v3",36);
-let colW=LS.get("acap_colw_v3",{});
+let colW=(function(){var s=LS.get("acap_colw_v3",{});return(s&&s._v===3)?s:{_v:3};})();
 let authCfg=LS.get("acap_auth_v3",{u:hashStr("admin"),p:hashStr("admin1234"),pin:hashStr("1234")});
 let view="dash",listMode="grid",filtered=[],editId=null,confirmId=null,detailId=null;
 let camStream=null,scanStream=null,scanIv=null,lkTarget=null,cellPhotoId=null,deferredInstall=null;
 let colDragSrc=null,rsCol=null,rsX=0,rsW=0,fdDragIdx=null;
 let undoStack=[],undoTmr=null,undoCnt=null;
 let isAuth=false,sessTmr=null,pinEntry="";
- 
+
 function saveAll(){
   const LONG_FLDS=['notes','exhibitionHistory','provenance','description','dimensions'];
   // Build slim assets - no photos, save photos separately
@@ -597,11 +597,11 @@ function saveAll(){
   }catch(e){console.warn('saveAll consign',e);}
   LS.set('acap_order_v3',fOrder);LS.set('acap_hidden_v3',hiddenFlds);LS.set('acap_custom_v3',customCols);
   LS.set('acap_tcols_v3',tableCols);LS.set('acap_name_v3',appName);LS.set('acap_rowh_v3',rowH);
-  LS.set('acap_colw_v3',colW);LS.set('acap_auth_v3',authCfg);
+  colW._v=3;LS.set('acap_colw_v3',colW);LS.set('acap_auth_v3',authCfg);
   localStorage.setItem('acap_has_data','1');
   const ss=G('sSave');if(ss){const d=new Date();ss.textContent='Saved '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}
 }
- 
+
 // Auth
 function switchTab(t){
   G("tPW").className="atab"+(t==="pw"?" on":"");G("tPIN").className="atab"+(t==="pin"?" on":"");
@@ -664,7 +664,7 @@ async function loadPhotosAndRender(){
   consignAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
   render();
 }
- 
+
 // Helpers
 function esc(s){if(s==null)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function G(id){return document.getElementById(id);}
@@ -689,7 +689,7 @@ function toast(msg,type,dur){
   el.textContent=msg;el.className="toast "+type;el.style.display="block";
   clearTimeout(toastTmr);toastTmr=setTimeout(()=>el.style.display="none",dur);
 }
- 
+
 // Undo
 function pushUndo(action,data,msg){
   undoStack=[{action,data}];clearTimeout(undoTmr);clearInterval(undoCnt);
@@ -708,7 +708,7 @@ function doUndo(){
   else if(action==="cell"){const a=assets.find(x=>x.id===data.id);if(a)a[data.k]=data.old;}
   saveAll();render();toast("Undone","i");
 }
- 
+
 // Navigation
 const TITLES={dash:"Dashboard",list:"All Assets",table:"Inventory Table",consign:"Consignment",sold:"Sold Assets",settings:"Field Order",cols:"Manage Columns",security:"Security",io:"Import / Export",detail:"Asset Detail"};
 function goTo(v){
@@ -735,7 +735,7 @@ function newAsset(){
 }
 function toggleSB(){const sb=G("SB");sb.classList.toggle("open");G("SOVL").style.display=sb.classList.contains("open")?"block":"none";}
 function closeSB(){const sb=G("SB");if(sb)sb.classList.remove("open");const o=G("SOVL");if(o)o.style.display="none";}
- 
+
 function getUserCats(){return LS.get("acap_user_cats",null)||CATS;}
 function getUserConds(){return LS.get("acap_user_conds",null)||CONDS;}
 function getUserMeds(){return LS.get("acap_user_meds",null)||MEDS;}
@@ -767,7 +767,7 @@ function updSidebar(){
   if(fm&&_svm)fm.value=_svm;if(fy&&_svy)fy.value=_svy;
 }
 function filterByCat(c){const el=G("fCat");if(el)el.value=c;goTo("list");}
- 
+
 // Filtering
 function getFS(){
   function v(id){const el=G(id);return el?el.value:"";}
@@ -790,7 +790,7 @@ function doFilter(){
   });
   render();
 }
- 
+
 // Render
 function render(){
   updSidebar();
@@ -806,9 +806,9 @@ function render(){
   else if(view==="io")       ct.innerHTML=rIO();
   else if(view==="sold")     ct.innerHTML=rSold();
   else if(view==="consign")  ct.innerHTML=rConsign();
- 
+
   ["fCat","fCond","fLoc","fAsgn","fMed","fYear","fList"].forEach(function(id){var el=G(id);if(el)el.classList.toggle("active-filter",!!(el.value));});var _si=G("srchIn");if(_si)_si.classList.toggle("active-filter",!!_si.value);}
- 
+
 // Consignment
 function rConsign(){
   var f=getFS(),ql=f.q.toLowerCase();
@@ -899,7 +899,7 @@ function exportConsignCSV(){
   var rows=consignAssets.map(function(a){return[a.id].concat(cols.map(function(k){return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';})).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","consignment.csv");toast("Exported");
 }
- 
+
 // Sold Assets
 function rSold(){
   var f=getFS(),ql=f.q.toLowerCase();
@@ -954,7 +954,7 @@ function rSold(){
   h+='</tbody></table></div></div>';
   return h;
 }
- 
+
 // Restore/delete sold and consign
 function restoreAsset(btn){
   var id=btn.getAttribute('data-id');
@@ -1087,7 +1087,7 @@ function rDash(){
   return h+'</div>';
   } catch(e) { return '<div class="empty" style="color:red;"><b>Dashboard error:</b><br>'+e.message+'<br><pre style="font-size:10px;text-align:left;">'+e.stack+'</pre></div>'; }
 }
- 
+
 // List
 function setLM(m){listMode=m;const g=G("vtG"),t=G("vtT");if(g)g.className=m==="grid"?"on":"";if(t)t.className=m==="tbl"?"on":"";render();}
 function rList(){
@@ -1151,8 +1151,8 @@ function rList(){
   h+='</div>';
   return h;
 }
- 
- 
+
+
 // Inventory Table
 function getSTCols(){
   // Sold table columns = same as inventory defaults + soldAt
@@ -1180,8 +1180,8 @@ function defW(k){
     authenticCert:66,
     currentValue:76, purchasePrice:76, insuredValue:76, soldAt:76,
     location:86, assignedTo:86,
-    notes:500,
-    exhibitionHistory:800,
+    notes:750,
+    exhibitionHistory:1200,
     provenance:120,    // wrap 3 lines
     description:120,   // wrap 3 lines
     department:86, manufacturer:86, model:86, appraiser:86,
@@ -1189,9 +1189,9 @@ function defW(k){
   };
   return W[k]||88;
 }
- 
+
 function cw(k){return colW[k]||defW(k);}
- 
+
 function rTable(){
   const tblA=hasFilter()?filtered:assets;
   const cols=getTCols(),fds=allFDs(),renames=LS.get("acap_renames_v3",{});
@@ -1265,19 +1265,19 @@ function rTable(){
 }
 function setRH(v){rowH=parseInt(v);var l=G("rhLbl");if(l)l.textContent=v+"px";LS.set("acap_rowh_v3",rowH);document.querySelectorAll("#MT td[style]").forEach(function(td){td.style.height=v+"px";});document.querySelectorAll("#MT .tdin[style*='height']").forEach(function(d){d.style.height=v+"px";});}
 function bindTbl(){}
- 
+
 // Col drag
 function cdS(e,i){colDragSrc=i;e.currentTarget.classList.add("cdrag");}
 function cdO(e,i){e.preventDefault();document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrop");});e.currentTarget.classList.add("cdrop");var w=G("TW");if(w){var r=w.getBoundingClientRect();if(e.clientX-r.left<60)w.scrollLeft-=12;else if(r.right-e.clientX<60)w.scrollLeft+=12;}}
 function cdD(e,i){e.preventDefault();document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrop");t.classList.remove("cdrag");});if(colDragSrc===null||colDragSrc===i)return;var cols=getTCols();var m=cols.splice(colDragSrc,1)[0];cols.splice(i,0,m);tableCols=cols;colDragSrc=null;saveAll();render();}
 function cdE(){document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrag");t.classList.remove("cdrop");});}
- 
+
 // Col resize
- 
- 
- 
- 
- 
+
+
+
+
+
 function onRS(e){
   if(!rsCol)return;
   var nw=Math.max(34,rsW+(e.clientX-rsX));
@@ -1305,7 +1305,7 @@ function endRS(){
   window.removeEventListener("touchmove",onRStouch);
   window.removeEventListener("touchend",endRS);
 }
- 
+
 // Inline edit
 function startEdit(td,aid,key){
   if(td.querySelector("input,select,textarea"))return;
@@ -1352,7 +1352,7 @@ function commitCell(aid,key,val,old){
   var w2=G("TW");if(w2){w2.scrollLeft=sx;w2.scrollTop=sy;}
   toast("Saved");
 }
- 
+
 // Cell photo
 function editCellPhoto(aid){
   cellPhotoId=aid;
@@ -1375,7 +1375,7 @@ function editCellPhoto(aid){
     };document.body.appendChild(inp);
   }inp.click();
 }
- 
+
 // Hide/Unhide cols
 function hideCol(key){tableCols=getTCols().filter(function(k){return k!==key;});saveAll();render();toast("Hidden — tap 👁 Unhide to restore","i",10000);}
 function showUnhide(){
@@ -1405,7 +1405,7 @@ function addCol(){
   var key="cc_"+Date.now();customCols.push({key:key,label:lbl,type:(G("nColType")||{value:"text"}).value});
   var cols=getTCols();cols.push(key);tableCols=cols;saveAll();closeM("mAddCol");goTo("table");toast("Column added");
 }
- 
+
 // Print
 function openPrintDlg(){var el=G("mPrint");if(el)el.style.display="flex";}
 function doPrint(){
@@ -1429,7 +1429,7 @@ function doPrint(){
   window.print();
   setTimeout(function(){if(ph)ph.style.display="none";if(sel)sel.textContent="";if(leg)leg.style.display="none";},800);
 }
- 
+
 // Hyperlink
 function showLink(aid,key){
   lkTarget={aid:aid,key:key};var a=assets.find(function(x){return x.id===aid;});
@@ -1445,7 +1445,7 @@ function applyLink(){
   var old=a[lkTarget.key]||"";pushUndo("cell",{id:lkTarget.aid,k:lkTarget.key,old:old},"Link inserted");
   a[lkTarget.key]=JSON.stringify({text:text||url,url:url});a.updatedAt=today();saveAll();closeM("mLink");render();toast("Link inserted");
 }
- 
+
 // Form
 function editAsset(id){
   editId=id;view="form";var t=G("pgTit");if(t)t.textContent="Edit Asset";
@@ -1543,7 +1543,7 @@ function submitForm(){
     toast("Saved ✓ ("+assets.length+" assets)");
   }
 }
- 
+
 // Detail
 function viewDetail(id){
   detailId=id;view="detail";
@@ -1627,7 +1627,7 @@ function rDetail(){
   setTimeout(function(){drawBC(bcId,a.id,180,48);},50);
   return h;
 }
- 
+
 // Settings
 function rSettings(){
   var fds=allFDs();
@@ -1654,7 +1654,7 @@ function fdDrop(i){if(fdDragIdx===null||fdDragIdx===i)return;var m=fOrder.splice
 function nudgeF(i,d){var t=i+d;if(t<0||t>=fOrder.length)return;var tmp=fOrder[i];fOrder[i]=fOrder[t];fOrder[t]=tmp;saveAll();render();}
 function togFV(key,show){if(show)hiddenFlds=hiddenFlds.filter(function(k){return k!==key;});else if(!hiddenFlds.includes(key))hiddenFlds.push(key);saveAll();render();}
 function resetFO(){fOrder=DORDER.slice();hiddenFlds=[];saveAll();render();toast("Reset","i");}
- 
+
 // Manage Columns
 function rCols(){
   var allFds2=[{k:"photo",lbl:"Photo (thumbnail)",sec:""}].concat(allFDs());
@@ -1725,7 +1725,7 @@ function resetListDef(btn){
   localStorage.removeItem(km[0]);ta.value=km[1].join("\n");render();toast("Reset to default","i");
 }
 function saveAN(){appName=(G("anIn")||{value:"Asset Capitalizer"}).value.trim()||"Asset Capitalizer";saveAll();document.title=appName;toast("Saved");}
- 
+
 // Security
 function rSecurity(){
   var h='<div class="sw">';
@@ -1765,7 +1765,7 @@ function changePIN(){
   authCfg.pin=hashStr(pin);saveAll();
   if(msg){msg.style.color="var(--ok)";msg.textContent="Updated ✓";}setTimeout(function(){if(G("pinMsg"))G("pinMsg").textContent="";},3000);
 }
- 
+
 // Import/Export
 function rIO(){
   var h='<div style="max-width:540px;margin:0 auto;">';
@@ -1894,7 +1894,7 @@ function importCSV(inp){
   r.readAsText(f);inp.value="";
 }
 function dl(content,mime,name){var blob=new Blob([content],{type:mime});var url=URL.createObjectURL(blob);Object.assign(document.createElement("a"),{href:url,download:name}).click();URL.revokeObjectURL(url);}
- 
+
 // Camera
 async function openCam(){
   var cm=G("CAM");if(cm)cm.style.display="flex";
@@ -1928,7 +1928,7 @@ function pickFile(inp){
   setTimeout(function(){},100);
 }
 function clearPhoto(){var pd=G("pdata");if(pd)pd.value="";var pp=G("pprev");if(pp)pp.innerHTML="📷";}
- 
+
 // Scanner
 async function openScanner(){
   var sc=G("SCAN");if(sc)sc.style.display="flex";
@@ -1970,7 +1970,7 @@ async function openScanner(){
     if(stat)stat.textContent="Camera unavailable — type asset ID below";
   });
 }
- 
+
 function closeScanner(){
   if(window._stopScan){window._stopScan();window._stopScan=null;}
   clearInterval(scanIv);scanIv=null;
@@ -1987,7 +1987,7 @@ function handleScan(raw){
   else{var si=G("srchIn");if(si)si.value=raw;doFilter();goTo("list");toast("No match — showing search results","i");}
 }
 function manualScan(){var v=(G("scanIn")||{value:""}).value.trim();if(v)handleScan(v);}
- 
+
 // Delete
 function _listClick(el){
   var id=el.getAttribute("data-id"),src=el.getAttribute("data-src");
@@ -2035,7 +2035,7 @@ function confirmDel(){
   assets=assets.filter(function(x){return x.id!==confirmId;});deletePhoto(confirmId);saveAll();closeM("mConfirm");
   if(view==="detail")goTo("list");else render();toast("Deleted","i");
 }
- 
+
 // Barcodes / Stickers
 function printBC(id){
   var a=assets.find(function(x){return x.id===id;});if(!a)return;
@@ -2062,7 +2062,7 @@ function printBC(id){
     +'</body></html>');
   w.document.close();
 }
- 
+
 function stickersPDF(){toast("In print dialog → choose Save as PDF","i",6000);setTimeout(printStickers,400);}
 function printStickers(){
   var w=window.open("","_blank");
@@ -2076,12 +2076,12 @@ function printStickers(){
   w.document.write('<!DOCTYPE html><html><head><title>Stickers</title><style>*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}body{width:210mm;background:#fff;font-family:Arial,sans-serif;}.grid{display:grid;grid-template-columns:repeat(4,52.5mm);width:210mm;}.card{width:52.5mm;height:49.25mm;border:0.3mm solid #ddd;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5mm 1mm 1mm;overflow:hidden;page-break-inside:avoid;}.name{font-size:6.5pt;font-weight:bold;text-align:center;width:50mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:0.4mm;}.id{font-size:4.8pt;color:#333;font-family:monospace;text-align:center;margin-bottom:0.4mm;overflow:hidden;white-space:nowrap;width:50mm;text-overflow:ellipsis;}.bc{display:block;width:39mm;height:7mm;margin:0 auto;}</style></head><body onload="go();window.print();"><div class="grid">'+cards+'</div><scr'+'ipt>var aa='+bcData+';'+bcDraw+'function go(){aa.forEach(function(a){draw(a.id,a.seq);});}<\/sc'+'ript></body></html>');
   w.document.close();
 }
- 
+
 // PWA
 window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredInstall=e;var ib=G("IB");if(ib)ib.style.display="flex";});
 window.addEventListener("appinstalled",function(){var ib=G("IB");if(ib)ib.style.display="none";toast("App installed! 🎉");});
 function installApp(){if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;});}else toast("Android: Chrome menu → Install · Windows: install icon in address bar · iOS: Share → Add to Home Screen","i",5000);}
- 
+
 // Init
 function printCurrentListStickers(){
   var arr=view==="sold"?soldAssets:view==="consign"?consignAssets:assets;
