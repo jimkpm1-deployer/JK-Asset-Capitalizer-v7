@@ -498,11 +498,11 @@ function compressPhoto(dataUrl){
     const img=new Image();
     img.onload=()=>{
       // Use 400px max to keep localStorage usage low (fits 300+ photos in 5MB)
-      const MAX=400;let w=img.width,h=img.height;
+      const MAX=350;let w=img.width,h=img.height;
       if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
       const cv=document.createElement("canvas");cv.width=w;cv.height=h;
       cv.getContext("2d").drawImage(img,0,0,w,h);
-      res(cv.toDataURL("image/jpeg",0.45));
+      res(cv.toDataURL("image/jpeg",0.38));
     };
     img.onerror=()=>res(dataUrl);img.src=dataUrl;
   });
@@ -1692,7 +1692,7 @@ async function importJSON(inp){
       // Also collect photos from soldAssets and consignAssets
       if(d.soldAssets)d.soldAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
       if(d.consignAssets)d.consignAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
-      localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_has_data","1");
+      try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_has_data","1");}catch(e){toast("Warning: asset data too large for storage, photos will be session-only","i",5000);}
       try{localStorage.setItem("acap_assets_bak",localStorage.getItem("acap_assets_v3"));}catch{}
       if(d.fOrder)LS.set("acap_order_v3",d.fOrder);
       if(d.hiddenFlds)LS.set("acap_hidden_v3",d.hiddenFlds);
@@ -1704,7 +1704,14 @@ async function importJSON(inp){
       if(d.fOrder)fOrder=d.fOrder;if(d.hiddenFlds)hiddenFlds=d.hiddenFlds;
       if(d.customCols)customCols=d.customCols;if(d.appName){appName=d.appName;document.title=appName;}
       if(d.colW)colW=d.colW;if(d.rowH)rowH=d.rowH;
-      // Recompress all photos to fit in localStorage (400px/0.45 quality)
+      // Clear ALL existing photo keys before import to avoid accumulation
+      var keysToDelete=[];
+      for(var ki=0;ki<localStorage.length;ki++){
+        var kk=localStorage.key(ki);
+        if(kk&&kk.startsWith("acap_ph_"))keysToDelete.push(kk);
+      }
+      keysToDelete.forEach(function(k){localStorage.removeItem(k);});
+      // Save photos with aggressive compression to fit in localStorage
       for(var i=0;i<photosToSave.length;i++){
         var compressed=await compressPhoto(photosToSave[i].photo);
         await savePhoto(photosToSave[i].id,compressed);
