@@ -813,7 +813,7 @@ function rConsign(){
     if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;"><div class="thin"><span class="thlbl">Photo</span></div></th>';return;}
     var fd=fds.find(function(f){return f.k===key;})||{lbl:key};
     var lbl=renames[key]||fd.lbl;
-    h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;" data-ck="'+key+'"><div class="thin"><span class="thlbl">'+esc(lbl)+'</span><div class="colrsz" onpointerdown="startRS(event,\''+key+'\','+cw(key)+')"></div></div></th>';
+    h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;" data-ck="'+key+'"><div class="thin"><span class="thlbl">'+esc(lbl)+'</span><div class="colrsz" onmousedown="startRS(event,\''+key+'\','+cw(key)+')"></div></div></th>';
   });
   h+='<th style="width:90px;position:sticky;top:0;"><div class="thin"><span class="thlbl">Actions</span></div></th>';
   h+='</tr></thead><tbody>';
@@ -1145,7 +1145,7 @@ function rTable(){
     h+='<th data-ci="'+i+'" data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:relative;" draggable="true" ondragstart="cdS(event,'+i+')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+')" ondragend="cdE()">';
     h+='<div class="thin">'+(isPhoto?'<span>📷</span>':'<span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>');
     h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">✕</span></div>';
-    h+='<div class="colrsz" onpointerdown="startRS(event,\''+key+'\','+w+')"></div></th>';
+    h+='<div class="colrsz" onmousedown="startRS(event,\''+key+'\','+w+')"></div></th>';
   });
   h+='<th class="no-print" style="width:66px;min-width:50px;"><div class="thin">Actions</div></th></tr></thead><tbody>';
   tblA.forEach(function(a){
@@ -1194,10 +1194,16 @@ function cdE(){document.querySelectorAll(".tbl th").forEach(function(t){t.classL
 // Col resize
 function startRS(e,key,w0){
   e.preventDefault();e.stopPropagation();
-  rsCol=key;rsX=e.clientX||( e.touches?e.touches[0].clientX:0);rsW=w0;
-  document.addEventListener("pointermove",onRS);document.addEventListener("pointerup",endRS);
-  document.addEventListener("touchmove",onRStouch,{passive:false});
-  document.addEventListener("touchend",endRS);
+  rsCol=key;
+  rsX=e.clientX!==undefined?e.clientX:(e.touches?e.touches[0].clientX:0);
+  rsW=w0;
+  // Use both mouse and pointer events for maximum compatibility
+  window.addEventListener("mousemove",onRS);
+  window.addEventListener("mouseup",endRS);
+  window.addEventListener("pointermove",onRS);
+  window.addEventListener("pointerup",endRS);
+  window.addEventListener("touchmove",onRStouch,{passive:false});
+  window.addEventListener("touchend",endRS);
 }
 function onRStouch(e){
   e.preventDefault();
@@ -1224,7 +1230,15 @@ function onRS(e){
     tbl.style.width=total+"px";
   }
 }
-function endRS(){LS.set("acap_colw_v3",colW);rsCol=null;document.removeEventListener("pointermove",onRS);document.removeEventListener("pointerup",endRS);document.removeEventListener("touchmove",onRStouch);document.removeEventListener("touchend",endRS);}
+function endRS(){
+  LS.set("acap_colw_v3",colW);rsCol=null;
+  window.removeEventListener("mousemove",onRS);
+  window.removeEventListener("mouseup",endRS);
+  window.removeEventListener("pointermove",onRS);
+  window.removeEventListener("pointerup",endRS);
+  window.removeEventListener("touchmove",onRStouch);
+  window.removeEventListener("touchend",endRS);
+}
  
 // Inline edit
 function startEdit(td,aid,key){
@@ -1751,17 +1765,14 @@ async function importJSON(inp){
       // Also collect photos from soldAssets and consignAssets
       if(d.soldAssets)d.soldAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
       if(d.consignAssets)d.consignAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
-      try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_assets_bak",localStorage.getItem("acap_assets_v3"));localStorage.setItem("acap_has_data","1");}catch(e){console.warn("import assets quota",e);}
-      if(d.fOrder)LS.set("acap_order_v3",d.fOrder);
-      if(d.hiddenFlds)LS.set("acap_hidden_v3",d.hiddenFlds);
-      if(d.customCols)LS.set("acap_custom_v3",d.customCols);
-      if(d.appName)LS.set("acap_name_v3",d.appName);
-      if(d.colW)LS.set("acap_colw_v3",d.colW);
-      if(d.rowH)LS.set("acap_rowh_v3",d.rowH);
+      // Load into memory first
       assets=d.assets;
       if(d.fOrder)fOrder=d.fOrder;if(d.hiddenFlds)hiddenFlds=d.hiddenFlds;
       if(d.customCols)customCols=d.customCols;if(d.appName){appName=d.appName;document.title=appName;}
       if(d.colW)colW=d.colW;if(d.rowH)rowH=d.rowH;
+      // Use saveAll() which properly handles __ref__ for long fields
+      saveAll();
+      localStorage.setItem("acap_has_data","1");
       // Clear ALL existing photo keys before import to avoid accumulation
       var keysToDelete=[];
       for(var ki=0;ki<localStorage.length;ki++){
