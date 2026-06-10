@@ -99,7 +99,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .tcond.Poor,.tcond.Disposed,.tcond.Damaged{background:#fce4ec;color:#b71c1c;}
 .aval{font-family:var(--mo);font-size:12px;font-weight:600;color:var(--ac);margin-top:3px;}
 .twrap{overflow:auto;border:1px solid var(--b);border-radius:var(--r);background:var(--s);max-height:calc(100vh - 200px);position:relative;}
-.tbl{border-collapse:collapse;font-size:12px;}
+.tbl{border-collapse:collapse;font-size:12px;table-layout:fixed;}
 .tbl thead{display:table-header-group;}
 .tbl th{padding:0;text-align:left;background:var(--s2);border-bottom:2px solid var(--b);position:sticky;top:0;z-index:3;user-select:none;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:visible;}
 .thin{display:flex;align-items:center;gap:3px;padding:7px 8px;overflow:hidden;}
@@ -112,7 +112,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .tbl th{position:relative;}
 .tbl th.cdrag{opacity:.35;}
 .tbl th.cdrop{box-shadow:inset -3px 0 0 var(--ac);}
-.tbl td{padding:0;border-bottom:1px solid #ddd8cc;vertical-align:middle;overflow:hidden;}
+.tbl td{padding:0;border-bottom:1px solid #ddd8cc;vertical-align:middle;overflow:hidden;max-width:0;}
 .tdin{padding:6px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px;}
 .tbl td.ed .tdin{cursor:text;}
 .tbl td.ed:hover .tdin{background:#fffbf5;}
@@ -1264,7 +1264,18 @@ function onRS(e){
   var nw=Math.max(40,rsW+(nx-rsX));
   colW[rsCol]=nw;
   var th=document.querySelector('[data-ck="'+rsCol+'"]');
-  if(th)th.style.width=nw+'px';
+  if(th){
+    th.style.width=nw+'px';
+    th.style.minWidth=nw+'px';
+    th.style.maxWidth=nw+'px';
+    // Update table total width
+    var tbl=th.closest('table');
+    if(tbl){
+      var total=0;
+      tbl.querySelectorAll('th').forEach(function(t){total+=parseInt(t.style.width)||40;});
+      tbl.style.width=total+'px';
+    }
+  }
 }
 function endRS(){
   if(!rsCol)return;
@@ -1287,7 +1298,13 @@ function onRStouch(e){
   var nw=Math.max(40,rsW+(nx-rsX));
   colW[rsCol]=nw;
   var th=document.querySelector('[data-ck="'+rsCol+'"]');
-  if(th)th.style.width=nw+'px';
+  if(th){
+    th.style.width=nw+'px';
+    th.style.minWidth=nw+'px';
+    th.style.maxWidth=nw+'px';
+    var tbl=th.closest('table');
+    if(tbl){var total=0;tbl.querySelectorAll('th').forEach(function(t){total+=parseInt(t.style.width)||40;});tbl.style.width=total+'px';}
+  }
 }
  
 function onRS(e){
