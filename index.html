@@ -116,6 +116,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .tbl td{padding:0;border-bottom:1px solid #ddd8cc;vertical-align:top;overflow:hidden;}
 .col-wrap .tdin{overflow:hidden !important;}
 .col-short .tdin{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tcenter .tdin{justify-content:center;text-align:center;}
 .tdin{padding:6px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px;}
 .tbl td.ed .tdin{cursor:text;}
 .tbl td.ed:hover .tdin{background:#fffbf5;}
@@ -1180,7 +1181,7 @@ function defW(k){
     currentValue:76, purchasePrice:76, insuredValue:76, soldAt:76,
     location:86, assignedTo:86,
     notes:148,         // wrap 3 lines
-    exhibitionHistory:155, // wrap 4 lines
+    exhibitionHistory:300, // wrap 4 lines - wide column
     provenance:120,    // wrap 3 lines
     description:120,   // wrap 3 lines
     department:86, manufacturer:86, model:86, appraiser:86,
@@ -1243,10 +1244,9 @@ function rTable(){
       try{var lp=JSON.parse(raw);if(lp.url)disp='<a href="'+esc(lp.url)+'" target="_blank" onclick="event.stopPropagation()">'+esc(lp.text||lp.url)+'</a>';}catch{}
       if(!disp&&isUrl&&raw.startsWith("http"))disp='<a href="'+esc(raw)+'" target="_blank" onclick="event.stopPropagation()">'+esc(raw)+'</a>';
       if(!disp){var v=raw;if(["purchasePrice","currentValue","insuredValue"].includes(key)&&v)v="$"+parseFloat(v).toLocaleString();disp=esc(v);}
-      h+='<td class="ed" style="height:'+rowH+'px;" data-id="'+a.id+'" data-k="'+key+'" onclick="startEdit(this,\''+a.id+'\',\''+key+'\')">';
-      var isML=["name","medium","notes","description","provenance","exhibitionHistory","dimensions"].includes(key);
-      var clamp=key==="exhibitionHistory"?4:(key==="notes"||key==="provenance"||key==="description")?3:2;
-      h+='<div class="tdin" style="height:'+(isML?Math.max(rowH,clamp*20):rowH)+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:'+clamp+';-webkit-box-orient:vertical;':'nowrap')+';"  >'+disp+'</span>';
+         var isML=["name","medium","notes","description","provenance","exhibitionHistory","dimensions"].includes(key);
+      h+='<td class="ed '+(isML?'':'tcenter')+'" data-id="'+a.id+'" data-k="'+key+'" onclick="startEdit(this,\''+a.id+'\',\''+key+'\')">';
+      h+='<div class="tdin" style="'+(isML?'min-height:'+rowH+'px;align-items:flex-start;padding-top:5px;padding-bottom:5px;':'height:'+rowH+'px;')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;':'nowrap')+';"  >'+disp+'</span>';
       if(isUrl)h+='<span style="cursor:pointer;opacity:.4;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();showLink(\''+a.id+'\',\''+key+'\')" title="Link">🔗</span>';
       h+='</div></td>';
     });
