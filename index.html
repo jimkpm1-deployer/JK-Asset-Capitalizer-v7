@@ -543,7 +543,7 @@ let customCols=LS.get("acap_custom_v3",[]);
 let tableCols=LS.get("acap_tcols_v3",null);
 let appName=LS.get("acap_name_v3","Asset Capitalizer");
 let rowH=LS.get("acap_rowh_v3",36);
-let colW=(function(){var s=LS.get("acap_colw_v3",{});return(s&&s._v===3)?s:{_v:3};})();
+let colW=(function(){var s=LS.get("acap_colw_v3",{});return(s&&s._v===4)?s:{_v:4};})();
 let authCfg=LS.get("acap_auth_v3",{u:hashStr("admin"),p:hashStr("admin1234"),pin:hashStr("1234")});
 let view="dash",listMode="grid",filtered=[],editId=null,confirmId=null,detailId=null;
 let camStream=null,scanStream=null,scanIv=null,lkTarget=null,cellPhotoId=null,deferredInstall=null;
@@ -597,7 +597,7 @@ function saveAll(){
   }catch(e){console.warn('saveAll consign',e);}
   LS.set('acap_order_v3',fOrder);LS.set('acap_hidden_v3',hiddenFlds);LS.set('acap_custom_v3',customCols);
   LS.set('acap_tcols_v3',tableCols);LS.set('acap_name_v3',appName);LS.set('acap_rowh_v3',rowH);
-  colW._v=3;LS.set('acap_colw_v3',colW);LS.set('acap_auth_v3',authCfg);
+  colW._v=4;LS.set('acap_colw_v3',colW);LS.set('acap_auth_v3',authCfg);
   localStorage.setItem('acap_has_data','1');
   const ss=G('sSave');if(ss){const d=new Date();ss.textContent='Saved '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}
 }
@@ -1180,8 +1180,8 @@ function defW(k){
     authenticCert:66,
     currentValue:76, purchasePrice:76, insuredValue:76, soldAt:76,
     location:86, assignedTo:86,
-    notes:750,
-    exhibitionHistory:1200,
+    notes:window.innerWidth<768?375:750,
+    exhibitionHistory:window.innerWidth<768?600:1200,
     provenance:120,    // wrap 3 lines
     description:120,   // wrap 3 lines
     department:86, manufacturer:86, model:86, appraiser:86,
