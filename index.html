@@ -269,6 +269,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <div class="sbi" id="ni-cols"        onclick="goTo('cols')">⬝ Manage Columns</div>
       <div class="sbi" id="ni-security"    onclick="goTo('security')">🔐 Security</div>
       <div class="sbi" id="ni-io"          onclick="goTo('io')">⇅ Import / Export</div>
+      <div class="sbi" onclick="closeSB();showStorageDiag()">&#x1F50D; Storage Diag</div>
       <div class="sbsc" style="margin-top:4px;">Categories</div>
       <div id="sCats"></div>
     </nav>
@@ -304,6 +305,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <button class="btn bg no-print" id="bBC"     style="display:none" onclick="printStickers()">🖨 Stickers</button>
       <button class="btn bg no-print" id="bBCpdf"  style="display:none" onclick="stickersPDF()">📄 PDF</button>
       <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾 Save</button>
+      <button class="btn bg no-print" id="bDiag" style="font-size:10px;" onclick="showStorageDiag()">🔍 Storage</button>
       <button class="btn bg no-print" id="bStickerList" style="display:none;font-size:11px;" onclick="printCurrentListStickers()">🏷 Stickers</button>
       <button class="btn bg no-print" id="bPrintAll" style="display:none;font-size:11px;" onclick="printAllLists()">🖨 All Lists</button>
       <button class="btn bp no-print" id="bNew" onclick="newAsset()">＋ New</button>
@@ -992,6 +994,30 @@ function exportSoldCSV(){
   dl(hdr+"\n"+rows.join("\n"),"text/csv","sold_assets.csv");toast("Exported");
 }
 // Dashboard
+function showStorageDiag(){
+  var keys=['acap_assets_v3','acap_sold_v3','acap_consign_v3','acap_has_data'];
+  var txt='localStorage size check:\n';
+  var total=0;
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    var v=localStorage.getItem(k)||'';
+    total+=k.length+v.length;
+  }
+  txt+='Total: '+(total/1024).toFixed(1)+'KB\n\n';
+  keys.forEach(function(k){
+    var v=localStorage.getItem(k);
+    txt+=k+': '+(v?((v.length/1024).toFixed(1)+'KB'):'MISSING')+'\n';
+  });
+  // Count txt keys
+  var txtKeys=0;
+  for(var i=0;i<localStorage.length;i++){if(localStorage.key(i)&&localStorage.key(i).startsWith('acap_txt_'))txtKeys++;}
+  txt+='Long field keys: '+txtKeys+'\n';
+  // Try a test write
+  try{localStorage.setItem('acap_test','test');localStorage.removeItem('acap_test');txt+='Write test: OK\n';}
+  catch(e){txt+='Write test: FAILED - '+e.message+'\n';}
+  // Show in-app
+  alert(txt);
+}
 function rDash(){
   try {
   // Debug: count photos in localStorage
