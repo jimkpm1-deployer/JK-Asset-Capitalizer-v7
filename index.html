@@ -101,12 +101,12 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .twrap{overflow:auto;border:1px solid var(--b);border-radius:var(--r);background:var(--s);max-height:calc(100vh - 200px);position:relative;}
 .tbl{border-collapse:collapse;font-size:12px;}
 .tbl thead{display:table-header-group;}
-.tbl th{padding:0;text-align:left;background:var(--s2);border-bottom:2px solid var(--b);position:sticky;top:0;z-index:3;user-select:none;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.tbl th{padding:0;text-align:left;background:var(--s2);border-bottom:2px solid var(--b);position:sticky;top:0;z-index:3;user-select:none;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:visible;}
 .thin{display:flex;align-items:center;gap:3px;padding:7px 8px;overflow:hidden;}
 .thlbl{flex:1;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--mu);font-weight:600;overflow:hidden;text-overflow:ellipsis;outline:none;cursor:text;}
 .colx{opacity:0;font-size:11px;cursor:pointer;color:var(--mu);flex-shrink:0;}
 .tbl th:hover .colx{opacity:1;}
-.colrsz{position:absolute;right:-6px;top:0;bottom:0;width:20px;cursor:col-resize;z-index:5;touch-action:none;background:transparent;}
+.colrsz{position:absolute;right:-8px;top:0;bottom:0;width:24px;cursor:col-resize;z-index:6;touch-action:none;background:transparent;}
 .colrsz:hover,.colrsz:active{background:var(--ac);opacity:.4;}
 .tbl th{position:relative;}
 .tbl th.cdrag{opacity:.35;}
@@ -536,10 +536,19 @@ let undoStack=[],undoTmr=null,undoCnt=null;
 let isAuth=false,sessTmr=null,pinEntry="";
  
 function saveAll(){
-  // Save photos to IndexedDB; strip from localStorage to avoid quota
+  // Save photos separately; strip from main data to save space
   const slim=assets.map(a=>{if(a.photo)savePhoto(a.id,a.photo);const{photo,...r}=a;return r;});
-  var slimSold=soldAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_assets_bak",localStorage.getItem("acap_assets_v3"));localStorage.setItem("acap_sold_v3",JSON.stringify(slimSold));
-    var slimConsign=consignAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});localStorage.setItem("acap_consign_v3",JSON.stringify(slimConsign));}catch(e){console.warn(e);}
+  var slimSold=soldAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+  var slimConsign=consignAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+  // Save each list individually with its own try/catch
+  try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_assets_bak",localStorage.getItem("acap_assets_v3"));}
+  catch(e){
+    // Try saving without long text fields if quota exceeded
+    var slim2=slim.map(function(a){var r=Object.assign({},a);if(r.notes&&r.notes.length>200)r.notes=r.notes.slice(0,200);if(r.provenance&&r.provenance.length>200)r.provenance=r.provenance.slice(0,200);if(r.exhibitionHistory&&r.exhibitionHistory.length>200)r.exhibitionHistory=r.exhibitionHistory.slice(0,200);return r;});
+    try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim2));}catch(e2){console.warn("saveAll assets failed",e2);}
+  }
+  try{localStorage.setItem("acap_sold_v3",JSON.stringify(slimSold));}catch(e){console.warn("saveAll sold",e);}
+  try{localStorage.setItem("acap_consign_v3",JSON.stringify(slimConsign));}catch(e){console.warn("saveAll consign",e);}
   LS.set("acap_order_v3",fOrder);LS.set("acap_hidden_v3",hiddenFlds);LS.set("acap_custom_v3",customCols);
   LS.set("acap_tcols_v3",tableCols);LS.set("acap_name_v3",appName);LS.set("acap_rowh_v3",rowH);LS.set("acap_colw_v3",colW);LS.set("acap_auth_v3",authCfg);
   localStorage.setItem("acap_has_data","1");
@@ -1660,7 +1669,8 @@ async function exportJSON(){
   var withPhotos=assets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
   var _leg=LS.get("acap_tbl_legend",""),_ps=LS.get("acap_tbl_ps","");
   var withConsign=consignAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
-  dl(JSON.stringify({assets:withPhotos,soldAssets:soldAssets,consignAssets:withConsign,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,colW:colW,rowH:rowH,legend:_leg,ps:_ps},null,2),"application/json","assets_backup.json");
+  var withSold=soldAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
+  dl(JSON.stringify({assets:withPhotos,soldAssets:withSold,consignAssets:withConsign,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,colW:colW,rowH:rowH,legend:_leg,ps:_ps},null,2),"application/json","assets_backup.json");
   toast("JSON exported ("+assets.length+" assets)","s",4000);
 }
 function exportCSV(){
@@ -1692,8 +1702,7 @@ async function importJSON(inp){
       // Also collect photos from soldAssets and consignAssets
       if(d.soldAssets)d.soldAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
       if(d.consignAssets)d.consignAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
-      try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_has_data","1");}catch(e){toast("Warning: asset data too large for storage, photos will be session-only","i",5000);}
-      try{localStorage.setItem("acap_assets_bak",localStorage.getItem("acap_assets_v3"));}catch{}
+      try{localStorage.setItem("acap_assets_v3",JSON.stringify(slim));localStorage.setItem("acap_assets_bak",localStorage.getItem("acap_assets_v3"));localStorage.setItem("acap_has_data","1");}catch(e){console.warn("import assets quota",e);}
       if(d.fOrder)LS.set("acap_order_v3",d.fOrder);
       if(d.hiddenFlds)LS.set("acap_hidden_v3",d.hiddenFlds);
       if(d.customCols)LS.set("acap_custom_v3",d.customCols);
