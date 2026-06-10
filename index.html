@@ -459,12 +459,8 @@ function openPhotoDB(){
 async function savePhoto(id,data){
   if(!id||!data)return;
   _photoCache[id]=data;
-  // Store in localStorage with individual key
-  try{localStorage.setItem("acap_ph_"+id,data);}catch(e){
-    console.warn("localStorage quota for photo",id,"- available in session only");
-  }
-  // Also save to IndexedDB as backup
-  try{const db=await openPhotoDB();db.transaction("photos","readwrite").objectStore("photos").put({id,data});}catch(e){}
+  // Save ONLY to IndexedDB - localStorage is reserved for asset data
+  try{const db=await openPhotoDB();db.transaction("photos","readwrite").objectStore("photos").put({id,data});}catch(e){console.warn("photo save error",e);}
 }
 async function loadAllPhotos(){
   var m={};
@@ -645,16 +641,23 @@ document.addEventListener("click",()=>{if(isAuth)resetSess();},true);
 document.addEventListener("visibilitychange",()=>{if(isAuth){if(document.hidden)saveAll();else{loadPhotosAndRender();}}});
 window.addEventListener("beforeunload",()=>{if(isAuth)saveAll();});
 async function loadPhotosAndRender(){
-  // Load from localStorage into cache first (fast, synchronous)
+  // Load from IndexedDB into cache (permanent storage, no size limit)
+  try{
+    var pm=await loadAllPhotos();
+    Object.assign(_photoCache,pm);
+  }catch(e){console.warn("photo load error",e);}
+  // Also check localStorage for any legacy photos not yet migrated
   for(var _i=0;_i<localStorage.length;_i++){
     var _k=localStorage.key(_i);
-    if(_k&&_k.startsWith("acap_ph_")){var _pid=_k.slice(8);if(!_photoCache[_pid])_photoCache[_pid]=localStorage.getItem(_k);}
+    if(_k&&_k.startsWith("acap_ph_")){
+      var _pid=_k.slice(8);
+      if(!_photoCache[_pid]){_photoCache[_pid]=localStorage.getItem(_k);}
+    }
   }
-  // Also load from IndexedDB (legacy + backup)
-  try{const pm=await loadAllPhotos();Object.assign(_photoCache,pm);}catch(e){}
-  // Merge into assets
+  // Merge cache into assets
   assets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
   soldAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
+  consignAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
   render();
 }
  
@@ -2162,6 +2165,30 @@ document.addEventListener("DOMContentLoaded",function(){
   document.title=appName;
   if("serviceWorker"in navigator)
   // Check persisted session
+  // ONE-TIME MIGRATION: move photos from localStorage to IndexedDB
+  // This frees up localStorage space for asset data
+  (async function(){
+    var phKeys=[];
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k&&k.startsWith('acap_ph_'))phKeys.push(k);
+    }
+    if(phKeys.length>0){
+      for(var i=0;i<phKeys.length;i++){
+        var k=phKeys[i];
+        var id=k.slice(8);
+        var data=localStorage.getItem(k);
+        if(data){
+          try{
+            var db=await openPhotoDB();
+            db.transaction('photos','readwrite').objectStore('photos').put({id:id,data:data});
+          }catch(e){}
+        }
+        localStorage.removeItem(k);
+      }
+      console.log('Migrated '+phKeys.length+' photos from localStorage to IndexedDB');
+    }
+  })();
   // Migrate 4-digit IDs to 3-digit (AST-0001 → AST-001)
   var _m=false;
   assets.forEach(function(a){if(a.id&&a.id.length===8&&a.id.indexOf("AST-0")===0){a.id="AST-"+a.id.slice(5);_m=true;}});
