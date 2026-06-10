@@ -107,7 +107,8 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .colx{opacity:0;font-size:11px;cursor:pointer;color:var(--mu);flex-shrink:0;}
 .tbl th:hover .colx{opacity:1;}
 .colrsz{position:absolute;right:-8px;top:0;bottom:0;width:24px;cursor:col-resize;z-index:6;touch-action:none;background:transparent;}
-.colrsz:hover,.colrsz:active{background:var(--ac);opacity:.4;}
+.colrsz:hover,.colrsz:active{background:var(--ac);opacity:.5;}
+.colrsz::after{content:"";position:absolute;left:50%;top:20%;bottom:20%;width:2px;background:var(--b);border-radius:1px;}
 .tbl th{position:relative;}
 .tbl th.cdrag{opacity:.35;}
 .tbl th.cdrop{box-shadow:inset -3px 0 0 var(--ac);}
@@ -509,9 +510,22 @@ function compressPhoto(dataUrl){
 }
  
 // State
+function loadLongFields(arr){
+  // Restore long text fields that were saved separately
+  var LONG_FLDS=['notes','exhibitionHistory','provenance','description','dimensions'];
+  arr.forEach(function(a){
+    LONG_FLDS.forEach(function(k){
+      if(a[k]==='__ref__'){
+        var val=localStorage.getItem('acap_txt_'+a.id+'_'+k);
+        if(val)a[k]=val; else delete a[k];
+      }
+    });
+  });
+  return arr;
+}
 function loadAssets(){
   for(const k of["acap_assets_v3","acap_assets_bak"]){
-    try{const r=localStorage.getItem(k);if(r){const p=JSON.parse(r);if(Array.isArray(p)&&p.length>0){if(k==="acap_assets_bak")localStorage.setItem("acap_assets_v3",r);return p;}}}catch{}
+    try{const r=localStorage.getItem(k);if(r){const p=JSON.parse(r);if(Array.isArray(p)&&p.length>0){if(k==="acap_assets_bak")localStorage.setItem("acap_assets_v3",r);return loadLongFields(p);}}}catch{}
   }
   return[];
 }
@@ -519,8 +533,8 @@ function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCod
  
 let assets=loadAssets();
 let _photoCache={}; // in-memory photo cache, survives renders
-let consignAssets=(function(){try{var r=localStorage.getItem("acap_consign_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return p;}}catch(e){}return[];})();
-let soldAssets=(function(){try{var r=localStorage.getItem("acap_sold_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return p;}}catch{}return[];})();
+let consignAssets=(function(){try{var r=localStorage.getItem("acap_consign_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return loadLongFields(p);}}catch(e){}return[];})();
+let soldAssets=(function(){try{var r=localStorage.getItem("acap_sold_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return loadLongFields(p);}}catch(e){}return[];})();
 let fOrder=LS.get("acap_order_v3",DORDER);
 let hiddenFlds=LS.get("acap_hidden_v3",[]);
 let customCols=LS.get("acap_custom_v3",[]);
@@ -537,7 +551,19 @@ let isAuth=false,sessTmr=null,pinEntry="";
  
 function saveAll(){
   // Save photos separately; strip from main data to save space
-  const slim=assets.map(a=>{if(a.photo)savePhoto(a.id,a.photo);const{photo,...r}=a;return r;});
+  const LONG_FLDS=['notes','exhibitionHistory','provenance','description','dimensions'];
+  const slim=assets.map(a=>{
+    if(a.photo)savePhoto(a.id,a.photo);
+    const{photo,...r}=a;
+    // Save long text fields separately to avoid quota
+    LONG_FLDS.forEach(function(k){
+      if(r[k]&&r[k].length>50){
+        try{localStorage.setItem('acap_txt_'+a.id+'_'+k,r[k]);}catch(e){}
+        r[k]='__ref__'; // placeholder
+      }
+    });
+    return r;
+  });
   var slimSold=soldAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
   var slimConsign=consignAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
   // Save each list individually with its own try/catch
@@ -1173,8 +1199,31 @@ function startRS(e,key,w0){
   document.addEventListener("touchmove",onRStouch,{passive:false});
   document.addEventListener("touchend",endRS);
 }
-function onRStouch(e){e.preventDefault();if(!rsCol)return;var nw=Math.max(34,rsW+(e.touches[0].clientX-rsX));colW[rsCol]=nw;var th=document.querySelector('[data-ck="'+rsCol+'"]');if(th)th.style.width=nw+"px";}
-function onRS(e){if(!rsCol)return;var nw=Math.max(34,rsW+(e.clientX-rsX));colW[rsCol]=nw;var th=document.querySelector('[data-ck="'+rsCol+'"]');if(th)th.style.width=nw+"px";}
+function onRStouch(e){
+  e.preventDefault();
+  if(!rsCol)return;
+  var nw=Math.max(34,rsW+(e.touches[0].clientX-rsX));
+  colW[rsCol]=nw;
+  var th=document.querySelector('[data-ck="'+rsCol+'"]');
+  if(th)th.style.width=nw+"px";
+  var tbl=document.getElementById("ITB")||document.getElementById("CTB");
+  if(tbl){var total=0;tbl.querySelectorAll('th').forEach(function(t){total+=t.offsetWidth;});tbl.style.width=total+"px";}
+}
+function onRS(e){
+  if(!rsCol)return;
+  var nw=Math.max(34,rsW+(e.clientX-rsX));
+  colW[rsCol]=nw;
+  // Update th width
+  var th=document.querySelector('[data-ck="'+rsCol+'"]');
+  if(th)th.style.width=nw+"px";
+  // Update table total width
+  var tbl=document.getElementById("ITB")||document.getElementById("CTB");
+  if(tbl){
+    var total=0;
+    tbl.querySelectorAll('th').forEach(function(t){total+=t.offsetWidth;});
+    tbl.style.width=total+"px";
+  }
+}
 function endRS(){LS.set("acap_colw_v3",colW);rsCol=null;document.removeEventListener("pointermove",onRS);document.removeEventListener("pointerup",endRS);document.removeEventListener("touchmove",onRStouch);document.removeEventListener("touchend",endRS);}
  
 // Inline edit
