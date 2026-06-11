@@ -1048,10 +1048,9 @@ function rDash(){
   var inPossessionVal=val+conVal;
   h+='<div class="sc"><div class="sl">In Possession</div><div class="sv">'+inPossession+'<span style="font-size:10px;color:var(--mu)"> inv+con</span></div></div>';
   h+='<div class="sc"><div class="sl">Possession Value</div><div class="sv ac">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc"><div class="sl">Inventory</div><div class="sv">'+total+'</div></div>';
-  h+='<div class="sc"><div class="sl">Consignment</div><div class="sv" style="color:#4a6b8a">'+conTotal+'</div></div>';
-  h+='<div class="sc"><div class="sl">Sold</div><div class="sv" style="color:#8a5a2e">'+soldTotal+'</div></div>';
-  h+='<div class="sc"><div class="sl">Sold Value</div><div class="sv" style="color:#8a5a2e">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc"><div class="sl">Inventory ('+total+')</div><div class="sv">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc"><div class="sl">Consignment ('+conTotal+')</div><div class="sv" style="color:#4a6b8a">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc"><div class="sl">Sold ('+soldTotal+')</div><div class="sv" style="color:#8a5a2e">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
   // All 3 lists - inventory, consignment, sold
@@ -1426,8 +1425,28 @@ function doPrint(){
   var leg=G("printLPS");
   if(!leg){leg=document.createElement("div");leg.id="printLPS";leg.style.cssText="display:none;margin-top:9px;font-size:9pt;border-top:1pt solid #ccc;padding-top:4pt;";var ct=G("CT");if(ct)ct.appendChild(leg);}
   if(legend||ps){leg.innerHTML=(legend?"<div><b>Legend:</b> "+esc(legend)+"</div>":"")+(ps?"<div><b>PS:</b> "+esc(ps)+"</div>":"");leg.style.display="block";}
+  // Temporarily expand twrap to show ALL rows for printing
+  var tw=document.querySelector('.twrap');
+  var savedH=tw?tw.style.height:'';
+  var savedOv=tw?tw.style.overflow:'';
+  if(tw){tw.style.height='auto';tw.style.overflow='visible';}
+  // Make content not clip during print
+  var ct=G('CT');var savedCt=ct?ct.style.overflow:'';
+  if(ct)ct.style.overflow='visible';
+  // Bigger photos for print
+  var printPhotoStyle=document.createElement('style');
+  printPhotoStyle.id='printPhotoFix';
+  printPhotoStyle.textContent='@media print{.tbl img{width:60px!important;height:60px!important;} .twrap{height:auto!important;overflow:visible!important;} .content{overflow:visible!important;}}';
+  document.head.appendChild(printPhotoStyle);
   window.print();
-  setTimeout(function(){if(ph)ph.style.display="none";if(sel)sel.textContent="";if(leg)leg.style.display="none";},800);
+  setTimeout(function(){
+    if(ph)ph.style.display="none";
+    if(sel)sel.textContent="";
+    if(leg)leg.style.display="none";
+    if(tw){tw.style.height=savedH;tw.style.overflow=savedOv;}
+    if(ct)ct.style.overflow=savedCt;
+    var pf=G('printPhotoFix');if(pf)pf.remove();
+  },1000);
 }
 
 // Hyperlink
