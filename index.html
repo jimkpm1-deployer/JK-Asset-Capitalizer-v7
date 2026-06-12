@@ -1428,34 +1428,74 @@ function doPrint(){
   var showP=(G("pPhotos")||{value:"1"}).value==="1";
   var title=(G("pTitle")||{value:appName}).value||appName;
   closeM("mPrint");
-  var sty="@page{size:"+sz+";margin:9mm;}.tbl th,.tbl td{font-size:"+fs+"!important;}";
-  if(!showP)sty+=".phcell,.phphl{display:none!important;}[data-ck='photo']{display:none!important;}";
-  var sel=G("printStyle");
-  if(!sel){sel=document.createElement("style");sel.id="printStyle";document.head.appendChild(sel);}
-  sel.textContent=sty;
-  var ph=G("phdr"),pht=G("phdrTxt");
-  if(pht)pht.textContent=title+" — "+new Date().toLocaleDateString()+" · "+(hasFilter()?filtered.length+" of "+assets.length:assets.length)+" items";
-  if(ph)ph.style.display="block";
-  // Temporarily expand twrap to show ALL rows for printing
-  var tw=document.querySelector('.twrap');
-  var savedH=tw?tw.style.height:'';
-  var savedOv=tw?tw.style.overflow:'';
-  if(tw){tw.style.height='auto';tw.style.overflow='visible';}
-  // Make content not clip during print
-  var ct=G('CT');var savedCt=ct?ct.style.overflow:'';
-  if(ct)ct.style.overflow='visible';
-  // Bigger photos for print - reuse existing style element to avoid duplicates
-  var printPhotoStyle=G('printPhotoFix');
-  if(!printPhotoStyle){printPhotoStyle=document.createElement('style');printPhotoStyle.id='printPhotoFix';document.head.appendChild(printPhotoStyle);}
-  printPhotoStyle.textContent='@media print{.tbl img{width:32px!important;height:32px!important;} .twrap{height:auto!important;overflow:visible!important;} .content{overflow:visible!important;} .tbl td,.tbl th{padding:1px 4px!important;} .tdin{padding:1px 4px!important;} .col-wrap .tdin{padding-top:1px!important;} .tbl tr{page-break-inside:avoid;} .tbl th{position:static!important;box-shadow:none!important;} .twrap{position:static!important;}}';
-  window.print();
-  setTimeout(function(){
-    if(ph)ph.style.display="none";
-    if(sel)sel.textContent="";
-    if(tw){tw.style.height=savedH;tw.style.overflow=savedOv;}
-    if(ct)ct.style.overflow=savedCt;
-    if(printPhotoStyle)printPhotoStyle.textContent="";
-  },1500);
+  // Determine data source based on current view
+  var arr=view==="sold"?soldAssets:view==="consign"?consignAssets:assets;
+  if(hasFilter()&&filtered.length&&view==="table")arr=filtered;
+  var cols=view==="sold"?getSTCols():getTCols();
+  var fds=allFDs(),renames=LS.get("acap_renames_v3",{});
+  var legKey=view==="sold"?"acap_sold_legend":view==="consign"?"acap_consign_legend":"acap_tbl_legend";
+  var psKey=view==="sold"?"acap_sold_ps":view==="consign"?"acap_consign_ps":"acap_tbl_ps";
+  var leg=LS.get(legKey,""),ps=LS.get(psKey,"");
+  // Build header row
+  var thead='<tr><th>ID</th>';
+  cols.forEach(function(key){
+    var fd=fds.find(function(f){return f.k===key;})||{lbl:key};
+    var lbl=key==="soldAt"?"Sold At":key==="soldDate"?"Sold Date":(renames[key]||fd.lbl);
+    thead+='<th>'+esc(lbl)+'</th>';
+  });
+  thead+='</tr>';
+  // Build body rows
+  var tbody='';
+  arr.forEach(function(a){
+    tbody+='<tr><td class="idc">'+esc(a.id)+'</td>';
+    cols.forEach(function(key){
+      if(key==="photo"){
+        var ph=a.photo||_photoCache[a.id]||'';
+        tbody+='<td>'+(showP&&ph?'<img src="'+ph+'">':'')+'</td>';
+        return;
+      }
+      if(key==="soldAt"){tbody+='<td>'+(a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"")+'</td>';return;}
+      if(key==="soldDate"){tbody+='<td>'+esc(a.soldDate||"")+'</td>';return;}
+      var v=a[key]||"";
+      if(["purchasePrice","currentValue","insuredValue"].includes(key)&&v)v="$"+parseFloat(v).toLocaleString();
+      tbody+='<td>'+esc(v)+'</td>';
+    });
+    tbody+='</tr>';
+  });
+  var legendHtml='';
+  if(leg||ps){
+    legendHtml='<div class="legbox">'+(leg?'<div><b>Legend:</b> '+esc(leg).replace(/\n/g,'<br>')+'</div>':'')+(ps?'<div style="margin-top:6px;"><b>PS:</b> '+esc(ps).replace(/\n/g,'<br>')+'</div>':'')+'</div>';
+  }
+  var dateStr=new Date().toLocaleString();
+  var itemCount=arr.length;
+  var w=window.open("","_blank");
+  w.document.write('<!DOCTYPE html><html><head><title>'+esc(title)+'</title>'
+    +'<style>'
+    +'*{box-sizing:border-box;}'
+    +'body{font-family:-apple-system,Arial,sans-serif;margin:0;padding:10px;color:#222;}'
+    +'@page{size:'+sz+';margin:9mm;}'
+    +'.hdr{display:flex;justify-content:space-between;align-items:baseline;font-weight:600;font-size:13px;border-bottom:2px solid #111;padding-bottom:5px;margin-bottom:8px;}'
+    +'.hdr .meta{font-size:10px;color:#888;font-weight:400;}'
+    +'table{width:100%;border-collapse:collapse;font-size:'+fs+';table-layout:auto;}'
+    +'th,td{border:0.5pt solid #ccc;padding:3px 5px;text-align:left;vertical-align:top;word-break:break-word;}'
+    +'th{background:#e0e0e0;font-weight:600;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+    +'tr:nth-child(even) td{background:#f5f5f3;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+    +'td.idc{font-family:monospace;font-size:9px;color:#888;}'
+    +'img{max-width:32px;max-height:32px;display:block;}'
+    +'thead{display:table-header-group;}'
+    +'tr{page-break-inside:avoid;}'
+    +'.legbox{margin-top:14px;padding-top:8px;border-top:1px solid #999;font-size:9pt;}'
+    +'.hint{position:fixed;top:8px;right:8px;z-index:99;}'
+    +'.hint button{padding:8px 14px;font-size:13px;cursor:pointer;}'
+    +'@media print{.hint{display:none;}}'
+    +'</style></head><body>'
+    +'<div class="hint"><button onclick="window.print()">\u{1F4C4} Print / Save PDF</button></div>'
+    +'<div class="hdr"><span>'+esc(title)+'</span><span class="meta">'+dateStr+' \u00B7 '+itemCount+' items</span></div>'
+    +'<table><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table>'
+    +legendHtml
+    +'</body></html>');
+  w.document.close();
+  setTimeout(function(){try{w.print();}catch(e){}},700);
 }
 
 // Hyperlink
