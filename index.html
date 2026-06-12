@@ -1436,10 +1436,6 @@ function doPrint(){
   var ph=G("phdr"),pht=G("phdrTxt");
   if(pht)pht.textContent=title+" — "+new Date().toLocaleDateString()+" · "+(hasFilter()?filtered.length+" of "+assets.length:assets.length)+" items";
   if(ph)ph.style.display="block";
-  var legend=LS.get("acap_tbl_legend",""),ps=LS.get("acap_tbl_ps","");
-  var leg=G("printLPS");
-  if(!leg){leg=document.createElement("div");leg.id="printLPS";leg.style.cssText="display:none;margin-top:9px;font-size:9pt;border-top:1pt solid #ccc;padding-top:4pt;";var ct=G("CT");if(ct)ct.appendChild(leg);}
-  if(legend||ps){leg.innerHTML=(legend?"<div><b>Legend:</b> "+esc(legend)+"</div>":"")+(ps?"<div><b>PS:</b> "+esc(ps)+"</div>":"");leg.style.display="block";}
   // Temporarily expand twrap to show ALL rows for printing
   var tw=document.querySelector('.twrap');
   var savedH=tw?tw.style.height:'';
@@ -1457,7 +1453,6 @@ function doPrint(){
   setTimeout(function(){
     if(ph)ph.style.display="none";
     if(sel)sel.textContent="";
-    if(leg)leg.style.display="none";
     if(tw){tw.style.height=savedH;tw.style.overflow=savedOv;}
     if(ct)ct.style.overflow=savedCt;
     var pf=G('printPhotoFix');if(pf)pf.remove();
