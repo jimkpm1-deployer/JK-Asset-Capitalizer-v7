@@ -1447,7 +1447,7 @@ function doPrint(){
   // Bigger photos for print
   var printPhotoStyle=document.createElement('style');
   printPhotoStyle.id='printPhotoFix';
-  printPhotoStyle.textContent='@media print{.tbl img{width:32px!important;height:32px!important;} .twrap{height:auto!important;overflow:visible!important;} .content{overflow:visible!important;} .tbl td,.tbl th{padding:1px 4px!important;} .tdin{padding:1px 4px!important;min-height:0!important;height:auto!important;} .col-wrap .tdin{padding-top:1px!important;} .tbl tr{page-break-inside:avoid;} .tbl thead{display:table-header-group;} .twrap>div:last-child{break-before:page;page-break-before:always;margin-top:40px!important;padding-top:20px!important;border-top:2px solid #000;clear:both;display:block!important;width:100%!important;position:relative!important;}}';
+  printPhotoStyle.textContent='@media print{.tbl img{width:32px!important;height:32px!important;} .twrap{height:auto!important;overflow:visible!important;} .content{overflow:visible!important;} .tbl td,.tbl th{padding:1px 4px!important;} .tdin{padding:1px 4px!important;min-height:0!important;height:auto!important;} .col-wrap .tdin{padding-top:1px!important;} .tbl tr{page-break-inside:avoid;} .tbl th{position:static!important;box-shadow:none!important;} .tbl thead{display:table-header-group;} .twrap{position:static!important;} .twrap>div:last-child{position:static!important;break-before:page;page-break-before:always;margin-top:20px!important;padding-top:20px!important;border-top:2px solid #000;clear:both;display:block!important;width:100%!important;}}';
   document.head.appendChild(printPhotoStyle);
   window.print();
   setTimeout(function(){
