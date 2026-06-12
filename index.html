@@ -1447,7 +1447,7 @@ function doPrint(){
   // Bigger photos for print
   var printPhotoStyle=document.createElement('style');
   printPhotoStyle.id='printPhotoFix';
-  printPhotoStyle.textContent='@media print{.tbl img{width:60px!important;height:60px!important;} .twrap{height:auto!important;overflow:visible!important;} .content{overflow:visible!important;}}';
+  printPhotoStyle.textContent='@media print{.tbl img{width:32px!important;height:32px!important;} .twrap{height:auto!important;overflow:visible!important;} .content{overflow:visible!important;} .tbl td,.tbl th{padding:1px 4px!important;} .tdin{padding:1px 4px!important;min-height:0!important;height:auto!important;} .col-wrap .tdin{padding-top:1px!important;}}';
   document.head.appendChild(printPhotoStyle);
   window.print();
   setTimeout(function(){
