@@ -1444,19 +1444,18 @@ function doPrint(){
   // Make content not clip during print
   var ct=G('CT');var savedCt=ct?ct.style.overflow:'';
   if(ct)ct.style.overflow='visible';
-  // Bigger photos for print
-  var printPhotoStyle=document.createElement('style');
-  printPhotoStyle.id='printPhotoFix';
-  printPhotoStyle.textContent='@media print{.tbl img{width:32px!important;height:32px!important;} .twrap{height:auto!important;overflow:visible!important;} .content{overflow:visible!important;} .tbl td,.tbl th{padding:1px 4px!important;} .tdin{padding:1px 4px!important;min-height:0!important;height:auto!important;} .col-wrap .tdin{padding-top:1px!important;} .tbl tr{page-break-inside:avoid;} .tbl th{position:static!important;box-shadow:none!important;} .twrap{position:static!important;} table.tbl{page-break-after:avoid;} .twrap>div:last-child{position:relative!important;display:block!important;width:100%!important;clear:both;margin-top:24px!important;padding-top:16px!important;border-top:1px solid #999;}}';
-  document.head.appendChild(printPhotoStyle);
+  // Bigger photos for print - reuse existing style element to avoid duplicates
+  var printPhotoStyle=G('printPhotoFix');
+  if(!printPhotoStyle){printPhotoStyle=document.createElement('style');printPhotoStyle.id='printPhotoFix';document.head.appendChild(printPhotoStyle);}
+  printPhotoStyle.textContent='@media print{.tbl img{width:32px!important;height:32px!important;} .twrap{height:auto!important;overflow:visible!important;} .content{overflow:visible!important;} .tbl td,.tbl th{padding:1px 4px!important;} .tdin{padding:1px 4px!important;} .col-wrap .tdin{padding-top:1px!important;} .tbl tr{page-break-inside:avoid;} .tbl th{position:static!important;box-shadow:none!important;} .twrap{position:static!important;}}';
   window.print();
   setTimeout(function(){
     if(ph)ph.style.display="none";
     if(sel)sel.textContent="";
     if(tw){tw.style.height=savedH;tw.style.overflow=savedOv;}
     if(ct)ct.style.overflow=savedCt;
-    var pf=G('printPhotoFix');if(pf)pf.remove();
-  },1000);
+    if(printPhotoStyle)printPhotoStyle.textContent="";
+  },1500);
 }
 
 // Hyperlink
