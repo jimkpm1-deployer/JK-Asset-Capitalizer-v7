@@ -848,9 +848,12 @@ function rConsign(){
     if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;"><div class="thin"><span class="thlbl">Photo</span></div></th>';return;}
     var fd=fds.find(function(f){return f.k===key;})||{lbl:key};
     var lbl=renames[key]||fd.lbl;
-    h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;" data-ck="'+key+'"><div class="thin"><span class="thlbl">'+esc(lbl)+'</span></div></th>';
+    var w=cw(key);
+    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);">';
+    h+='<div class="thin"><span class="thlbl">'+esc(lbl)+'</span>';
+    h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">✕</span></div></th>';
   });
-  h+='<th style="width:90px;position:sticky;top:0;"><div class="thin"><span class="thlbl">Actions</span></div></th>';
+  h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
@@ -939,9 +942,12 @@ function rSold(){
   h+='<thead><tr><th style="width:70px;position:sticky;top:0;"><div class="thin"><span class="thlbl">ID</span></div></th>';
   cols.forEach(function(key){
     var lbl=key==="photo"?"Photo":key==="soldAt"?"Sold At $":key==="soldDate"?"Sold Date":(renames[key]||(fds.find(function(f){return f.k===key;})||{lbl:key}).lbl);
-    h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;"><div class="thin"><span class="thlbl">'+esc(lbl)+'</span></div></th>';
+    var w=cw(key);
+    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);">';
+    h+='<div class="thin"><span class="thlbl">'+esc(lbl)+'</span>';
+    h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">✕</span></div></th>';
   });
-  h+='<th style="width:90px;position:sticky;top:0;"><div class="thin"><span class="thlbl">Actions</span></div></th>';
+  h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
@@ -1066,8 +1072,7 @@ function rDash(){
   var soldVal=soldAssets.reduce((s,a)=>s+parseFloat(a.soldAt||0),0);var soldFaceVal=soldAssets.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
   var inPossession=total+conTotal;
   var inPossessionVal=val+conVal;
-  h+='<div class="sc"><div class="sl">In Possession</div><div class="sv">'+inPossession+'<span style="font-size:10px;color:var(--mu)"> inv+con</span></div></div>';
-  h+='<div class="sc"><div class="sl">Possession Value</div><div class="sv ac">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl">In Possession <span style="font-size:10px;color:var(--mu);">(inv+con)</span></div><div class="sv" style="font-size:13px;">'+inPossession+' items</div></div><div class="sv ac" style="font-size:16px;">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div></div>';
   h+='<div class="sc"><div class="sl">Inventory ('+total+')</div><div class="sv">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc"><div class="sl">Consignment ('+conTotal+')</div><div class="sv" style="color:#4a6b8a">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#8a5a2e;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span></div></div></div>';
