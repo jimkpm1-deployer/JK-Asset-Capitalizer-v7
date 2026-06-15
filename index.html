@@ -753,9 +753,13 @@ function updSidebar(){
   }).join("");
   const fc=G("fCat"),fd=G("fCond"),fl=G("fLoc"),fa=G("fAsgn");
   const _sv={cat:fc?fc.value:"",cond:fd?fd.value:"",loc:fl?fl.value:"",asgn:fa?fa.value:""};
-  const catList=getUserCats();
+    // Build options only from data that exists in current view
+  var _filterArr=view==="sold"?soldAssets:view==="consign"?consignAssets:assets;
+  var _allArr=_filterArr.concat(view==="table"?[]:view==="sold"?[]:view==="consign"?[]:[]);
+  const catList=[...new Set(_filterArr.map(function(a){return a.category;}).filter(Boolean))].sort();
   if(fc)fc.innerHTML='<option value="">All Categories</option>'+catList.map(c=>'<option>'+esc(c)+'</option>').join("");
-  if(fd)fd.innerHTML='<option value="">All Conditions</option>'+getUserConds().map(c=>'<option>'+esc(c)+'</option>').join("");
+  var condList=[...new Set(_filterArr.map(function(a){return a.condition;}).filter(Boolean))].sort();
+  if(fd)fd.innerHTML='<option value="">All Conditions</option>'+condList.map(c=>'<option>'+esc(c)+'</option>').join("");
   if(fl){const locs=[...new Set(assets.map(a=>a.location).concat(consignAssets.map(a=>a.location)).concat(soldAssets.map(a=>a.location)).filter(Boolean))].sort();fl.innerHTML='<option value="">All Locations</option>'+locs.map(l=>'<option>'+esc(l)+'</option>').join("");}
   if(fa){const as=[...new Set(assets.map(a=>a.assignedTo).concat(consignAssets.map(a=>a.assignedTo)).concat(soldAssets.map(a=>a.assignedTo)).filter(Boolean))].sort();fa.innerHTML='<option value="">All Assigned</option>'+as.map(l=>'<option>'+esc(l)+'</option>').join("");}
   if(fc&&_sv.cat)fc.value=_sv.cat;if(fd&&_sv.cond)fd.value=_sv.cond;
@@ -1084,7 +1088,7 @@ function rDash(){
   var conRows=makeCatBars(consignAssets,'');
   var soldRows=makeCatBars(soldAssets,'');
   if(invRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:4px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Inventory</div>'+invRows;
-  if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#4a6b8a;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
+  if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
   if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#7a5c2e;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
   h+='</div></div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Recent Assets</div>';
