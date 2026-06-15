@@ -236,6 +236,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .cname{width:116px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ctrack{flex:1;background:var(--s3);border-radius:2px;height:4px;}
 .cfill{height:4px;border-radius:2px;background:var(--ac);}
+.cfill.sold-bar{background:#8a5a2e;}
 .cfill.aw{background:var(--ar);}
 .ccount{font-family:var(--mo);font-size:10px;width:18px;text-align:right;}
 @keyframes sup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -720,7 +721,8 @@ function goTo(v){
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear"].forEach(id=>{const el=G(id);if(el)el.style.display=isL?"":"none";});
   var flEl=G("fList");if(flEl)flEl.style.display=v==="list"?"":"none";
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
-  ["bPrint","bAddCol","bUnhide"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
+  ["bPrint","bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
+  var _uh=G("bUnhide");if(_uh)_uh.style.display=(v==="table"||v==="sold"||v==="consign")?"":"none";
   ["bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="list"?"":"none";});
   var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign")?"":"none";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
@@ -1068,8 +1070,7 @@ function rDash(){
   h+='<div class="sc"><div class="sl">Possession Value</div><div class="sv ac">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc"><div class="sl">Inventory ('+total+')</div><div class="sv">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc"><div class="sl">Consignment ('+conTotal+')</div><div class="sv" style="color:#4a6b8a">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc"><div class="sl">Sold ('+soldTotal+') sold price</div><div class="sv" style="color:#8a5a2e">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc"><div class="sl">Sold face value</div><div class="sv" style="color:#8a5a2e;opacity:.7">$'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#8a5a2e;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span></div></div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
   // All 3 lists - inventory, consignment, sold
@@ -1086,7 +1087,7 @@ function rDash(){
   }
   var invRows=makeCatBars(assets,'aw');
   var conRows=makeCatBars(consignAssets,'');
-  var soldRows=makeCatBars(soldAssets,'');
+  var soldRows=makeCatBars(soldAssets,'sold-bar');
   if(invRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:4px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Inventory</div>'+invRows;
   if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
   if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#7a5c2e;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
