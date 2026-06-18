@@ -721,7 +721,8 @@ function goTo(v){
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear"].forEach(id=>{const el=G(id);if(el)el.style.display=isL?"":"none";});
   var flEl=G("fList");if(flEl)flEl.style.display=v==="list"?"":"none";
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
-  ["bPrint","bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
+  ["bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
+  var _bp=G("bPrint");if(_bp)_bp.style.display=(v==="table"||v==="sold"||v==="consign")?"":"none";
   var _uh=G("bUnhide");if(_uh)_uh.style.display=(v==="table"||v==="sold"||v==="consign")?"":"none";
   ["bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="list"?"":"none";});
   var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign")?"":"none";
@@ -1144,7 +1145,19 @@ function rList(){
   var h='<div style="margin-bottom:7px;font-family:var(--mo);font-size:11px;color:var(--mu);">'+total+' items'+(f.list?' ('+f.list+')':'')+' total</div>';
   if(!total)return h+'<div class="empty"><div class="big">📦</div>No items match.</div>';
   if(listMode==="tbl"){
-    h+='<div style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
+    var _inv=assets.length,_con=consignAssets.length,_sol=soldAssets.length;
+  var _invV=assets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
+  var _conV=consignAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
+  var _solV=soldAssets.reduce(function(s,a){return s+parseFloat(a.soldAt||0);},0);
+  var _totN=_inv+_con+_sol, _posN=_inv+_con, _posV=_invV+_conV;
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 10px;font-size:11px;font-family:var(--mo);color:var(--tx);">';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Total: <b>'+_totN+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">In Possession: <b>'+_posN+'</b> · $<b>'+_posV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Inventory: <b>'+_inv+'</b> · $<b>'+_invV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#4a6b8a;">Consignment: <b>'+_con+'</b> · $<b>'+_conV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#8a5a2e;">Sold: <b>'+_sol+'</b> · $<b>'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='</div>';
+  h+='<div style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
     h+='<thead><tr style="background:var(--s2);"><th style="padding:5px 7px;text-align:left;">Name</th><th style="padding:5px 7px;text-align:left;">Artist</th><th style="padding:5px 7px;text-align:left;">Cat</th><th style="padding:5px 7px;text-align:left;">List</th><th style="padding:5px 7px;text-align:right;">Value</th></tr></thead><tbody>';
     allItems.forEach(function(a){
       h+='<tr style="border-bottom:1px solid var(--b);'+srcColors[a._src]+'" onclick="'+( a._src!=="sold"?"viewDetail('"+esc(a.id)+"')":'""')+'">';
