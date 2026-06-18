@@ -1073,6 +1073,9 @@ function rDash(){
   var soldVal=soldAssets.reduce((s,a)=>s+parseFloat(a.soldAt||0),0);var soldFaceVal=soldAssets.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
   var inPossession=total+conTotal;
   var inPossessionVal=val+conVal;
+  var grandTotal=inPossession+soldTotal;
+  var grandVal=inPossessionVal+soldFaceVal;
+  h+='<div style="font-size:10px;color:var(--mu);font-family:var(--mo);padding:0 2px 8px;"> Total tracked: <b>'+grandTotal+'</b> assets &nbsp;·&nbsp; face value: <b>$'+grandVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></div>';
   h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl">In Possession <span style="font-size:10px;color:var(--mu);">(inv+con)</span></div><div class="sv" style="font-size:13px;">'+inPossession+' items</div></div><div class="sv ac" style="font-size:16px;">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div></div>';
   h+='<div class="sc"><div class="sl">Inventory ('+total+')</div><div class="sv">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc"><div class="sl">Consignment ('+conTotal+')</div><div class="sv" style="color:#4a6b8a">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
@@ -1144,19 +1147,20 @@ function rList(){
   var total=allItems.length;
   var h='<div style="margin-bottom:7px;font-family:var(--mo);font-size:11px;color:var(--mu);">'+total+' items'+(f.list?' ('+f.list+')':'')+' total</div>';
   if(!total)return h+'<div class="empty"><div class="big">📦</div>No items match.</div>';
-  if(listMode==="tbl"){
-    var _inv=assets.length,_con=consignAssets.length,_sol=soldAssets.length;
+  // Stats bar - always visible in All Assets view
+  var _inv=assets.length,_con=consignAssets.length,_sol=soldAssets.length;
   var _invV=assets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
   var _conV=consignAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
   var _solV=soldAssets.reduce(function(s,a){return s+parseFloat(a.soldAt||0);},0);
   var _totN=_inv+_con+_sol, _posN=_inv+_con, _posV=_invV+_conV;
-  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 10px;font-size:11px;font-family:var(--mo);color:var(--tx);">';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 0 8px;font-size:11px;font-family:var(--mo);">';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Total: <b>'+_totN+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">In Possession: <b>'+_posN+'</b> · $<b>'+_posV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Inventory: <b>'+_inv+'</b> · $<b>'+_invV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#4a6b8a;">Consignment: <b>'+_con+'</b> · $<b>'+_conV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#8a5a2e;">Sold: <b>'+_sol+'</b> · $<b>'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Possession: <b>'+_posN+'</b> · <b>$'+_posV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Inv: <b>'+_inv+'</b> · <b>$'+_invV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#4a6b8a;">Con: <b>'+_con+'</b> · <b>$'+_conV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#8a5a2e;">Sold: <b>'+_sol+'</b> · <b>$'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
   h+='</div>';
+  if(listMode==="tbl"){
   h+='<div style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
     h+='<thead><tr style="background:var(--s2);"><th style="padding:5px 7px;text-align:left;">Name</th><th style="padding:5px 7px;text-align:left;">Artist</th><th style="padding:5px 7px;text-align:left;">Cat</th><th style="padding:5px 7px;text-align:left;">List</th><th style="padding:5px 7px;text-align:right;">Value</th></tr></thead><tbody>';
     allItems.forEach(function(a){
