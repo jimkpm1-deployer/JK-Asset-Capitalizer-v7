@@ -1584,7 +1584,7 @@ function rForm(){
   }).join("");
   var h='<div class="fw">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:6px;">';
-  h+='<h2 style="font-family:var(--mo);font-size:13px;letter-spacing:.06em;">'+(editId?"EDITING: "+editId:"NEW ASSET")+'</h2>';
+  h+='<h2 style="font-family:var(--mo);font-size:13px;letter-spacing:.06em;">'+(editId?"EDITING: "+editId+' <button type="button" class="btn bg" style="font-size:10px;padding:2px 8px;margin-left:6px;" onclick="changeAssetId(\''+editId+'\')">✏ Change ID</button>':"NEW ASSET")+'</h2>';
   h+='<div style="display:flex;gap:6px;"><button class="btn bg" onclick="cancelForm()">Cancel</button>';
   h+='<button class="btn '+(isArt(cat)?"ba":"bp")+'" onclick="submitForm()">💾 '+(editId?"Update":"Save")+'</button></div></div>';
   h+='<div class="fs"><div class="fsh">Asset Photo</div><div class="pa">';
@@ -2330,6 +2330,43 @@ function startEditInList(td,aid,key,listName){
   var save=function(){commitFn(aid,key,inp.value,old);};
   inp.onblur=save;
   inp.onkeydown=function(e){if(e.key==="Enter"&&fd.t!=="ta")save();if(e.key==="Escape"){e.preventDefault();render();}};
+}
+function changeAssetId(oldId){
+  var a=assets.find(function(x){return x.id===oldId;});
+  if(!a){toast("Asset not found","e");return;}
+  var newId=prompt("Change asset ID\n\nCurrent: "+oldId+"\nEnter new ID (e.g. AST-045):",oldId);
+  if(newId===null)return;
+  newId=newId.trim().toUpperCase();
+  if(!newId){toast("ID cannot be empty","e");return;}
+  if(!newId.startsWith("AST-"))newId="AST-"+newId.replace(/^AST-/i,"");
+  if(newId===oldId)return;
+  // Check for collision across all 3 lists
+  var clash=assets.concat(consignAssets).concat(soldAssets).find(function(x){return x.id===newId;});
+  if(clash){toast("ID "+newId+" is already in use","e");return;}
+  if(!confirm("Change ID from "+oldId+" to "+newId+"?\n\nThis cannot be undone automatically.")) return;
+  // Move photo in IndexedDB to new ID
+  (async function(){
+    try{
+      var pm=await loadAllPhotos();
+      if(pm[oldId]){await savePhoto(newId,pm[oldId]);await deletePhoto(oldId);}
+    }catch(e){}
+  })();
+  // Move long-text fields (acap_txt_<oldId>_<field>)
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(k&&k.indexOf("acap_txt_"+oldId+"_")===0){
+      var field=k.slice(("acap_txt_"+oldId+"_").length);
+      var v=localStorage.getItem(k);
+      localStorage.setItem("acap_txt_"+newId+"_"+field,v);
+      localStorage.removeItem(k);
+    }
+  }
+  a.id=newId;
+  a.updatedAt=today();
+  editId=newId;
+  saveAll();
+  render();
+  toast("ID changed to "+newId);
 }
 document.addEventListener("DOMContentLoaded",function(){
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
