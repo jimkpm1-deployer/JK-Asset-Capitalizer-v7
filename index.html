@@ -2364,6 +2364,12 @@ function changeAssetId(oldId){
   a.id=newId;
   a.updatedAt=today();
   editId=newId;
+  // Re-sort assets array by ID number so it appears in logical rank
+  assets.sort(function(x,y){
+    var nx=parseInt((x.id||"").replace(/\D/g,""),10)||0;
+    var ny=parseInt((y.id||"").replace(/\D/g,""),10)||0;
+    return nx-ny;
+  });
   saveAll();
   render();
   toast("ID changed to "+newId);
