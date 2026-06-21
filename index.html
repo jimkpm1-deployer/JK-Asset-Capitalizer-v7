@@ -876,7 +876,7 @@ function rConsign(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="font-family:var(--mo);font-size:10px;">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40),hsz=sz;
@@ -950,7 +950,7 @@ function rFraming(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="font-family:var(--mo);font-size:10px;">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40),hsz=sz;
@@ -1121,7 +1121,7 @@ function rSold(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="font-family:var(--mo);font-size:10px;">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40);
@@ -1253,7 +1253,7 @@ function rDash(){
   h+='<div class="sc"><div class="sl">Inventory ('+total+')</div><div class="sv">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc"><div class="sl">Consignment ('+conTotal+')</div><div class="sv" style="color:#4a6b8a">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc"><div class="sl">Framing ('+framTotal+')</div><div class="sv" style="color:#8a6a2e">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc"><div class="sl">Wish List ('+wishTotal+')</div><div class="sv" style="color:#7a4a8a">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc"><div class="sl">Wish List ('+wishTotal+')</div><div class="sv" style="color:#2e7d52">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#8a5a2e;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span></div></div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
@@ -1278,7 +1278,7 @@ function rDash(){
   if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
   if(framRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Framing</div>'+framRows;
   if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#7a5c2e;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
-  if(wishRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#7a4a8a;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Wish List</div>'+wishRows;
+  if(wishRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#2e7d52;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Wish List</div>'+wishRows;
   h+='</div></div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Recent Assets</div>';
   assets.slice(-6).reverse().forEach(a=>{
@@ -1527,7 +1527,7 @@ function rWish(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="font-family:var(--mo);font-size:10px;color:var(--mu);">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40),hsz=sz;
@@ -1701,7 +1701,11 @@ function addCol(){
 }
 
 // Print
-function openPrintDlg(){var el=G("mPrint");if(el)el.style.display="flex";}
+function openPrintDlg(){
+  var el=G("mPrint");if(el)el.style.display="flex";
+  var titles={table:"Inventory",sold:"Sold Assets",consign:"Consignment",framing:"Framing / Restoration",wish:"Wish List"};
+  var pt=G("pTitle");if(pt)pt.value=titles[view]||"Asset Inventory";
+}
 function doPrint(){
   var sz=(G("pSize")||{value:"a4 landscape"}).value;
   var fs=(G("pFont")||{value:"8pt"}).value;
@@ -2571,7 +2575,7 @@ function printAllLists(){
     +makeTable(consignAssets,"Consignment","#4a6b8a",cols)
     +makeTable(framingAssets,"Framing / Restoration","#8a6a2e",cols)
     +makeTable(soldAssets,"Sold","#8a5a2e",soldCols)
-    +makeTable(wishAssets,"Wish List","#7a4a8a",cols);
+    +makeTable(wishAssets,"Wish List","#2e7d52",cols);
   w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>'
     +'body{font-family:Arial,sans-serif;font-size:9pt;padding:10px;}'
     +'table{width:100%;border-collapse:collapse;margin-bottom:20px;}'
