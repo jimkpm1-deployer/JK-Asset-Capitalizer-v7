@@ -237,6 +237,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .ctrack{flex:1;background:var(--s3);border-radius:2px;height:4px;}
 .cfill{height:4px;border-radius:2px;background:var(--ac);}
 .cfill.sold-bar{background:#8a5a2e;}
+.cfill.wish-bar{background:#2e7d52;}
 .cfill.aw{background:var(--ar);}
 .ccount{font-family:var(--mo);font-size:10px;width:18px;text-align:right;}
 @keyframes sup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -748,6 +749,8 @@ function goTo(v){
 }
 function newAsset(){
   editId=null;view="form";
+  if(!window._newAssetModeSet)editMode="inventory";
+  window._newAssetModeSet=false;
   const t=G("pgTit");if(t)t.textContent="New Asset";
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display="none";});
   closeSB();render();
@@ -981,14 +984,13 @@ function rFraming(){
   return h;
 }
 function newConsignAsset(){
-  // Create a new asset in consignment mode
-  editId=null;editMode="consign";newAsset();
+  editId=null;editMode="consign";window._newAssetModeSet=true;newAsset();
 }
 function newFramingAsset(){
-  editId=null;editMode="framing";newAsset();
+  editId=null;editMode="framing";window._newAssetModeSet=true;newAsset();
 }
 function newWishAsset(){
-  editId=null;editMode="wish";newAsset();
+  editId=null;editMode="wish";window._newAssetModeSet=true;newAsset();
 }
 function restoreFramingToInventory(id){
   var a=framingAssets.find(function(x){return x.id===id;});if(!a)return;
@@ -1273,7 +1275,7 @@ function rDash(){
   var conRows=makeCatBars(consignAssets,'');
   var framRows=makeCatBars(framingAssets,'');
   var soldRows=makeCatBars(soldAssets,'sold-bar');
-  var wishRows=makeCatBars(wishAssets,'');
+  var wishRows=makeCatBars(wishAssets,'wish-bar');
   if(invRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:4px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Inventory</div>'+invRows;
   if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
   if(framRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Framing</div>'+framRows;
@@ -1801,6 +1803,13 @@ function applyLink(){
 // Form
 function editAsset(id){
   editId=id;view="form";var t=G("pgTit");if(t)t.textContent="Edit Asset";
+  // Determine which list this asset belongs to, so saveForm() routes back correctly
+  editMode=assets.find(function(x){return x.id===id;})?"inventory"
+    :consignAssets.find(function(x){return x.id===id;})?"consign"
+    :framingAssets.find(function(x){return x.id===id;})?"framing"
+    :wishAssets.find(function(x){return x.id===id;})?"wish"
+    :soldAssets.find(function(x){return x.id===id;})?"sold"
+    :"inventory";
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
   closeSB();render();
 }
@@ -1809,7 +1818,8 @@ function ordDefs(cat){
   return fOrder.map(function(k){return all.find(function(f){return f.k===k;});}).filter(function(f){return f&&!hiddenFlds.includes(f.k);}).filter(function(f){return!(f.artOnly&&!isArt(cat));});
 }
 function rForm(){
-  var a=editId?assets.find(function(x){return x.id===editId;})||{}:{};
+  var _formArr=editMode==="consign"?consignAssets:editMode==="framing"?framingAssets:editMode==="wish"?wishAssets:editMode==="sold"?soldAssets:assets;
+  var a=editId?_formArr.find(function(x){return x.id===editId;})||{}:{};
   var cat=a.category||"Electronics";
   var fds=ordDefs(cat);
   var tblKeys=getTCols().filter(function(k){return k!=="photo";});
