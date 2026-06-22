@@ -745,6 +745,7 @@ function goTo(v){
   var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish")?"":"none";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
   var ct=G("CT");if(ct){ct.classList.toggle("tbl-view",v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish");}
+  filtered=[]; // clear stale filter results when switching views
   closeSB();render();
 }
 function newAsset(){
@@ -802,15 +803,17 @@ function getFS(){
 function hasFilter(){const f=getFS();return !!(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year);}
 function doFilter(){
   const f=getFS(),ql=f.q.toLowerCase();
+  // Pick source array based on current view
+  var src=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:assets;
   if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year){filtered=[];render();return;}
-  filtered=assets.filter(a=>{
+  filtered=src.filter(a=>{
     const ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(v=>v&&v.toLowerCase().includes(ql));
     var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
     return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
   }).sort((a,b)=>{
     if(f.sort==="cat") return(a.category||"").localeCompare(b.category||"");
     if(f.sort==="val") return parseFloat(b.currentValue||0)-parseFloat(a.currentValue||0);
-    if(f.sort==="date")return(b.purchaseDate||"").localeCompare(a.purchaseDate||"");
+    if(f.sort==="date")return(b.purchaseDate||"").localeCompare(b.purchaseDate||"");
     if(f.sort==="id")  return(a.seq||0)-(b.seq||0);
     return(a.name||"").localeCompare(b.name||"");
   });
@@ -840,8 +843,8 @@ function render(){
 // Consignment
 function rConsign(){
   var f=getFS(),ql=f.q.toLowerCase();
-  var list=consignAssets.slice().reverse();
-  if(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year){
+  var list=hasFilter()&&filtered.length?filtered.slice():consignAssets.slice().reverse();
+  if(false){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
       var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
@@ -914,8 +917,8 @@ function rConsign(){
 // Framing / Restoration
 function rFraming(){
   var f=getFS(),ql=f.q.toLowerCase();
-  var list=framingAssets.slice().reverse();
-  if(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year){
+  var list=hasFilter()&&filtered.length?filtered.slice():framingAssets.slice().reverse();
+  if(false){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
       var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
@@ -1091,8 +1094,8 @@ function exportConsignCSV(){
 // Sold Assets
 function rSold(){
   var f=getFS(),ql=f.q.toLowerCase();
-  var list=soldAssets.slice().reverse();
-  if(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year){
+  var list=hasFilter()&&filtered.length?filtered.slice():soldAssets.slice().reverse();
+  if(false){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
       var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
@@ -1489,8 +1492,8 @@ function rTable(){
 // Wish List
 function rWish(){
   var f=getFS(),ql=f.q.toLowerCase();
-  var list=wishAssets.slice().reverse();
-  if(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year){
+  var list=hasFilter()&&filtered.length?filtered.slice():wishAssets.slice().reverse();
+  if(false){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
       var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
@@ -1716,25 +1719,8 @@ function doPrint(){
   closeM("mPrint");
   // Determine data source based on current view
   var arr=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:assets;
-  // Apply current filter to all list views, not just inventory
-  if(hasFilter()&&filtered.length){
-    var fullArr=arr;
-    // filtered[] contains inventory items; for other lists we filter inline
-    if(view==="table"){arr=filtered;}
-    else{
-      var f2=getFS(),ql2=(f2.q||"").toLowerCase();
-      arr=arr.filter(function(a){
-        var ms=!ql2||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql2);});
-        return ms
-          &&(!f2.cat||(a.category||"")=== f2.cat)
-          &&(!f2.cond||(a.condition||"")=== f2.cond)
-          &&(!f2.loc||(a.location||"")=== f2.loc)
-          &&(!f2.asgn||(a.assignedTo||"")=== f2.asgn)
-          &&(!f2.med||(a.medium||"")=== f2.med)
-          &&(!f2.year||(a.yearCreated||"")=== f2.year);
-      });
-    }
-  }
+  // Apply current filter - filtered[] is now correctly populated by doFilter() for all views
+  if(hasFilter()&&filtered.length)arr=filtered;
   var cols=view==="sold"?getSTCols():getTCols();
   var fds=allFDs(),renames=LS.get("acap_renames_v3",{});
   var legKey=view==="sold"?"acap_sold_legend":view==="consign"?"acap_consign_legend":view==="framing"?"acap_framing_legend":view==="wish"?"acap_wish_legend":"acap_tbl_legend";
