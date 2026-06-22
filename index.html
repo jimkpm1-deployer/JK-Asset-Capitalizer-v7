@@ -235,10 +235,13 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .crow{display:flex;align-items:center;gap:7px;font-size:11px;}
 .cname{width:116px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ctrack{flex:1;background:var(--s3);border-radius:2px;height:4px;}
-.cfill{height:4px;border-radius:2px;background:var(--ac);}
-.cfill.sold-bar{background:#8a5a2e;}
+.cfill{height:4px;border-radius:2px;background:#1a3a6b;}
+.cfill.inv-bar{background:#1a3a6b;}
+.cfill.con-bar{background:#2e6da4;}
+.cfill.fram-bar{background:#5aaccf;}
+.cfill.sold-bar{background:#c0392b;}
 .cfill.wish-bar{background:#2e7d52;}
-.cfill.aw{background:var(--ar);}
+.cfill.aw{background:#1a3a6b;}
 .ccount{font-family:var(--mo);font-size:10px;width:18px;text-align:right;}
 @keyframes sup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 </style>
@@ -1274,9 +1277,9 @@ function rDash(){
     });
     return out;
   }
-  var invRows=makeCatBars(assets,'aw');
-  var conRows=makeCatBars(consignAssets,'');
-  var framRows=makeCatBars(framingAssets,'');
+  var invRows=makeCatBars(assets,'inv-bar');
+  var conRows=makeCatBars(consignAssets,'con-bar');
+  var framRows=makeCatBars(framingAssets,'fram-bar');
   var soldRows=makeCatBars(soldAssets,'sold-bar');
   var wishRows=makeCatBars(wishAssets,'wish-bar');
   if(invRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:4px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Inventory</div>'+invRows;
