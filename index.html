@@ -1716,7 +1716,25 @@ function doPrint(){
   closeM("mPrint");
   // Determine data source based on current view
   var arr=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:assets;
-  if(hasFilter()&&filtered.length&&view==="table")arr=filtered;
+  // Apply current filter to all list views, not just inventory
+  if(hasFilter()&&filtered.length){
+    var fullArr=arr;
+    // filtered[] contains inventory items; for other lists we filter inline
+    if(view==="table"){arr=filtered;}
+    else{
+      var f2=getFS(),ql2=(f2.q||"").toLowerCase();
+      arr=arr.filter(function(a){
+        var ms=!ql2||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql2);});
+        return ms
+          &&(!f2.cat||(a.category||"")=== f2.cat)
+          &&(!f2.cond||(a.condition||"")=== f2.cond)
+          &&(!f2.loc||(a.location||"")=== f2.loc)
+          &&(!f2.asgn||(a.assignedTo||"")=== f2.asgn)
+          &&(!f2.med||(a.medium||"")=== f2.med)
+          &&(!f2.year||(a.yearCreated||"")=== f2.year);
+      });
+    }
+  }
   var cols=view==="sold"?getSTCols():getTCols();
   var fds=allFDs(),renames=LS.get("acap_renames_v3",{});
   var legKey=view==="sold"?"acap_sold_legend":view==="consign"?"acap_consign_legend":view==="framing"?"acap_framing_legend":view==="wish"?"acap_wish_legend":"acap_tbl_legend";
