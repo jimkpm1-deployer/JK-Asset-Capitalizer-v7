@@ -2191,7 +2191,7 @@ function rIO(){
   h+='<input type="file" id="csvImp" accept=".csv" style="display:none" onchange="importCSV(this)"/></div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">EXPORT</h3>';
-  h+='<div style="font-size:13px;color:var(--mu);margin-bottom:11px;">'+assets.length+' assets. JSON includes photos.</div>';
+  h+='<div style="font-size:13px;color:var(--mu);margin-bottom:11px;">'+(assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length)+' total assets ('+assets.length+' inv · '+consignAssets.length+' con · '+framingAssets.length+' fram · '+soldAssets.length+' sold · '+wishAssets.length+' wish). JSON includes all lists + photos.</div>';
   h+='<div style="display:flex;gap:7px;flex-wrap:wrap;">';
   h+='<button class="btn bp" onclick="exportJSON()">💾 JSON Backup</button>';
   h+='<button class="btn bg" onclick="exportCSV()">📊 Export CSV</button></div></div>';
