@@ -2215,7 +2215,8 @@ async function exportJSON(){
   var _framLeg=LS.get("acap_framing_legend",""),_framPs=LS.get("acap_framing_ps","");
   var _wishLeg=LS.get("acap_wish_legend",""),_wishPs=LS.get("acap_wish_ps","");
   dl(JSON.stringify({assets:withPhotos,soldAssets:withSold,consignAssets:withConsign,framingAssets:withFraming,wishAssets:withWish,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,colW:colW,rowH:rowH,legend:_leg,ps:_ps,consignLegend:_consignLeg,consignPs:_consignPs,soldLegend:_soldLeg,soldPs:_soldPs,framingLegend:_framLeg,framingPs:_framPs,wishLegend:_wishLeg,wishPs:_wishPs},null,2),"application/json","assets_backup.json");
-  toast("JSON exported ("+assets.length+" assets)","s",4000);
+  var _total=assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length;
+  toast("Backup complete: "+assets.length+" inv · "+consignAssets.length+" con · "+framingAssets.length+" fram · "+soldAssets.length+" sold · "+wishAssets.length+" wish ("+_total+" total)","s",6000);
 }
 function exportCSV(){
   var fds=allFDs(),cols=fds.map(function(f){return f.k;}),renames=LS.get("acap_renames_v3",{});
