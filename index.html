@@ -563,6 +563,12 @@ let undoStack=[],undoTmr=null,undoCnt=null;
 let isAuth=false,sessTmr=null,pinEntry="";
 
 function saveAll(){
+  // Keep all lists sorted by ID at all times
+  sortById(assets);
+  sortById(soldAssets);
+  sortById(consignAssets);
+  sortById(framingAssets);
+  sortById(wishAssets);
   const LONG_FLDS=['notes','exhibitionHistory','provenance','description','dimensions'];
   // Build slim assets - no photos, save photos separately
   const slim=assets.map(a=>{
@@ -1258,11 +1264,11 @@ function rDash(){
   var grandVal=inPossessionVal+soldFaceVal;
   h+='<div style="font-size:10px;color:var(--mu);font-family:var(--mo);padding:0 2px 8px;"> Total tracked: <b>'+grandTotal+'</b> assets &nbsp;·&nbsp; face value: <b>$'+grandVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></div>';
   h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl">In Possession <span style="font-size:10px;color:var(--mu);">(inv+con+framing)</span></div><div class="sv" style="font-size:13px;">'+inPossession+' items</div></div><div class="sv ac" style="font-size:16px;">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div></div>';
-  h+='<div class="sc"><div class="sl">Inventory ('+total+')</div><div class="sv">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc"><div class="sl">Consignment ('+conTotal+')</div><div class="sv" style="color:#4a6b8a">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc"><div class="sl">Framing ('+framTotal+')</div><div class="sv" style="color:#8a6a2e">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc"><div class="sl">Wish List ('+wishTotal+')</div><div class="sv" style="color:#2e7d52">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#8a5a2e;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span></div></div></div>';
+  h+='<div class="sc"><div class="sl" style="color:#1a3a6b">Inventory ('+total+')</div><div class="sv" style="color:#1a3a6b">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc"><div class="sl" style="color:#2e6da4">Consignment ('+conTotal+')</div><div class="sv" style="color:#2e6da4">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc"><div class="sl" style="color:#5aaccf">Framing ('+framTotal+')</div><div class="sv" style="color:#5aaccf">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc"><div class="sl" style="color:#2e7d52">Wish List ('+wishTotal+')</div><div class="sv" style="color:#2e7d52">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl" style="color:#c0392b">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#c0392b;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span></div></div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
   // All 3 lists - inventory, consignment, sold
@@ -2605,6 +2611,16 @@ function printAllLists(){
     +content+'</body></html>');
   w.document.close();
 }
+function sortById(arr){
+  return arr.sort(function(a,b){
+    var ai=a.id||"",bi=b.id||"";
+    var ap=ai.replace(/\d+$/,""),bp=bi.replace(/\d+$/,"");
+    if(ap!==bp)return ap.localeCompare(bp);
+    var an=parseInt(ai.match(/\d+$/)||[0],10);
+    var bn=parseInt(bi.match(/\d+$/)||[0],10);
+    return an-bn;
+  });
+}
 function _nextId(){
   // AST- namespace covers Inventory, Sold, Consignment, Framing (items that are/were owned)
   var all=assets.concat(soldAssets||[]).concat(consignAssets||[]).concat(framingAssets||[]);
@@ -2709,12 +2725,6 @@ function changeAssetId(oldId){
   a.id=newId;
   a.updatedAt=today();
   editId=newId;
-  // Re-sort assets array by ID number so it appears in logical rank
-  assets.sort(function(x,y){
-    var nx=parseInt((x.id||"").replace(/\D/g,""),10)||0;
-    var ny=parseInt((y.id||"").replace(/\D/g,""),10)||0;
-    return nx-ny;
-  });
   saveAll();
   render();
   toast("ID changed to "+newId);
