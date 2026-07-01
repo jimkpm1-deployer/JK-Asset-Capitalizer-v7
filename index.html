@@ -226,7 +226,8 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 #IB{display:none;background:#18180f;color:#e6e1d6;padding:7px 13px;font-size:12px;font-family:var(--mo);align-items:center;justify-content:space-between;gap:8px;}
 #IB button{padding:4px 10px;background:var(--ac);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;}
 .dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:13px;}
-.sc{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:11px 13px;}
+.sc{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:11px 13px;transition:box-shadow .15s,transform .1s;}
+.sc[onclick]:hover{box-shadow:0 3px 10px rgba(0,0,0,.15);transform:translateY(-1px);}
 .sl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:4px;font-weight:600;}
 .sv{font-family:var(--mo);font-size:17px;font-weight:600;}
 .sv.ac{color:var(--ac);}
@@ -401,6 +402,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <div class="fr" style="border:none;padding:0;margin-bottom:9px;"><label>Font Size</label><select id="pFont"><option value="7pt">Small (7pt)</option><option value="8pt" selected>Normal (8pt)</option><option value="10pt">Large (10pt)</option></select></div>
       <div class="fr" style="border:none;padding:0;margin-bottom:9px;"><label>Include Photos</label><select id="pPhotos"><option value="1">Yes</option><option value="0">No — text only</option></select></div>
       <div class="fr" style="border:none;padding:0;"><label>Report Title</label><input type="text" id="pTitle" value="Asset Inventory"/></div>
+      <div style="font-size:11px;color:#888;padding:4px 0 0;">&#9432; In the browser print dialog, set paper to <b>A4 Landscape</b> for best results.</div>
     </div>
     <div class="mft"><button class="btn bg" onclick="closeM('mPrint')">Cancel</button><button class="btn bp" onclick="doPrint()">🖨 Print Now</button></div>
   </div>
