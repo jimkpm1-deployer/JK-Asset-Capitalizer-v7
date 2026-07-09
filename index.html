@@ -945,6 +945,7 @@ function rConsign(){
       var isML=["name","medium","notes","description","provenance","exhibitionHistory","dimensions"].includes(key);
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'consign\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
+    h+='<td class="no-print"><div class="tdin"><div class="racts">';
     h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="consign" title="Actions">&#x2699; Actions</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
@@ -1017,6 +1018,7 @@ function rFraming(){
       var isML=["name","medium","notes","description","provenance","exhibitionHistory","dimensions"].includes(key);
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'framing\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
+    h+='<td class="no-print"><div class="tdin"><div class="racts">';
     h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="framing" title="Actions">&#x2699; Actions</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
