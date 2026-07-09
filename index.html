@@ -367,6 +367,29 @@ body.app-locked .shell * { pointer-events: none !important; }
     <div class="mft"><button class="btn bg" onclick="closeM('mConfirm')">Cancel</button></div>
   </div>
 </div>
+
+<!-- Action Modal: location + price prompts -->
+<div class="mbg" id="mAction" style="display:none;">
+  <div class="mdl" style="max-width:340px;">
+    <div class="mhd"><h3 id="mActTitle">MOVE ASSET</h3><button class="mcls" onclick="closeM('mAction')">✕</button></div>
+    <div class="mbd">
+      <div id="mActPrice" style="display:none;margin-bottom:10px;">
+        <label style="font-size:12px;font-family:var(--mo);color:var(--mu);">Sold at price ($)</label>
+        <input id="mActPriceVal" type="number" min="0" step="0.01" placeholder="Leave blank to skip" style="width:100%;padding:7px 9px;border:1px solid var(--b);border-radius:var(--r);font-size:14px;background:var(--s);color:var(--tx);margin-top:4px;"/>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;font-family:var(--mo);color:var(--mu);" id="mActLocLabel">Location</label>
+        <select id="mActLocSel" style="width:100%;padding:7px 9px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;background:var(--s);color:var(--tx);margin-top:4px;" onchange="if(this.value==='__new__'){document.getElementById('mActLocNew').style.display='';document.getElementById('mActLocNew').focus();}else{document.getElementById('mActLocNew').style.display='none';}">
+        </select>
+        <input id="mActLocNew" type="text" placeholder="Type new location…" style="display:none;width:100%;padding:7px 9px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;background:var(--s);color:var(--tx);margin-top:6px;"/>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" style="flex:1;background:var(--ac);color:#fff;padding:10px;font-size:13px;" onclick="mActConfirm()">✓ Confirm</button>
+        <button class="btn" style="padding:10px;font-size:13px;" onclick="closeM('mAction')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="mbg" id="mLink" style="display:none">
   <div class="mdl" style="max-width:350px;">
     <div class="mhd"><h3>INSERT HYPERLINK</h3><button class="mcls" onclick="closeM('mLink')">✕</button></div>
@@ -909,9 +932,8 @@ function rConsign(){
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'consign\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
     h+='<td><div class="tdin"><div class="racts">';
-    h+='<button class="btn bg" style="font-size:10px;" onclick="restoreConsignToInventory(\''+esc(a.id)+'\')"  title="Restore to Inventory">&#x21A9;</button>';
-    h+='<button class="btn bp" style="font-size:10px;" onclick="sellConsignAsset(\''+esc(a.id)+'\')"  title="Sell">&#x1F4B0;</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="delConsignAsset(\''+esc(a.id)+'\')"  title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn bg" style="font-size:10px;" onclick="confirmId=\''+esc(a.id)+'\';showListAction(\'consign\')" title="Actions">⋯</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="delConsignAsset(\''+esc(a.id)+'\')" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -983,9 +1005,7 @@ function rFraming(){
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'framing\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
     h+='<td><div class="tdin"><div class="racts">';
-    h+='<button class="btn bg" style="font-size:10px;" onclick="restoreFramingToInventory(\''+esc(a.id)+'\')" title="Restore to Inventory">&#x21A9; Inv</button>';
-    h+='<button class="btn" style="font-size:10px;background:#2e6da4;color:#fff;" onclick="moveToConsign(\''+esc(a.id)+'\')" title="Send to Consignment">&#x1F4E6;</button>';
-    h+='<button class="btn" style="font-size:10px;background:#c0392b;color:#fff;" onclick="moveToSold(\''+esc(a.id)+'\')" title="Mark as Sold">&#x1F4B0;</button>';
+    h+='<button class="btn bg" style="font-size:10px;" onclick="confirmId=\''+esc(a.id)+'\';showListAction(\'framing\')" title="Actions">⋯</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="delFramingAsset(\''+esc(a.id)+'\')" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
@@ -1128,7 +1148,7 @@ function rSold(){
         h+='<td><div class="tdin">'+( ph?'<img src="'+ph+'" style="width:'+sz+'px;height:'+sz+'px;object-fit:cover;border-radius:2px;cursor:zoom-in;" onclick="showPhoto(this.src,event)"/>':'<span style="font-size:16px;">'+(isArt(a.category)?"🖼":"📦")+'</span>')+'</div></td>';
         return;
       }
-      if(key==="soldAt"){h+='<td><div class="tdin" style="font-family:var(--mo);color:var(--ac);font-weight:600;">'+(a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"—")+'</div></td>';return;}
+      if(key==="soldAt"){h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="soldAt" onclick="startEditInList(this,\''+esc(a.id)+'\',\'soldAt\',\'sold\')"><div class="tdin" style="font-family:var(--mo);color:var(--ac);font-weight:600;cursor:text;">'+(a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"—")+'</div></td>';return;}
       if(key==="soldDate"){h+='<td><div class="tdin" style="font-family:var(--mo);font-size:11px;">'+esc(a.soldDate||"")+'</div></td>';return;}
       var raw=a[key]||"";
       var v=raw;if(["purchasePrice","currentValue","insuredValue"].includes(key)&&v)v="$"+parseFloat(v).toLocaleString();
@@ -2626,7 +2646,8 @@ function startEditInList(td,aid,key,listName){
   var arr=listName==="sold"?soldAssets:listName==="framing"?framingAssets:listName==="wish"?wishAssets:consignAssets;
   var commitFn=listName==="sold"?commitSoldCell:listName==="framing"?commitFramingCell:listName==="wish"?commitWishCell:commitConsignCell;
   var a=arr.find(function(x){return x.id===aid;});if(!a)return;
-  var fd=getFD(key)||{t:"text"};if(fd.t==="url")return;
+  var fd=key==="soldAt"||key==="soldDate"?{t:key==="soldAt"?"num":"date"}:getFD(key)||{t:"text"};
+  if(fd.t==="url")return;
   var val=a[key]||"";var old=val;var inp;
   if(fd.t==="sel"&&fd.opts){
     inp=document.createElement("select");
@@ -2700,61 +2721,115 @@ function _removeFromAllLists(id){
   framingAssets=framingAssets.filter(function(x){return x.id!==id;});
   filtered=filtered.filter(function(x){return x.id!==id;});
 }
+function _allLocs(){
+  var all=assets.concat(consignAssets).concat(soldAssets).concat(framingAssets).concat(wishAssets);
+  return [...new Set(all.map(function(a){return(a.location||"").trim();}).filter(Boolean))].sort();
+}
+function _openActionModal(title,showPrice,currentLoc,callback){
+  var G2=function(id){return document.getElementById(id);};
+  var titleEl=G2("mActTitle");if(titleEl)titleEl.textContent=title;
+  var priceDiv=G2("mActPrice");if(priceDiv)priceDiv.style.display=showPrice?"block":"none";
+  var priceEl=G2("mActPriceVal");if(priceEl)priceEl.value="";
+  var locLabel=G2("mActLocLabel");
+  if(locLabel)locLabel.textContent=showPrice?"Buyer / new owner / auction house":"New location";
+  var sel=G2("mActLocSel");
+  if(sel){
+    var locs=_allLocs();
+    sel.innerHTML="";
+    if(currentLoc){sel.innerHTML+='<option value="'+currentLoc+'">'+currentLoc+" (current)</option>";}
+    locs.forEach(function(l){if(l!==currentLoc)sel.innerHTML+='<option value="'+l+'">'+l+"</option>";});
+    sel.innerHTML+='<option value="__new__">✏ New location…</option>';
+  }
+  var newEl=G2("mActLocNew");if(newEl){newEl.style.display="none";newEl.value="";}
+  var modal=document.getElementById("mAction");if(modal)modal.style.display="flex";
+  window._mActCallback=callback;
+}
+function mActConfirm(){
+  var sel=document.getElementById("mActLocSel");
+  var newEl=document.getElementById("mActLocNew");
+  var priceEl=document.getElementById("mActPriceVal");
+  var loc=sel&&sel.value==="__new__"?(newEl?newEl.value.trim():""):(sel?sel.value:"");
+  var price=priceEl?priceEl.value.trim():"";
+  closeM("mAction");closeM("mConfirm");
+  if(window._mActCallback)window._mActCallback(loc,price);
+}
 function moveToConsign(id){
   var a=_findAsset(id);if(!a)return;
-  var newLoc=prompt("Consignment location:\n(Where is it being sent?)",a.location||"");
-  if(newLoc===null)return;
-  var c=Object.assign({},a);
-  c.consignDate=today();c.status="consignment";
-  c.originalLocation=a.location||"";
-  c.location=newLoc.trim();
-  _removeFromAllLists(id);
-  consignAssets.push(c);
-  saveAll();closeM("mConfirm");render();toast("Moved to Consignment ✓","s");
+  _openActionModal("SEND TO CONSIGNMENT",false,a.location||"",function(loc){
+    var c=Object.assign({},a);
+    c.consignDate=today();c.status="consignment";
+    c.originalLocation=a.location||"";
+    c.location=loc||a.location||"";
+    _removeFromAllLists(id);
+    consignAssets.push(c);
+    saveAll();render();toast("Moved to Consignment ✓","s");
+  });
 }
 function moveToFraming(id){
   var a=_findAsset(id);if(!a)return;
-  var newLoc=prompt("Framer / restorer location:\n(Where is it being sent?)",a.location||"");
-  if(newLoc===null)return;
-  var c=Object.assign({},a);
-  c.framingDate=today();c.status="framing";
-  c.originalLocation=a.location||"";
-  c.location=newLoc.trim();
-  _removeFromAllLists(id);
-  framingAssets.push(c);
-  saveAll();closeM("mConfirm");render();toast("Sent to Framing ✓","s");
+  _openActionModal("SEND TO FRAMING",false,a.location||"",function(loc){
+    var c=Object.assign({},a);
+    c.framingDate=today();c.status="framing";
+    c.originalLocation=a.location||"";
+    c.location=loc||a.location||"";
+    _removeFromAllLists(id);
+    framingAssets.push(c);
+    saveAll();render();toast("Sent to Framing ✓","s");
+  });
 }
 function moveToSold(id){
   var a=_findAsset(id);if(!a)return;
-  var soldPrice=prompt("Sold at price ($):\n(Leave blank to skip)","");
-  if(soldPrice===null)return;
-  var buyerLoc=prompt("Buyer / new owner / auction house:\n(Where / to whom was it sold?)",a.location||"");
-  if(buyerLoc===null)return;
-  var sold=Object.assign({},a);
-  sold.soldDate=today();sold.status="sold";
-  sold.originalLocation=a.location||"";
-  sold.location=buyerLoc.trim();
-  if(soldPrice.trim()!=="")sold.soldAt=soldPrice.trim().replace(/[^0-9.]/g,"");
-  _removeFromAllLists(id);
-  soldAssets.push(sold);
-  saveAll();closeM("mConfirm");render();toast("Moved to Sold Assets ✓","s");
+  _openActionModal("MARK AS SOLD",true,a.location||"",function(loc,price){
+    var sold=Object.assign({},a);
+    sold.soldDate=today();sold.status="sold";
+    sold.originalLocation=a.location||"";
+    sold.location=loc||a.location||"";
+    if(price)sold.soldAt=price.replace(/[^0-9.]/g,"");
+    _removeFromAllLists(id);
+    soldAssets.push(sold);
+    saveAll();render();toast("Moved to Sold Assets ✓","s");
+  });
 }
 function restoreToInventory(id){
   var a=_findAsset(id);if(!a)return;
-  var restored=Object.assign({},a);
-  delete restored.consignDate;delete restored.framingDate;delete restored.status;
-  if(restored.originalLocation!==undefined&&restored.originalLocation!==""){
-    restored.location=restored.originalLocation;
-    delete restored.originalLocation;
+  var autoLoc=a.originalLocation;
+  if(autoLoc){
+    var restored=Object.assign({},a);
+    delete restored.consignDate;delete restored.framingDate;delete restored.status;
+    restored.location=autoLoc;delete restored.originalLocation;
+    _removeFromAllLists(id);assets.push(restored);
+    saveAll();render();toast("Restored to Inventory ✓");
   } else {
-    var loc=prompt("Restore location:\n(Where is it going back to?)",restored.location||"");
-    if(loc===null)return;
-    restored.location=loc.trim();
-    delete restored.originalLocation;
+    _openActionModal("RESTORE TO INVENTORY",false,a.location||"",function(loc){
+      var restored=Object.assign({},a);
+      delete restored.consignDate;delete restored.framingDate;delete restored.status;
+      restored.location=loc||a.location||"";delete restored.originalLocation;
+      _removeFromAllLists(id);assets.push(restored);
+      saveAll();render();toast("Restored to Inventory ✓");
+    });
   }
-  _removeFromAllLists(id);
-  assets.push(restored);
-  saveAll();render();toast("Restored to Inventory ✓");
+}
+function showListAction(listType){
+  // Show mConfirm with context-appropriate buttons
+  var modal=document.getElementById("mConfirm");
+  var bd=modal?modal.querySelector(".mbd"):null;
+  if(!bd)return;
+  if(listType==="consign"){
+    bd.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'
+      +'<button class="btn" style="background:#1a3a6b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="restoreToInventory(confirmId)">&#x21A9; Restore to Inventory</button>'
+      +'<button class="btn" style="background:#5aaccf;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="moveToFraming(confirmId)">&#x1F58C; Send to Framing</button>'
+      +'<button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="moveToSold(confirmId)">&#x1F4B0; Mark as Sold</button>'
+      +'<button class="btn bd" style="padding:10px;font-size:13px;" onclick="delConsignAsset(confirmId)">&#x1F5D1; Delete</button>'
+      +'</div>';
+  } else if(listType==="framing"){
+    bd.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'
+      +'<button class="btn" style="background:#1a3a6b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="restoreToInventory(confirmId)">&#x21A9; Restore to Inventory</button>'
+      +'<button class="btn" style="background:#2e6da4;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="moveToConsign(confirmId)">&#x1F4E6; Send to Consignment</button>'
+      +'<button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="moveToSold(confirmId)">&#x1F4B0; Mark as Sold</button>'
+      +'<button class="btn bd" style="padding:10px;font-size:13px;" onclick="delFramingAsset(confirmId)">&#x1F5D1; Delete</button>'
+      +'</div>';
+  }
+  if(modal)modal.style.display="flex";
 }
 document.addEventListener("DOMContentLoaded",function(){
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
