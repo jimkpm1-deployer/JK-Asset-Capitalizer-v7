@@ -1010,6 +1010,14 @@ function restoreFramingToInventory(id){
   var a=framingAssets.find(function(x){return x.id===id;});if(!a)return;
   var restored=Object.assign({},a);
   delete restored.framingDate;delete restored.status;
+  // Restore original location if saved, otherwise prompt
+  if(restored.originalLocation!==undefined&&restored.originalLocation!==""){
+    restored.location=restored.originalLocation;
+  } else {
+    var loc=prompt("Restore location:\n(Where is it going back to?)",restored.location||"");
+    if(loc!==null)restored.location=loc.trim();
+  }
+  delete restored.originalLocation;
   var insertIdx=assets.findIndex(function(x){return (x.seq||0)>(restored.seq||0);});
   if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
   framingAssets=framingAssets.filter(function(x){return x.id!==id;});
@@ -1030,7 +1038,12 @@ function exportFramingCSV(){
 }
 function confirmFraming(){
   var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
-  var c=Object.assign({},a);c.framingDate=today();c.status="framing";c.source="inventory";
+  var c=Object.assign({},a);
+  c.framingDate=today();c.status="framing";c.source="inventory";
+  c.originalLocation=a.location||"";  // remember where it was
+  var newLoc=prompt("Framer/restorer location:\n(Where is it being sent?)",a.location||"");
+  if(newLoc===null)return;  // cancelled
+  c.location=newLoc.trim();
   framingAssets.push(c);
   assets=assets.filter(function(x){return x.id!==confirmId;});
   filtered=filtered.filter(function(x){return x.id!==confirmId;});
@@ -1197,6 +1210,14 @@ function restoreConsignToInventory(id){
   var a=consignAssets.find(function(x){return x.id===id;});if(!a)return;
   var restored=Object.assign({},a);
   delete restored.consignDate;delete restored.status;
+  // Restore original location if saved, otherwise prompt
+  if(restored.originalLocation!==undefined&&restored.originalLocation!==""){
+    restored.location=restored.originalLocation;
+  } else {
+    var loc=prompt("Restore location:\n(Where is it going back to?)",restored.location||"");
+    if(loc!==null)restored.location=loc.trim();
+  }
+  delete restored.originalLocation;
   var insertIdx=assets.findIndex(function(x){return (x.seq||0)>(restored.seq||0);});
   if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
   consignAssets=consignAssets.filter(function(x){return x.id!==id;});
@@ -2450,7 +2471,12 @@ function showPhoto(src,e){
 function askDel(id){confirmId=id;var m=G("mConfirm");if(m)m.style.display="flex";}
 function confirmConsign(){
   var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
-  var c=Object.assign({},a);c.consignDate=today();c.status="consignment";c.source="inventory";
+  var c=Object.assign({},a);
+  c.consignDate=today();c.status="consignment";c.source="inventory";
+  c.originalLocation=a.location||"";  // remember where it was
+  var newLoc=prompt("Consignment location:\n(Where is it being sent?)",a.location||"");
+  if(newLoc===null)return;  // cancelled
+  c.location=newLoc.trim();
   consignAssets.push(c);
   assets=assets.filter(function(x){return x.id!==confirmId;});
   filtered=filtered.filter(function(x){return x.id!==confirmId;});
@@ -2461,9 +2487,14 @@ function confirmConsign(){
 function confirmSell(){
   var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
   var soldPrice=prompt("Sold at price ($):\n(Leave blank to skip)","");
+  if(soldPrice===null)return;  // cancelled
+  var buyerLoc=prompt("Buyer / new owner / auction house:\n(Where / to whom was it sold?)",a.location||"");
+  if(buyerLoc===null)return;  // cancelled
   var sold=Object.assign({},a);
   sold.soldDate=today();sold.status="sold";
-  if(soldPrice!==null&&soldPrice.trim()!=="")sold.soldAt=soldPrice.trim().replace(/[^0-9.]/g,"");
+  sold.originalLocation=a.location||"";  // remember original location
+  sold.location=buyerLoc.trim();  // new location = buyer info
+  if(soldPrice.trim()!=="")sold.soldAt=soldPrice.trim().replace(/[^0-9.]/g,"");
   soldAssets.push(sold);
   assets=assets.filter(function(x){return x.id!==confirmId;});
   filtered=filtered.filter(function(x){return x.id!==confirmId;});
