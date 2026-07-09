@@ -898,6 +898,7 @@ function rConsign(){
       return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
     });
   }
+  window._detailList=list.map(function(a){return a.id;});
   var cols=getTCols();
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
@@ -971,6 +972,7 @@ function rFraming(){
       return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
     });
   }
+  window._detailList=list.map(function(a){return a.id;});
   var cols=getTCols();
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
@@ -1130,6 +1132,7 @@ function rSold(){
       return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
     });
   }
+  window._detailList=list.map(function(a){return a.id;});
   var cols=getSTCols();
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
@@ -1305,6 +1308,7 @@ function rDash(){
   if(wishRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#2e7d52;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Wish List</div>'+wishRows;
   h+='</div></div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Recent Assets</div>';
+  window._detailList=assets.map(function(a){return a.id;});
   assets.slice(-6).reverse().forEach(a=>{
     h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f4f1ea;cursor:pointer;" onclick="viewDetail(\''+a.id+'\')">';
     var _dp=a.photo||_photoCache[a.id]||'';h+=_dp?'<img src="'+_dp+'" style="width:30px;height:22px;object-fit:cover;border-radius:2px;flex-shrink:0;cursor:zoom-in;" onclick="showPhoto(this.src,event)"/>':'<div style="width:30px;height:22px;background:var(--s2);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">'+(isArt(a.category)?"🖼":"📦")+'</div>';
@@ -1341,14 +1345,25 @@ function rList(){
       return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
     });
   }
-  // Sort
+  // Group by list (Inventory → Consignment → Framing → Sold → Wish), matching dashboard/sidebar order.
+  // Within each group, apply the selected secondary sort (name/category/value).
+  var GROUP_ORDER={inventory:0,consign:1,framing:2,sold:3,wish:4};
+  var GROUP_HEX={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52"};
+  var GROUP_NAMES={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List"};
+  function _hexA(hex,a){var h=hex.replace('#','');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return 'rgba('+r+','+g+','+b+','+a+')';}
   allItems.sort(function(a,b){
+    var go=GROUP_ORDER[a._src]-GROUP_ORDER[b._src];
+    if(go!==0)return go;
     if(f.sort==="val")return parseFloat(b.currentValue||0)-parseFloat(a.currentValue||0);
     if(f.sort==="cat")return (a.category||"").localeCompare(b.category||"");
     return (a.name||"").localeCompare(b.name||"");
   });
-  var srcColors={inventory:"",consign:"border-left:3px solid #4a6b8a;",sold:"border-left:3px solid #8a5a2e;"};
-  var srcLabels={inventory:"",consign:'<span style="font-size:9px;font-family:var(--mo);color:#4a6b8a;text-transform:uppercase;margin-left:4px;">CON</span>',sold:'<span style="font-size:9px;font-family:var(--mo);color:#8a5a2e;text-transform:uppercase;margin-left:4px;">SOLD</span>'};
+  var srcColors={},srcLabels={};
+  Object.keys(GROUP_HEX).forEach(function(k){
+    srcColors[k]="background:"+_hexA(GROUP_HEX[k],.08)+";border-left:3px solid "+GROUP_HEX[k]+";";
+    srcLabels[k]='<span style="font-size:9px;font-family:var(--mo);color:'+GROUP_HEX[k]+';text-transform:uppercase;margin-left:4px;font-weight:600;">'+(k==="inventory"?"INV":k==="consign"?"CON":k==="framing"?"FRAM":k==="sold"?"SOLD":"WISH")+'</span>';
+  });
+  window._detailList=allItems.map(function(a){return a.id;});
   var total=allItems.length;
   var h='<div style="margin-bottom:7px;font-family:var(--mo);font-size:11px;color:var(--mu);">'+total+' items'+(f.list?' ('+f.list+')':'')+' total</div>';
   if(!total)return h+'<div class="empty"><div class="big">📦</div>No items match.</div>';
@@ -1372,7 +1387,12 @@ function rList(){
   if(listMode==="tbl"){
   h+='<div style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
     h+='<thead><tr style="background:var(--s2);"><th style="padding:5px 7px;text-align:left;">Name</th><th style="padding:5px 7px;text-align:left;">Artist</th><th style="padding:5px 7px;text-align:left;">Cat</th><th style="padding:5px 7px;text-align:left;">List</th><th style="padding:5px 7px;text-align:right;">Value</th></tr></thead><tbody>';
+    var _lastGrp=null;
     allItems.forEach(function(a){
+      if(a._src!==_lastGrp){
+        _lastGrp=a._src;
+        h+='<tr><td colspan="5" style="padding:6px 7px 4px;background:'+_hexA(GROUP_HEX[a._src],.16)+';border-left:3px solid '+GROUP_HEX[a._src]+';font-family:var(--mo);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:'+GROUP_HEX[a._src]+';">'+GROUP_NAMES[a._src]+'</td></tr>';
+      }
       h+='<tr style="border-bottom:1px solid var(--b);'+srcColors[a._src]+'" onclick="'+( a._src!=="sold"?"viewDetail('"+esc(a.id)+"')":'""')+'">';
       h+='<td style="padding:5px 7px;font-weight:500;">'+esc(a.name)+'</td>';
       h+='<td style="padding:5px 7px;color:var(--ar);">'+esc(a.artist||"")+'</td>';
@@ -1386,7 +1406,12 @@ function rList(){
   }
   // Grid view
   h+='<div class="agrid">';
-  allItems.forEach(function(a){
+  var _lastGrpG=null;
+  allItems.forEach(function(a,idx){
+    if(a._src!==_lastGrpG){
+      _lastGrpG=a._src;
+      h+='<div style="grid-column:1/-1;margin:'+(idx===0?'0':'8px')+' 0 2px;padding:5px 10px;background:'+_hexA(GROUP_HEX[a._src],.16)+';border-left:3px solid '+GROUP_HEX[a._src]+';border-radius:4px;font-family:var(--mo);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:'+GROUP_HEX[a._src]+';">'+GROUP_NAMES[a._src]+' ('+allItems.filter(function(x){return x._src===a._src;}).length+')</div>';
+    }
     var _ap=a.photo||_photoCache[a.id]||"";
     var borderStyle=srcColors[a._src];
     h+='<div class="ac'+(isArt(a.category)?' art':'')+' src-'+a._src+'" style="'+borderStyle+'" data-id="'+esc(a.id)+'" data-src="'+a._src+'" onclick="_listClick(this)">';
@@ -1444,6 +1469,7 @@ function cw(k){return colW[k]||defW(k);}
 
 function rTable(){
   const tblA=hasFilter()?filtered:assets;
+  window._detailList=tblA.map(function(a){return a.id;});
   const cols=getTCols(),fds=allFDs(),renames=LS.get("acap_renames_v3",{});
   const f=getFS();
   const parts=[];
@@ -1525,6 +1551,7 @@ function rWish(){
       return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
     });
   }
+  window._detailList=list.map(function(a){return a.id;});
   var cols=getTCols();
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
@@ -1961,7 +1988,7 @@ function submitForm(){
 // Detail
 function viewDetail(id){
   detailId=id;view="detail";
-  window._detailList=(hasFilter()?filtered:assets).map(function(a){return a.id;});
+  if(!window._detailList||!window._detailList.length)window._detailList=(hasFilter()?filtered:assets).map(function(a){return a.id;});
   var t=G("pgTit");if(t)t.textContent="Asset Detail";
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
   document.querySelectorAll(".sbi").forEach(function(el){el.classList.remove("on");});
