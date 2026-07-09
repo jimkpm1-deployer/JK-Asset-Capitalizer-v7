@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="AssetCap"/>
 <meta name="theme-color" content="#1a1a18"/>
-<title>Asset Capitalizer v33</title>
+<title>Asset Capitalizer v34</title>
 <link rel="manifest" href="/manifest.json"/>
 <script>
 // Unregister old service workers silently
@@ -2822,7 +2822,7 @@ function restoreToInventory(id){
 function showListAction(listType){
   var title=G("mListActTitle");
   var body=G("mListActBody");
-  if(!body)return;
+  if(!body){alert("DEBUG: mListActBody not found");return;}
   var id=confirmId;
   if(listType==="consign"){
     if(title)title.textContent="CONSIGNMENT ACTION";
