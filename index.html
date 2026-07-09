@@ -390,6 +390,15 @@ body.app-locked .shell * { pointer-events: none !important; }
     </div>
   </div>
 </div>
+
+<!-- List Action Modal: for consign/framing actions -->
+<div class="mbg" id="mListAction" style="display:none;">
+  <div class="mdl" style="max-width:310px;">
+    <div class="mhd"><h3 id="mListActTitle">ASSET ACTION</h3><button class="mcls" onclick="closeM('mListAction')">✕</button></div>
+    <div class="mbd" id="mListActBody"></div>
+    <div class="mft"><button class="btn bg" onclick="closeM('mListAction')">Cancel</button></div>
+  </div>
+</div>
 <div class="mbg" id="mLink" style="display:none">
   <div class="mdl" style="max-width:350px;">
     <div class="mhd"><h3>INSERT HYPERLINK</h3><button class="mcls" onclick="closeM('mLink')">✕</button></div>
@@ -2810,26 +2819,28 @@ function restoreToInventory(id){
   }
 }
 function showListAction(listType){
-  // Show mConfirm with context-appropriate buttons
-  var modal=document.getElementById("mConfirm");
-  var bd=modal?modal.querySelector(".mbd"):null;
-  if(!bd)return;
+  var title=G("mListActTitle");
+  var body=G("mListActBody");
+  if(!body)return;
+  var id=confirmId;
   if(listType==="consign"){
-    bd.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'
-      +'<button class="btn" style="background:#1a3a6b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="restoreToInventory(confirmId)">&#x21A9; Restore to Inventory</button>'
-      +'<button class="btn" style="background:#5aaccf;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="moveToFraming(confirmId)">&#x1F58C; Send to Framing</button>'
-      +'<button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="moveToSold(confirmId)">&#x1F4B0; Mark as Sold</button>'
-      +'<button class="btn bd" style="padding:10px;font-size:13px;" onclick="delConsignAsset(confirmId)">&#x1F5D1; Delete</button>'
+    if(title)title.textContent="CONSIGNMENT ACTION";
+    body.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'
+      +'<button class="btn" style="background:#1a3a6b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');restoreToInventory(\''+id+'\')">&#x21A9; Restore to Inventory</button>'
+      +'<button class="btn" style="background:#5aaccf;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');moveToFraming(\''+id+'\')">&#x1F58C; Send to Framing</button>'
+      +'<button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');moveToSold(\''+id+'\')">&#x1F4B0; Mark as Sold</button>'
+      +'<button class="btn bd" style="padding:10px;font-size:13px;" onclick="closeM(\'mListAction\');delConsignAsset(\''+id+'\')">&#x1F5D1; Delete</button>'
       +'</div>';
   } else if(listType==="framing"){
-    bd.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'
-      +'<button class="btn" style="background:#1a3a6b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="restoreToInventory(confirmId)">&#x21A9; Restore to Inventory</button>'
-      +'<button class="btn" style="background:#2e6da4;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="moveToConsign(confirmId)">&#x1F4E6; Send to Consignment</button>'
-      +'<button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="moveToSold(confirmId)">&#x1F4B0; Mark as Sold</button>'
-      +'<button class="btn bd" style="padding:10px;font-size:13px;" onclick="delFramingAsset(confirmId)">&#x1F5D1; Delete</button>'
+    if(title)title.textContent="FRAMING ACTION";
+    body.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'
+      +'<button class="btn" style="background:#1a3a6b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');restoreToInventory(\''+id+'\')">&#x21A9; Restore to Inventory</button>'
+      +'<button class="btn" style="background:#2e6da4;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');moveToConsign(\''+id+'\')">&#x1F4E6; Send to Consignment</button>'
+      +'<button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');moveToSold(\''+id+'\')">&#x1F4B0; Mark as Sold</button>'
+      +'<button class="btn bd" style="padding:10px;font-size:13px;" onclick="closeM(\'mListAction\');delFramingAsset(\''+id+'\')">&#x1F5D1; Delete</button>'
       +'</div>';
   }
-  if(modal)modal.style.display="flex";
+  var modal=G("mListAction");if(modal)modal.style.display="flex";
 }
 document.addEventListener("DOMContentLoaded",function(){
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
