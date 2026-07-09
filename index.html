@@ -963,7 +963,7 @@ function rFraming(){
     h+='<div class="thin"><span class="thlbl">'+esc(lbl)+'</span>';
     h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">\u2715</span></div></th>';
   });
-  h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
+  h+='<th class="no-print" style="width:130px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
@@ -983,8 +983,10 @@ function rFraming(){
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'framing\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
     h+='<td><div class="tdin"><div class="racts">';
-    h+='<button class="btn bg" style="font-size:10px;" onclick="restoreFramingToInventory(\''+esc(a.id)+'\')"  title="Restore to Inventory">&#x21A9;</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="delFramingAsset(\''+esc(a.id)+'\')"  title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn bg" style="font-size:10px;" onclick="restoreFramingToInventory(\''+esc(a.id)+'\')" title="Restore to Inventory">&#x21A9; Inv</button>';
+    h+='<button class="btn" style="font-size:10px;background:#2e6da4;color:#fff;" onclick="moveToConsign(\''+esc(a.id)+'\')" title="Send to Consignment">&#x1F4E6;</button>';
+    h+='<button class="btn" style="font-size:10px;background:#c0392b;color:#fff;" onclick="moveToSold(\''+esc(a.id)+'\')" title="Mark as Sold">&#x1F4B0;</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="delFramingAsset(\''+esc(a.id)+'\')" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -1006,24 +1008,7 @@ function newFramingAsset(){
 function newWishAsset(){
   editId=null;editMode="wish";window._newAssetModeSet=true;newAsset();
 }
-function restoreFramingToInventory(id){
-  var a=framingAssets.find(function(x){return x.id===id;});if(!a)return;
-  var restored=Object.assign({},a);
-  delete restored.framingDate;delete restored.status;
-  // Restore original location if saved, otherwise prompt
-  if(restored.originalLocation!==undefined&&restored.originalLocation!==""){
-    restored.location=restored.originalLocation;
-  } else {
-    var loc=prompt("Restore location:\n(Where is it going back to?)",restored.location||"");
-    if(loc!==null)restored.location=loc.trim();
-  }
-  delete restored.originalLocation;
-  var insertIdx=assets.findIndex(function(x){return (x.seq||0)>(restored.seq||0);});
-  if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
-  framingAssets=framingAssets.filter(function(x){return x.id!==id;});
-  filtered=filtered.filter(function(x){return x.id!==id;});
-  saveAll();render();toast("Restored to Inventory ✓");
-}
+function restoreFramingToInventory(id){restoreToInventory(id);}
 function delFramingAsset(id){
   if(!confirm("Delete this framing/restoration entry?"))return;
   framingAssets=framingAssets.filter(function(x){return x.id!==id;});
@@ -1036,21 +1021,7 @@ function exportFramingCSV(){
   var rows=framingAssets.map(function(a){return[a.id].concat(cols.map(function(k){return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';})).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","framing.csv");toast("Exported");
 }
-function confirmFraming(){
-  var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
-  var c=Object.assign({},a);
-  c.framingDate=today();c.status="framing";c.source="inventory";
-  c.originalLocation=a.location||"";  // remember where it was
-  var newLoc=prompt("Framer/restorer location:\n(Where is it being sent?)",a.location||"");
-  if(newLoc===null)return;  // cancelled
-  c.location=newLoc.trim();
-  framingAssets.push(c);
-  assets=assets.filter(function(x){return x.id!==confirmId;});
-  filtered=filtered.filter(function(x){return x.id!==confirmId;});
-  saveAll();closeM("mConfirm");
-  render();
-  toast("Sent to Framing ✓","s");
-}
+function confirmFraming(){moveToFraming(confirmId);}
 // Wish List actions
 function delWishAsset(id){
   if(!confirm("Delete this wish list item?"))return;
@@ -1206,24 +1177,7 @@ function deleteSold(btn){
   soldAssets=soldAssets.filter(function(x){return x.id!==id;});
   deletePhoto(id);saveAll();render();toast("Deleted","i");
 }
-function restoreConsignToInventory(id){
-  var a=consignAssets.find(function(x){return x.id===id;});if(!a)return;
-  var restored=Object.assign({},a);
-  delete restored.consignDate;delete restored.status;
-  // Restore original location if saved, otherwise prompt
-  if(restored.originalLocation!==undefined&&restored.originalLocation!==""){
-    restored.location=restored.originalLocation;
-  } else {
-    var loc=prompt("Restore location:\n(Where is it going back to?)",restored.location||"");
-    if(loc!==null)restored.location=loc.trim();
-  }
-  delete restored.originalLocation;
-  var insertIdx=assets.findIndex(function(x){return (x.seq||0)>(restored.seq||0);});
-  if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
-  consignAssets=consignAssets.filter(function(x){return x.id!==id;});
-  filtered=filtered.filter(function(x){return x.id!==id;});
-  saveAll();render();toast("Restored to Inventory ✓");
-}
+function restoreConsignToInventory(id){restoreToInventory(id);}
 function exportSoldCSV(){
   if(!soldAssets.length){toast("No sold assets","e");return;}
   var cols=getSTCols().filter(function(k){return k!=="photo";});
@@ -2469,39 +2423,8 @@ function showPhoto(src,e){
   img.src=src;lb.style.display="flex";
 }
 function askDel(id){confirmId=id;var m=G("mConfirm");if(m)m.style.display="flex";}
-function confirmConsign(){
-  var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
-  var c=Object.assign({},a);
-  c.consignDate=today();c.status="consignment";c.source="inventory";
-  c.originalLocation=a.location||"";  // remember where it was
-  var newLoc=prompt("Consignment location:\n(Where is it being sent?)",a.location||"");
-  if(newLoc===null)return;  // cancelled
-  c.location=newLoc.trim();
-  consignAssets.push(c);
-  assets=assets.filter(function(x){return x.id!==confirmId;});
-  filtered=filtered.filter(function(x){return x.id!==confirmId;});
-  saveAll();closeM("mConfirm");
-  render();
-  toast("Moved to Consignment ✓","s");
-}
-function confirmSell(){
-  var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
-  var soldPrice=prompt("Sold at price ($):\n(Leave blank to skip)","");
-  if(soldPrice===null)return;  // cancelled
-  var buyerLoc=prompt("Buyer / new owner / auction house:\n(Where / to whom was it sold?)",a.location||"");
-  if(buyerLoc===null)return;  // cancelled
-  var sold=Object.assign({},a);
-  sold.soldDate=today();sold.status="sold";
-  sold.originalLocation=a.location||"";  // remember original location
-  sold.location=buyerLoc.trim();  // new location = buyer info
-  if(soldPrice.trim()!=="")sold.soldAt=soldPrice.trim().replace(/[^0-9.]/g,"");
-  soldAssets.push(sold);
-  assets=assets.filter(function(x){return x.id!==confirmId;});
-  filtered=filtered.filter(function(x){return x.id!==confirmId;});
-  saveAll();closeM("mConfirm");
-  render();
-  toast("Moved to Sold Assets ✓","s");
-}
+function confirmConsign(){moveToConsign(confirmId);}
+function confirmSell(){moveToSold(confirmId);}
 function confirmDel(){
   var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
   pushUndo("del",Object.assign({},a),"Deleted — undo available");
@@ -2762,6 +2685,76 @@ function changeAssetId(oldId){
   saveAll();
   render();
   toast("ID changed to "+newId);
+}
+
+function _findAsset(id){
+  return assets.find(function(x){return x.id===id;})
+    ||consignAssets.find(function(x){return x.id===id;})
+    ||framingAssets.find(function(x){return x.id===id;})
+    ||soldAssets.find(function(x){return x.id===id;})
+    ||wishAssets.find(function(x){return x.id===id;});
+}
+function _removeFromAllLists(id){
+  assets=assets.filter(function(x){return x.id!==id;});
+  consignAssets=consignAssets.filter(function(x){return x.id!==id;});
+  framingAssets=framingAssets.filter(function(x){return x.id!==id;});
+  filtered=filtered.filter(function(x){return x.id!==id;});
+}
+function moveToConsign(id){
+  var a=_findAsset(id);if(!a)return;
+  var newLoc=prompt("Consignment location:\n(Where is it being sent?)",a.location||"");
+  if(newLoc===null)return;
+  var c=Object.assign({},a);
+  c.consignDate=today();c.status="consignment";
+  c.originalLocation=a.location||"";
+  c.location=newLoc.trim();
+  _removeFromAllLists(id);
+  consignAssets.push(c);
+  saveAll();closeM("mConfirm");render();toast("Moved to Consignment ✓","s");
+}
+function moveToFraming(id){
+  var a=_findAsset(id);if(!a)return;
+  var newLoc=prompt("Framer / restorer location:\n(Where is it being sent?)",a.location||"");
+  if(newLoc===null)return;
+  var c=Object.assign({},a);
+  c.framingDate=today();c.status="framing";
+  c.originalLocation=a.location||"";
+  c.location=newLoc.trim();
+  _removeFromAllLists(id);
+  framingAssets.push(c);
+  saveAll();closeM("mConfirm");render();toast("Sent to Framing ✓","s");
+}
+function moveToSold(id){
+  var a=_findAsset(id);if(!a)return;
+  var soldPrice=prompt("Sold at price ($):\n(Leave blank to skip)","");
+  if(soldPrice===null)return;
+  var buyerLoc=prompt("Buyer / new owner / auction house:\n(Where / to whom was it sold?)",a.location||"");
+  if(buyerLoc===null)return;
+  var sold=Object.assign({},a);
+  sold.soldDate=today();sold.status="sold";
+  sold.originalLocation=a.location||"";
+  sold.location=buyerLoc.trim();
+  if(soldPrice.trim()!=="")sold.soldAt=soldPrice.trim().replace(/[^0-9.]/g,"");
+  _removeFromAllLists(id);
+  soldAssets.push(sold);
+  saveAll();closeM("mConfirm");render();toast("Moved to Sold Assets ✓","s");
+}
+function restoreToInventory(id){
+  var a=_findAsset(id);if(!a)return;
+  var restored=Object.assign({},a);
+  delete restored.consignDate;delete restored.framingDate;delete restored.status;
+  if(restored.originalLocation!==undefined&&restored.originalLocation!==""){
+    restored.location=restored.originalLocation;
+    delete restored.originalLocation;
+  } else {
+    var loc=prompt("Restore location:\n(Where is it going back to?)",restored.location||"");
+    if(loc===null)return;
+    restored.location=loc.trim();
+    delete restored.originalLocation;
+  }
+  _removeFromAllLists(id);
+  assets.push(restored);
+  saveAll();render();toast("Restored to Inventory ✓");
 }
 document.addEventListener("DOMContentLoaded",function(){
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
