@@ -361,10 +361,9 @@ body.app-locked .shell * { pointer-events: none !important; }
     <div class="mhd"><h3>ASSET ACTION</h3><button class="mcls" onclick="closeM('mConfirm')">✕</button></div>
     <div class="mbd">
       <div style="display:flex;flex-direction:column;gap:8px;">
-        <button class="btn" style="background:#2e7d52;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmSell()">&#x1F4B0; Mark as Sold</button>
-        <button class="btn" style="background:#4a6b8a;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmConsign()">&#x1F4E6; Move to Consignment</button>
-        <button class="btn" style="background:#8a6a2e;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmFraming()">&#x1F58C; Send to Framing/Restoration</button>
-        <button class="btn bd" style="padding:10px;font-size:13px;" onclick="confirmDel()">&#x1F5D1; Delete Permanently</button>
+        <button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmSell()">&#x1F4B0; Mark as Sold</button>
+        <button class="btn" style="background:#2e6da4;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmConsign()">&#x1F4E6; Move to Consignment</button>
+        <button class="btn" style="background:#5aaccf;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmFraming()">&#x1F58C; Send to Framing/Restoration</button>
       </div>
       <p style="font-size:11px;color:var(--mu);margin-top:10px;">Sold assets move to Sold Assets list. Deleted can be undone for 10 seconds.</p>
     </div>
@@ -2842,7 +2841,7 @@ function showListAction(listType){
   if(listType==="inventory"){
     if(title)title.textContent="ASSET ACTIONS";
     wrap.appendChild(mb("#1a3a6b","&#x270F;","Edit Asset",function(){editAsset(id);}));
-    wrap.appendChild(mb("#2e7d52","&#x1F4B0;","Sell / Move",function(){confirmId=id;document.getElementById("mConfirm").style.display="flex";}));
+    wrap.appendChild(mb("#888","&#x1F4B0;","Sell / Move / Send...",function(){confirmId=id;document.getElementById("mConfirm").style.display="flex";}));
   } else if(listType==="consign"){
     if(title)title.textContent="CONSIGNMENT ACTIONS";
     wrap.appendChild(mb("#1a3a6b","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
