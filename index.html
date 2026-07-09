@@ -1880,7 +1880,14 @@ function rForm(){
   }).join("");
   var h='<div class="fw">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:6px;">';
-  h+='<h2 style="font-family:var(--mo);font-size:13px;letter-spacing:.06em;">'+(editId?"EDITING: "+editId+' <button type="button" class="btn bg" style="font-size:10px;padding:2px 8px;margin-left:6px;" onclick="changeAssetId(\''+editId+'\')">✏ Change ID</button>':"NEW ASSET")+'</h2>';
+  h+='<h2 style="font-family:var(--mo);font-size:13px;letter-spacing:.06em;">'+(editId?("EDITING: "+editId+' <button type="button" class="btn bg" style="font-size:10px;padding:2px 8px;margin-left:6px;" onclick="changeAssetId(\''+editId+'\')">✏ Change ID</button>'):'NEW ASSET')+'</h2>';
+  if(editId){
+    var _listLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List"};
+    var _listColors={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52"};
+    var _lbl=_listLabels[editMode]||editMode;
+    var _clr=_listColors[editMode]||"#888";
+    h+='<div style="display:inline-flex;align-items:center;gap:6px;background:'+_clr+';color:#fff;font-size:11px;font-family:var(--mo);padding:3px 10px;border-radius:12px;margin-bottom:8px;">&#x1F4CC; Currently in: '+_lbl+'</div>';
+  }
   h+='<div style="display:flex;gap:6px;"><button class="btn bg" onclick="cancelForm()">Cancel</button>';
   h+='<button class="btn '+(isArt(cat)?"ba":"bp")+'" onclick="submitForm()">💾 '+(editId?"Update":"Save")+'</button></div></div>';
   h+='<div class="fs"><div class="fsh">Asset Photo</div><div class="pa">';
