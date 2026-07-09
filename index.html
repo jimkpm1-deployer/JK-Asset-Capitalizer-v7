@@ -302,7 +302,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <select class="sel" id="fCond" onchange="doFilter()" style="display:none"></select>
       <select class="sel" id="fLoc"  onchange="doFilter()" style="display:none"></select>
       <select class="sel" id="fAsgn" onchange="doFilter()" style="display:none"></select>
-      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="sold">Sold</option></select>
+      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="framing">Framing</option><option value="sold">Sold</option><option value="wish">Wish List</option></select>
       <select class="sel" id="fMed" onchange="doFilter()" style="display:none"><option value="">All Mediums</option></select>
       <select class="sel" id="fYear" onchange="doFilter()" style="display:none"><option value="">All Years</option></select>
       <select class="sel" id="fSort" onchange="doFilter()" style="display:none">
@@ -1327,7 +1327,9 @@ function rList(){
   var inv=assets.map(function(a){return Object.assign({},a,{_src:"inventory"});});
   var con=consignAssets.map(function(a){return Object.assign({},a,{_src:"consign"});});
   var sol=soldAssets.map(function(a){return Object.assign({},a,{_src:"sold"});});
-  var allItems=inv.concat(con).concat(sol);
+  var fram=framingAssets.map(function(a){return Object.assign({},a,{_src:"framing"});});
+  var wsh=wishAssets.map(function(a){return Object.assign({},a,{_src:"wish"});});
+  var allItems=inv.concat(con).concat(fram).concat(sol).concat(wsh);
   // Apply list filter
   if(f.list)allItems=allItems.filter(function(a){return a._src===f.list;});
   // Apply other filters
@@ -1351,17 +1353,21 @@ function rList(){
   var h='<div style="margin-bottom:7px;font-family:var(--mo);font-size:11px;color:var(--mu);">'+total+' items'+(f.list?' ('+f.list+')':'')+' total</div>';
   if(!total)return h+'<div class="empty"><div class="big">📦</div>No items match.</div>';
   // Stats bar - always visible in All Assets view
-  var _inv=assets.length,_con=consignAssets.length,_sol=soldAssets.length;
+  var _inv=assets.length,_con=consignAssets.length,_sol=soldAssets.length,_fram=framingAssets.length,_wsh=wishAssets.length;
   var _invV=assets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
   var _conV=consignAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
   var _solV=soldAssets.reduce(function(s,a){return s+parseFloat(a.soldAt||0);},0);
-  var _totN=_inv+_con+_sol, _posN=_inv+_con, _posV=_invV+_conV;
+  var _framV=framingAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
+  var _wshV=wishAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
+  var _totN=_inv+_con+_sol+_fram+_wsh, _posN=_inv+_con+_fram, _posV=_invV+_conV+_framV;
   h+='<div style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 0 8px;font-size:11px;font-family:var(--mo);">';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Total: <b>'+_totN+'</b></span>';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Possession: <b>'+_posN+'</b> · <b>$'+_posV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Inv: <b>'+_inv+'</b> · <b>$'+_invV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#4a6b8a;">Con: <b>'+_con+'</b> · <b>$'+_conV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#8a5a2e;">Sold: <b>'+_sol+'</b> · <b>$'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#1a3a6b;">Inv: <b>'+_inv+'</b> · <b>$'+_invV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#2e6da4;">Con: <b>'+_con+'</b> · <b>$'+_conV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#5aaccf;">Fram: <b>'+_fram+'</b> · <b>$'+_framV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#c0392b;">Sold: <b>'+_sol+'</b> · <b>$'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#2e7d52;">Wish: <b>'+_wsh+'</b> · <b>$'+_wshV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
   h+='</div>';
   if(listMode==="tbl"){
   h+='<div style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
