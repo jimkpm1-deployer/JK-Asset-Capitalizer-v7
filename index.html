@@ -848,7 +848,8 @@ function doFilter(){
   const f=getFS(),ql=f.q.toLowerCase();
   // Pick source array based on current view
   var src=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:assets;
-  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year){filtered=[];render();return;}
+  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year){filtered=[];window._filteredView=null;render();return;}
+  window._filteredView=view;
   filtered=src.filter(a=>{
     const ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(v=>v&&v.toLowerCase().includes(ql));
     var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
@@ -886,8 +887,8 @@ function render(){
 // Consignment
 function rConsign(){
   var f=getFS(),ql=f.q.toLowerCase();
-  var list=hasFilter()&&filtered.length?filtered.slice():consignAssets.slice().reverse();
-  if(false){
+  var list=(hasFilter()&&filtered.length&&window._filteredView==="consign")?filtered.slice():consignAssets.slice().reverse();
+  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
       var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
@@ -959,8 +960,8 @@ function rConsign(){
 // Framing / Restoration
 function rFraming(){
   var f=getFS(),ql=f.q.toLowerCase();
-  var list=hasFilter()&&filtered.length?filtered.slice():framingAssets.slice().reverse();
-  if(false){
+  var list=(hasFilter()&&filtered.length&&window._filteredView==="framing")?filtered.slice():framingAssets.slice().reverse();
+  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
       var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
@@ -1118,8 +1119,8 @@ function exportConsignCSV(){
 // Sold Assets
 function rSold(){
   var f=getFS(),ql=f.q.toLowerCase();
-  var list=hasFilter()&&filtered.length?filtered.slice():soldAssets.slice().reverse();
-  if(false){
+  var list=(hasFilter()&&filtered.length&&window._filteredView==="sold")?filtered.slice():soldAssets.slice().reverse();
+  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
       var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
@@ -1507,8 +1508,8 @@ function rTable(){
 // Wish List
 function rWish(){
   var f=getFS(),ql=f.q.toLowerCase();
-  var list=hasFilter()&&filtered.length?filtered.slice():wishAssets.slice().reverse();
-  if(false){
+  var list=(hasFilter()&&filtered.length&&window._filteredView==="wish")?filtered.slice():wishAssets.slice().reverse();
+  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
       var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
