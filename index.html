@@ -2015,6 +2015,9 @@ function rDetail(){
   if(_detailSrc==='framing'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreFramingToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
   if(_detailSrc==='consign'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreConsignToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
   h+='<button class="btn bd" style="font-size:11px;" onclick="askDel(\''+a.id+'\')">🗑</button></div>';
+  var _srcLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List"};
+  var _srcColors={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52"};
+  h+='<div style="display:inline-flex;align-items:center;gap:6px;background:'+_srcColors[_detailSrc]+';color:#fff;font-size:11px;font-family:var(--mo);padding:4px 12px;border-radius:12px;margin-bottom:8px;">&#x1F4CC; Currently in: '+_srcLabels[_detailSrc]+'</div>';
   h+='<div class="dh'+(art?" art":"")+'">';
   var _xp=a.photo||_photoCache[a.id]||'';h+='<div class="dp">'+(_xp?'<img src="'+_xp+'" alt=""/>':art?'🖼':'📦')+'</div>';
   h+='<div style="flex:1;min-width:155px;">';
