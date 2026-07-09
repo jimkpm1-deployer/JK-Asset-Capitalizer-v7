@@ -945,9 +945,8 @@ function rConsign(){
       var isML=["name","medium","notes","description","provenance","exhibitionHistory","dimensions"].includes(key);
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'consign\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
-    h+='<td><div class="tdin"><div class="racts">';
-    h+='<button class="btn bg" style="font-size:10px;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="consign" title="Actions">&#x2699; Actions</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="delConsignAsset(\''+esc(a.id)+'\')" title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="consign" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -1018,9 +1017,8 @@ function rFraming(){
       var isML=["name","medium","notes","description","provenance","exhibitionHistory","dimensions"].includes(key);
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'framing\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
-    h+='<td><div class="tdin"><div class="racts">';
-    h+='<button class="btn bg" style="font-size:10px;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="framing" title="Actions">&#x2699; Actions</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="delFramingAsset(\''+esc(a.id)+'\')" title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="framing" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -1170,8 +1168,8 @@ function rSold(){
       h+='<td class="ed '+(isML?"col-wrap":"col-short")+'" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'sold\')"><div class="tdin"><span style="display:block;overflow:hidden;text-overflow:'+(isML?"clip":"ellipsis")+';white-space:'+(isML?"normal;word-break:break-word":"nowrap")+';">'+esc(v)+'</span></div></td>';
     });
     h+='<td><div class="tdin"><div class="racts">';
-    h+='<button class="btn bg" style="font-size:10px;" data-id="'+esc(a.id)+'" onclick="restoreAsset(this)" title="Restore">&#x21A9;</button>';
-    h+='<button class="btn bd" style="font-size:10px;" data-id="'+esc(a.id)+'" onclick="deleteSold(this)" title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="sold" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -1495,7 +1493,7 @@ function rTable(){
       if(isUrl)h+='<span style="cursor:pointer;opacity:.4;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();showLink(\''+a.id+'\',\''+key+'\')" title="Link">🔗</span>';
       h+='</div></td>';
     });
-    h+='<td class="no-print" style="height:'+rowH+'px;"><div class="tdin"><div class="racts"><button class="btn bg" style="font-size:10px;" onclick="editAsset(\''+a.id+'\')">✏</button><button class="btn bd" style="font-size:10px;" onclick="askDel(\''+a.id+'\')">🗑</button></div></div></td>';
+    h+='<td class="no-print" style="height:'+rowH+'px;"><div class="tdin"><div class="racts"><button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="inventory" title="Actions">&#x2699; Actions</button><button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button></div></div></td>';
     h+='</tr>';
   });
   h+='</tbody></table></div>';
@@ -1568,8 +1566,8 @@ function rWish(){
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'wish\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
     h+='<td class="no-print"><div class="tdin"><div class="racts">';
-    h+='<button class="btn bp" style="font-size:10px;" onclick="buyWishAsset(\''+esc(a.id)+'\')" title="Buy \u2014 move to Inventory">&#x1F4B0; Buy</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="delWishAsset(\''+esc(a.id)+'\')" title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="wish" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -2825,28 +2823,58 @@ function restoreToInventory(id){
 }
 function doListAction(btn){confirmId=btn.getAttribute("data-id");showListAction(btn.getAttribute("data-list"));}
 function showListAction(listType){
-  var title=G("mListActTitle");
-  var body=G("mListActBody");
-  if(!body){alert("DEBUG: mListActBody not found");return;}
+  var title=document.getElementById("mListActTitle");
+  var body=document.getElementById("mListActBody");
+  if(!body)return;
   var id=confirmId;
-  if(listType==="consign"){
-    if(title)title.textContent="CONSIGNMENT ACTION";
-    body.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'
-      +'<button class="btn" style="background:#1a3a6b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');restoreToInventory(\''+id+'\')">&#x21A9; Restore to Inventory</button>'
-      +'<button class="btn" style="background:#5aaccf;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');moveToFraming(\''+id+'\')">&#x1F58C; Send to Framing</button>'
-      +'<button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');moveToSold(\''+id+'\')">&#x1F4B0; Mark as Sold</button>'
-      +'<button class="btn bd" style="padding:10px;font-size:13px;" onclick="closeM(\'mListAction\');delConsignAsset(\''+id+'\')">&#x1F5D1; Delete</button>'
-      +'</div>';
-  } else if(listType==="framing"){
-    if(title)title.textContent="FRAMING ACTION";
-    body.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'
-      +'<button class="btn" style="background:#1a3a6b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');restoreToInventory(\''+id+'\')">&#x21A9; Restore to Inventory</button>'
-      +'<button class="btn" style="background:#2e6da4;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');moveToConsign(\''+id+'\')">&#x1F4E6; Send to Consignment</button>'
-      +'<button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="closeM(\'mListAction\');moveToSold(\''+id+'\')">&#x1F4B0; Mark as Sold</button>'
-      +'<button class="btn bd" style="padding:10px;font-size:13px;" onclick="closeM(\'mListAction\');delFramingAsset(\''+id+'\')">&#x1F5D1; Delete</button>'
-      +'</div>';
+  function mb(bg,icon,label,fn){
+    var b=document.createElement("button");
+    b.className="btn";
+    b.style.cssText="background:"+bg+";color:#fff;padding:10px;font-size:13px;border-radius:6px;width:100%;";
+    b.innerHTML=icon+" "+label;
+    b.onclick=function(){document.getElementById("mListAction").style.display="none";fn();};
+    return b;
   }
-  var modal=G("mListAction");if(modal)modal.style.display="flex";
+  var wrap=document.createElement("div");
+  wrap.style.cssText="display:flex;flex-direction:column;gap:8px;";
+  if(listType==="inventory"){
+    if(title)title.textContent="ASSET ACTIONS";
+    wrap.appendChild(mb("#1a3a6b","&#x270F;","Edit Asset",function(){editAsset(id);}));
+    wrap.appendChild(mb("#2e7d52","&#x1F4B0;","Sell / Move",function(){confirmId=id;document.getElementById("mConfirm").style.display="flex";}));
+  } else if(listType==="consign"){
+    if(title)title.textContent="CONSIGNMENT ACTIONS";
+    wrap.appendChild(mb("#1a3a6b","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
+    wrap.appendChild(mb("#5aaccf","&#x1F58C;","Send to Framing",function(){moveToFraming(id);}));
+    wrap.appendChild(mb("#c0392b","&#x1F4B0;","Mark as Sold",function(){moveToSold(id);}));
+  } else if(listType==="framing"){
+    if(title)title.textContent="FRAMING ACTIONS";
+    wrap.appendChild(mb("#1a3a6b","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
+    wrap.appendChild(mb("#2e6da4","&#x1F4E6;","Send to Consignment",function(){moveToConsign(id);}));
+    wrap.appendChild(mb("#c0392b","&#x1F4B0;","Mark as Sold",function(){moveToSold(id);}));
+  } else if(listType==="sold"){
+    if(title)title.textContent="SOLD ASSET ACTIONS";
+    wrap.appendChild(mb("#1a3a6b","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
+  } else if(listType==="wish"){
+    if(title)title.textContent="WISH LIST ACTIONS";
+    wrap.appendChild(mb("#2e7d52","&#x1F4B0;","Buy \u2192 Add to Inventory",function(){buyWishAsset(id);}));
+    wrap.appendChild(mb("#1a3a6b","&#x270F;","Edit",function(){editAsset(id);}));
+  }
+  body.innerHTML="";
+  body.appendChild(wrap);
+  document.getElementById("mListAction").style.display="flex";
+}
+function safeDelete(listType, btn){
+  var id=btn?btn.getAttribute("data-id"):confirmId;
+  var a=_findAsset(id);
+  var name=a?(a.name||id):id;
+  if(!confirm("Delete \""+name+"\" permanently?\n\nThis cannot be undone."))return;
+  if(!confirm("Are you REALLY sure you want to permanently delete \""+name+"\"?\n\nClick OK only if you are certain."))return;
+  closeM("mListAction");closeM("mConfirm");
+  if(listType==="inv"||listType==="inventory"){askDel(id);}
+  else if(listType==="consign"){delConsignAsset(id);}
+  else if(listType==="framing"){delFramingAsset(id);}
+  else if(listType==="sold"){var fb=document.querySelector('[data-id="'+id+'"]');if(fb)deleteSold(fb);}
+  else if(listType==="wish"){delWishAsset(id);}
 }
 document.addEventListener("DOMContentLoaded",function(){
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
