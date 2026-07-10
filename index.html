@@ -1066,7 +1066,9 @@ function restoreFramingToInventory(id){restoreToInventory(id);}
 function delFramingAsset(id){
   if(!confirm("Delete this framing/restoration entry?"))return;
   framingAssets=framingAssets.filter(function(x){return x.id!==id;});
-  deletePhoto(id);saveAll();render();toast("Deleted","i");
+  deletePhoto(id);saveAll();
+  if(view==="detail")goTo("list");else render();
+  toast("Deleted","i");
 }
 function exportFramingCSV(){
   if(!framingAssets.length){toast("No framing assets","e");return;}
@@ -1080,7 +1082,9 @@ function confirmFraming(){moveToFraming(confirmId);}
 function delWishAsset(id){
   if(!confirm("Delete this wish list item?"))return;
   wishAssets=wishAssets.filter(function(x){return x.id!==id;});
-  deletePhoto(id);saveAll();render();toast("Deleted","i");
+  deletePhoto(id);saveAll();
+  if(view==="detail")goTo("list");else render();
+  toast("Deleted","i");
 }
 function exportWishCSV(){
   if(!wishAssets.length){toast("No wish list items","e");return;}
@@ -1130,7 +1134,9 @@ function sellConsignAsset(id){
 function delConsignAsset(id){
   if(!confirm("Delete this consignment asset?"))return;
   consignAssets=consignAssets.filter(function(x){return x.id!==id;});
-  deletePhoto(id);saveAll();render();toast("Deleted","i");
+  deletePhoto(id);saveAll();
+  if(view==="detail")goTo("list");else render();
+  toast("Deleted","i");
 }
 function exportConsignCSV(){
   if(!consignAssets.length){toast("No consignment assets","e");return;}
@@ -2062,7 +2068,7 @@ function rDetail(){
   if(_detailSrc==='wish'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="buyWishAsset(\''+a.id+'\')">💰 Buy \u2192 Inventory</button>';}
   if(_detailSrc==='framing'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreFramingToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
   if(_detailSrc==='consign'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreConsignToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
-  h+='<button class="btn bd" style="font-size:11px;" onclick="askDel(\''+a.id+'\')">🗑</button></div>';
+  h+='<button class="btn bd" style="font-size:11px;" onclick="confirmId=\''+a.id+'\';safeDelete(\''+_detailSrc+'\')">🗑</button></div>';
   var _srcLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List"};
   var _srcColors={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52"};
   h+='<div style="display:inline-flex;align-items:center;gap:6px;background:'+_srcColors[_detailSrc]+';color:#fff;font-size:11px;font-family:var(--mo);padding:4px 12px;border-radius:12px;margin-bottom:8px;">&#x1F4CC; Currently in: '+_srcLabels[_detailSrc]+'</div>';
@@ -2935,10 +2941,15 @@ function safeDelete(listType, btn){
   if(!confirm("Delete \""+name+"\" permanently?\n\nThis cannot be undone."))return;
   if(!confirm("Are you REALLY sure you want to permanently delete \""+name+"\"?\n\nClick OK only if you are certain."))return;
   closeM("mListAction");closeM("mConfirm");
-  if(listType==="inv"||listType==="inventory"){askDel(id);}
+  if(listType==="inv"||listType==="inventory"){confirmId=id;confirmDel();}
   else if(listType==="consign"){delConsignAsset(id);}
   else if(listType==="framing"){delFramingAsset(id);}
-  else if(listType==="sold"){var fb=document.querySelector('[data-id="'+id+'"]');if(fb)deleteSold(fb);}
+  else if(listType==="sold"){
+    soldAssets=soldAssets.filter(function(x){return x.id!==id;});
+    deletePhoto(id);saveAll();
+    if(view==="detail")goTo("list");else render();
+    toast("Deleted","i");
+  }
   else if(listType==="wish"){delWishAsset(id);}
 }
 document.addEventListener("DOMContentLoaded",function(){
