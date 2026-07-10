@@ -87,6 +87,16 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .content{flex:1;overflow-y:auto;padding:13px;-webkit-overflow-scrolling:touch;}
 .content.tbl-view{overflow-y:auto;overflow-x:hidden;padding:8px 8px 0 8px;}
 .agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:10px;}
+.agrid.cols-2 .aphoto,.agrid.cols-3 .aphoto{height:88px;font-size:22px;}
+.agrid.cols-2 .abody,.agrid.cols-3 .abody{padding:6px 7px;}
+.agrid.cols-2 .aname,.agrid.cols-3 .aname{font-size:12px;margin-bottom:2px;}
+.agrid.cols-2 .aar,.agrid.cols-3 .aar{font-size:10px;margin-bottom:2px;}
+.agrid.cols-3 .aphoto{height:66px;font-size:18px;}
+.agrid.cols-3 .aid{font-size:9px;}
+.agrid.cols-3 .aname{font-size:11px;}
+.agrid.cols-3 .aval{font-size:11px;}
+.agrid.cols-3 .acat .tag{font-size:9px;padding:1px 5px;}
+@media(max-width:680px){.agrid{grid-template-columns:repeat(2,1fr);}.agrid:not(.cols-1) .aphoto{height:88px;font-size:22px;}.agrid:not(.cols-1) .abody{padding:6px 7px;}.agrid:not(.cols-1) .aname{font-size:12px;margin-bottom:2px;}.agrid:not(.cols-1) .aar{font-size:10px;margin-bottom:2px;}}
 .acard{background:var(--s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;cursor:pointer;}
 .acard:hover{box-shadow:0 3px 12px rgba(0,0,0,.08);transform:translateY(-1px);}
 .acard.isart{border-top:3px solid var(--ar);}
@@ -314,6 +324,12 @@ body.app-locked .shell * { pointer-events: none !important; }
         <button class="on" id="vtG" onclick="setLM('grid')">⊞</button>
         <button id="vtT" onclick="setLM('tbl')">☰</button>
       </div>
+      <select class="sel" id="vtCols" style="display:none;font-size:11px;" onchange="setGridCols(this.value)">
+        <option value="">Auto Columns</option>
+        <option value="1">1 Column</option>
+        <option value="2">2 Columns</option>
+        <option value="3">3 Columns</option>
+      </select>
       <button class="btn bg no-print" id="bScan"   style="display:none" onclick="openScanner()">🔍 Scan</button>
       <button class="btn bg no-print" id="bPrint"  style="display:none" onclick="openPrintDlg()">🖨 Print</button>
       <button class="btn bg no-print" id="bAddCol" style="display:none" onclick="showAddCol()">＋ Col</button>
@@ -594,6 +610,8 @@ let rowH=LS.get("acap_rowh_v3",36);
 let colW=(function(){var s=LS.get("acap_colw_v3",{});return(s&&s._v===5)?s:{_v:5};})();
 let authCfg=LS.get("acap_auth_v3",{u:hashStr("admin"),p:hashStr("admin1234"),pin:hashStr("1234")});
 let view="dash",listMode="grid",filtered=[],editId=null,confirmId=null,detailId=null;
+let gridCols=LS.get("acap_gridcols_v3","");
+function setGridCols(v){gridCols=v;LS.set("acap_gridcols_v3",v);render();}
 let camStream=null,scanStream=null,scanIv=null,lkTarget=null,cellPhotoId=null,deferredInstall=null;
 let colDragSrc=null,rsCol=null,rsX=0,rsW=0,fdDragIdx=null;
 let undoStack=[],undoTmr=null,undoCnt=null;
@@ -784,6 +802,7 @@ function goTo(v){
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear"].forEach(id=>{const el=G(id);if(el)el.style.display=isL?"":"none";});
   var flEl=G("fList");if(flEl)flEl.style.display=v==="list"?"":"none";
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
+  const vgc=G("vtCols");if(vgc){vgc.style.display=v==="list"?"":"none";vgc.value=gridCols||"";}
   ["bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
   var _bp=G("bPrint");if(_bp)_bp.style.display=(v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish")?"":"none";
   var _uh=G("bUnhide");if(_uh)_uh.style.display=(v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish")?"":"none";
@@ -799,7 +818,7 @@ function newAsset(){
   if(!window._newAssetModeSet)editMode="inventory";
   window._newAssetModeSet=false;
   const t=G("pgTit");if(t)t.textContent="New Asset";
-  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display="none";});
+  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display="none";});
   closeSB();render();
 }
 function toggleSB(){const sb=G("SB");sb.classList.toggle("open");G("SOVL").style.display=sb.classList.contains("open")?"block":"none";}
@@ -1405,7 +1424,9 @@ function rList(){
     return h;
   }
   // Grid view
-  h+='<div class="agrid">';
+  var _gcStyle=gridCols?(' style="grid-template-columns:repeat('+gridCols+',1fr);"'):"";
+  var _gcClass=gridCols?(' cols-'+gridCols):"";
+  h+='<div class="agrid'+_gcClass+'"'+_gcStyle+'>';
   var _lastGrpG=null;
   allItems.forEach(function(a,idx){
     if(a._src!==_lastGrpG){
@@ -1866,7 +1887,7 @@ function editAsset(id){
     :wishAssets.find(function(x){return x.id===id;})?"wish"
     :soldAssets.find(function(x){return x.id===id;})?"sold"
     :"inventory";
-  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
+  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
   closeSB();render();
 }
 function ordDefs(cat){
@@ -1990,7 +2011,7 @@ function viewDetail(id){
   detailId=id;view="detail";
   if(!window._detailList||!window._detailList.length)window._detailList=(hasFilter()?filtered:assets).map(function(a){return a.id;});
   var t=G("pgTit");if(t)t.textContent="Asset Detail";
-  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
+  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
   document.querySelectorAll(".sbi").forEach(function(el){el.classList.remove("on");});
   closeSB();render();
 }
