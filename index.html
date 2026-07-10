@@ -966,7 +966,7 @@ function rConsign(){
     });
     h+='<td class="no-print"><div class="tdin"><div class="racts">';
     h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="consign" title="Actions">&#x2699; Actions</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="consign" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -1040,7 +1040,7 @@ function rFraming(){
     });
     h+='<td class="no-print"><div class="tdin"><div class="racts">';
     h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="framing" title="Actions">&#x2699; Actions</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="framing" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -1198,7 +1198,7 @@ function rSold(){
     });
     h+='<td><div class="tdin"><div class="racts">';
     h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="sold" title="Actions">&#x2699; Actions</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="sold" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -1553,7 +1553,7 @@ function rTable(){
       if(isUrl)h+='<span style="cursor:pointer;opacity:.4;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();showLink(\''+a.id+'\',\''+key+'\')" title="Link">🔗</span>';
       h+='</div></td>';
     });
-    h+='<td class="no-print" style="height:'+rowH+'px;"><div class="tdin"><div class="racts"><button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="inventory" title="Actions">&#x2699; Actions</button><button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button></div></div></td>';
+    h+='<td class="no-print" style="height:'+rowH+'px;"><div class="tdin"><div class="racts"><button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="inventory" title="Actions">&#x2699; Actions</button><button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="inventory" title="Delete">&#x1F5D1;</button></div></div></td>';
     h+='</tr>';
   });
   h+='</tbody></table></div>';
@@ -1628,7 +1628,7 @@ function rWish(){
     });
     h+='<td class="no-print"><div class="tdin"><div class="racts">';
     h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="wish" title="Actions">&#x2699; Actions</button>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" title="Delete">&#x1F5D1;</button>';
+    h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="wish" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -2802,6 +2802,8 @@ function _removeFromAllLists(id){
   assets=assets.filter(function(x){return x.id!==id;});
   consignAssets=consignAssets.filter(function(x){return x.id!==id;});
   framingAssets=framingAssets.filter(function(x){return x.id!==id;});
+  soldAssets=soldAssets.filter(function(x){return x.id!==id;});
+  wishAssets=wishAssets.filter(function(x){return x.id!==id;});
   filtered=filtered.filter(function(x){return x.id!==id;});
 }
 function _allLocs(){
