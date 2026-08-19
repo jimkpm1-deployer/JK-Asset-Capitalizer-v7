@@ -317,6 +317,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="framing">Framing</option><option value="sold">Sold</option><option value="wish">Wish List</option><option value="coa">Private Collection</option></select>
       <select class="sel" id="fMed" onchange="doFilter()" style="display:none"><option value="">All Mediums</option></select>
       <select class="sel" id="fYear" onchange="doFilter()" style="display:none"><option value="">All Years</option></select>
+      <select class="sel" id="fOwner" onchange="doFilter()" style="display:none"><option value="">All Owners</option></select>
       <select class="sel" id="fSort" onchange="doFilter()" style="display:none">
         <option value="name">Name</option><option value="cat">Category</option>
         <option value="val">Value ↓</option><option value="date">Date</option><option value="id">ID</option>
@@ -616,7 +617,26 @@ let editMode="inventory"; // "inventory" | "consign" | "framing" | "wish" | "coa
 let fOrder=LS.get("acap_order_v3",DORDER);
 let hiddenFlds=LS.get("acap_hidden_v3",[]);
 let customCols=LS.get("acap_custom_v3",[]);
-let tableCols=LS.get("acap_tcols_v3",null);
+const LIST_DEFAULT16=["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","exhibitionHistory","location","currentValue","assignedTo","notes"];
+const LIST_COLS_KEYS={inventory:"acap_tcols_v3",consign:"acap_tcols_consign_v3",framing:"acap_tcols_framing_v3",wish:"acap_tcols_wish_v3",sold:"acap_tcols_sold_v3",coa:"acap_tcols_coa_v3"};
+let _listCols={};
+function _defaultListCols(listName){
+  if(listName==="sold")return["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","currentValue","soldAt","soldDate","location","assignedTo","notes"];
+  if(listName==="coa")return["photo","artist","name","yearCreated","medium","dimensions","condition","ownerName","ownerContact","dateSubmitted","authResult","coaIssued","coaNumber","coaDate","fee","notes"];
+  return LIST_DEFAULT16.slice();
+}
+function _viewList(v){return(v==="table"||v==="list")?"inventory":(LIST_COLS_KEYS[v]?v:"inventory");}
+function getListCols(listName){
+  listName=listName&&LIST_COLS_KEYS[listName]?listName:"inventory";
+  if(!_listCols[listName]){
+    var stored=LS.get(LIST_COLS_KEYS[listName],null);
+    _listCols[listName]=(stored&&stored.length)?stored.slice():_defaultListCols(listName);
+  }
+  customCols.forEach(function(c){if(!_listCols[listName].includes(c.key))_listCols[listName].push(c.key);});
+  return _listCols[listName];
+}
+function setListCols(listName,cols){listName=listName&&LIST_COLS_KEYS[listName]?listName:"inventory";_listCols[listName]=cols;LS.set(LIST_COLS_KEYS[listName],cols);}
+function resetListCols(listName){listName=listName&&LIST_COLS_KEYS[listName]?listName:"inventory";_listCols[listName]=_defaultListCols(listName).slice();LS.set(LIST_COLS_KEYS[listName],null);localStorage.removeItem(LIST_COLS_KEYS[listName]);}
 let appName=LS.get("acap_name_v3","Asset Capitalizer");
 let rowH=LS.get("acap_rowh_v3",36);
 let colW=(function(){var s=LS.get("acap_colw_v3",{});return(s&&s._v===5)?s:{_v:5};})();
@@ -625,7 +645,7 @@ let view="dash",listMode="grid",filtered=[],editId=null,confirmId=null,detailId=
 let gridCols=LS.get("acap_gridcols_v3","");
 function setGridCols(v){gridCols=v;LS.set("acap_gridcols_v3",v);render();}
 let camStream=null,scanStream=null,scanIv=null,lkTarget=null,cellPhotoId=null,deferredInstall=null;
-let colDragSrc=null,rsCol=null,rsX=0,rsW=0,fdDragIdx=null;
+let colDragSrc=null,colDragList=null,rsCol=null,rsX=0,rsW=0,fdDragIdx=null;
 let undoStack=[],undoTmr=null,undoCnt=null;
 let isAuth=false,sessTmr=null,pinEntry="";
 
@@ -693,7 +713,8 @@ function saveAll(){
     localStorage.setItem('acap_coa_v3',JSON.stringify(slimCoa));
   }catch(e){console.warn('saveAll coa',e);}
   LS.set('acap_order_v3',fOrder);LS.set('acap_hidden_v3',hiddenFlds);LS.set('acap_custom_v3',customCols);
-  LS.set('acap_tcols_v3',tableCols);LS.set('acap_name_v3',appName);LS.set('acap_rowh_v3',rowH);
+  Object.keys(_listCols).forEach(function(ln){LS.set(LIST_COLS_KEYS[ln],_listCols[ln]);});
+  LS.set('acap_name_v3',appName);LS.set('acap_rowh_v3',rowH);
   colW._v=5;LS.set('acap_colw_v3',colW);LS.set('acap_auth_v3',authCfg);
   localStorage.setItem('acap_has_data','1');
   const ss=G('sSave');if(ss){const d=new Date();ss.textContent='Saved '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}
@@ -819,6 +840,7 @@ function goTo(v){
   const isL=v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa";
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear"].forEach(id=>{const el=G(id);if(el)el.style.display=isL?"":"none";});
   var flEl=G("fList");if(flEl)flEl.style.display=v==="list"?"":"none";
+  var foEl=G("fOwner");if(foEl)foEl.style.display=v==="coa"?"":"none";
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
   const vgc=G("vtCols");if(vgc){vgc.style.display=v==="list"?"":"none";vgc.value=gridCols||"";}
   ["bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
@@ -875,25 +897,29 @@ function updSidebar(){
   if(fm){var meds=[...new Set(assets.map(a=>a.medium).concat(consignAssets.map(a=>a.medium)).concat(soldAssets.map(a=>a.medium)).concat(coaAssets.map(a=>a.medium)).filter(Boolean))].sort();fm.innerHTML='<option value="">All Mediums</option>'+meds.map(m=>'<option>'+esc(m)+'</option>').join("");}
   if(fy){var yrs=[...new Set(assets.map(a=>a.yearCreated).concat(consignAssets.map(a=>a.yearCreated)).concat(soldAssets.map(a=>a.yearCreated)).concat(coaAssets.map(a=>a.yearCreated)).filter(Boolean))].sort((a,b)=>b-a);fy.innerHTML='<option value="">All Years</option>'+yrs.map(y=>'<option>'+esc(y)+'</option>').join("");}
   if(fm&&_svm)fm.value=_svm;if(fy&&_svy)fy.value=_svy;
+  var fo=G("fOwner");
+  var _svo=fo?fo.value:"";
+  if(fo){var owners=[...new Set(coaAssets.map(a=>(a.ownerName||"").trim()).filter(Boolean))].sort();fo.innerHTML='<option value="">All Owners</option>'+owners.map(o=>'<option>'+esc(o)+'</option>').join("");}
+  if(fo&&_svo)fo.value=_svo;
 }
 function filterByCat(c){const el=G("fCat");if(el)el.value=c;goTo("list");}
 
 // Filtering
 function getFS(){
   function v(id){const el=G(id);return el?el.value:"";}
-  return{q:(v("srchIn")||"").trim(),cat:v("fCat"),cond:v("fCond"),loc:v("fLoc"),asgn:v("fAsgn"),med:v("fMed"),year:v("fYear"),list:v("fList"),sort:v("fSort")||"name"};
+  return{q:(v("srchIn")||"").trim(),cat:v("fCat"),cond:v("fCond"),loc:v("fLoc"),asgn:v("fAsgn"),med:v("fMed"),year:v("fYear"),owner:v("fOwner"),list:v("fList"),sort:v("fSort")||"name"};
 }
-function hasFilter(){const f=getFS();return !!(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year);}
+function hasFilter(){const f=getFS();return !!(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year||f.owner);}
 function doFilter(){
   const f=getFS(),ql=f.q.toLowerCase();
   // Pick source array based on current view
   var src=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:view==="coa"?coaAssets:assets;
-  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year){filtered=[];window._filteredView=null;render();return;}
+  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year&&!f.owner){filtered=[];window._filteredView=null;render();return;}
   window._filteredView=view;
   filtered=src.filter(a=>{
     const ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(v=>v&&v.toLowerCase().includes(ql));
-    var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
-    return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
+    var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim(),ao=(a.ownerName||'').trim();
+    return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year)&&(!f.owner||ao===f.owner);
   }).sort((a,b)=>{
     if(f.sort==="cat") return(a.category||"").localeCompare(b.category||"");
     if(f.sort==="val") return parseFloat(b.currentValue||0)-parseFloat(a.currentValue||0);
@@ -923,7 +949,7 @@ function render(){
   else if(view==="wish")     ct.innerHTML=rWish();
   else if(view==="coa")      ct.innerHTML=rCOA();
 
-  ["fCat","fCond","fLoc","fAsgn","fMed","fYear","fList"].forEach(function(id){var el=G(id);if(el)el.classList.toggle("active-filter",!!(el.value));});var _si=G("srchIn");if(_si)_si.classList.toggle("active-filter",!!_si.value);}
+  ["fCat","fCond","fLoc","fAsgn","fMed","fYear","fOwner","fList"].forEach(function(id){var el=G(id);if(el)el.classList.toggle("active-filter",!!(el.value));});var _si=G("srchIn");if(_si)_si.classList.toggle("active-filter",!!_si.value);}
 
 // Consignment
 function rConsign(){
@@ -937,7 +963,7 @@ function rConsign(){
     });
   }
   window._detailList=list.map(function(a){return a.id;});
-  var cols=getTCols();
+  var cols=getListCols('consign');
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
   var totalW=cols.reduce(function(s,k){return s+cw(k);},80)+80;
@@ -954,15 +980,15 @@ function rConsign(){
   }
   if(!list.length){h+='<div class="empty">No consignment assets match filter.</div>';return h+'</div>';}
   h+='<div class="twrap"><table class="tbl" id="CTB" style="width:'+totalW+'px;">';
-  h+='<thead><tr><th style="width:70px;position:sticky;top:0;"><div class="thin"><span class="thlbl">ID</span></div></th>';
-  cols.forEach(function(key){
-    if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;"><div class="thin"><span class="thlbl">Photo</span></div></th>';return;}
+  h+='<thead><tr><th style="width:70px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">ID</span></div></th>';
+  cols.forEach(function(key,i){
+    if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'consign\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'consign\')" ondragend="cdE()"><div class="thin"><span class="thlbl">📷</span></div></th>';return;}
     var fd=fds.find(function(f){return f.k===key;})||{lbl:key};
     var lbl=renames[key]||fd.lbl;
     var w=cw(key);
-    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);">';
-    h+='<div class="thin"><span class="thlbl">'+esc(lbl)+'</span>';
-    h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">✕</span></div></th>';
+    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'consign\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'consign\')" ondragend="cdE()">';
+    h+='<div class="thin"><span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>';
+    h+='<span class="colx" onclick="hideCol(\''+key+'\',\'consign\')" title="Hide">✕</span></div></th>';
   });
   h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
   h+='</tr></thead><tbody>';
@@ -1011,7 +1037,7 @@ function rFraming(){
     });
   }
   window._detailList=list.map(function(a){return a.id;});
-  var cols=getTCols();
+  var cols=getListCols('framing');
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
   var totalW=cols.reduce(function(s,k){return s+cw(k);},80)+80;
@@ -1028,15 +1054,15 @@ function rFraming(){
   }
   if(!list.length){h+='<div class="empty">No items match filter.</div>';return h+'</div>';}
   h+='<div class="twrap"><table class="tbl" id="FTB" style="width:'+totalW+'px;">';
-  h+='<thead><tr><th style="width:70px;position:sticky;top:0;"><div class="thin"><span class="thlbl">ID</span></div></th>';
-  cols.forEach(function(key){
-    if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;"><div class="thin"><span class="thlbl">Photo</span></div></th>';return;}
+  h+='<thead><tr><th style="width:70px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">ID</span></div></th>';
+  cols.forEach(function(key,i){
+    if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'framing\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'framing\')" ondragend="cdE()"><div class="thin"><span class="thlbl">📷</span></div></th>';return;}
     var fd=fds.find(function(f){return f.k===key;})||{lbl:key};
     var lbl=renames[key]||fd.lbl;
     var w=cw(key);
-    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);">';
-    h+='<div class="thin"><span class="thlbl">'+esc(lbl)+'</span>';
-    h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">\u2715</span></div></th>';
+    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'framing\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'framing\')" ondragend="cdE()">';
+    h+='<div class="thin"><span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>';
+    h+='<span class="colx" onclick="hideCol(\''+key+'\',\'framing\')" title="Hide">\u2715</span></div></th>';
   });
   h+='<th class="no-print" style="width:130px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
   h+='</tr></thead><tbody>';
@@ -1094,7 +1120,7 @@ function delFramingAsset(id){
 }
 function exportFramingCSV(){
   if(!framingAssets.length){toast("No framing assets","e");return;}
-  var cols=getTCols().filter(function(k){return k!=="photo";});
+  var cols=getListCols('framing').filter(function(k){return k!=="photo";});
   var hdr="ID,"+cols.join(",");
   var rows=framingAssets.map(function(a){return[a.id].concat(cols.map(function(k){return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';})).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","framing.csv");toast("Exported");
@@ -1110,7 +1136,7 @@ function delWishAsset(id){
 }
 function exportWishCSV(){
   if(!wishAssets.length){toast("No wish list items","e");return;}
-  var cols=getTCols().filter(function(k){return k!=="photo";});
+  var cols=getListCols('wish').filter(function(k){return k!=="photo";});
   var hdr="ID,"+cols.join(",");
   var rows=wishAssets.map(function(a){return[a.id].concat(cols.map(function(k){return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';})).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","wishlist.csv");toast("Exported");
@@ -1162,28 +1188,26 @@ function delConsignAsset(id){
 }
 function exportConsignCSV(){
   if(!consignAssets.length){toast("No consignment assets","e");return;}
-  var cols=getTCols().filter(function(k){return k!=="photo";});
+  var cols=getListCols('consign').filter(function(k){return k!=="photo";});
   var hdr="ID,"+cols.join(",");
   var rows=consignAssets.map(function(a){return[a.id].concat(cols.map(function(k){return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';})).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","consignment.csv");toast("Exported");
 }
 
 // Private Collection (COA / Authentication requests)
-function getCOACols(){
-  return ["photo","artist","name","yearCreated","medium","dimensions","condition","ownerName","ownerContact","dateSubmitted","authResult","coaIssued","coaNumber","coaDate","fee","notes"];
-}
+function getCOACols(){return getListCols("coa");}
 function rCOA(){
   var f=getFS(),ql=f.q.toLowerCase();
   var list=(hasFilter()&&filtered.length&&window._filteredView==="coa")?filtered.slice():coaAssets.slice().reverse();
   if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
     list=list.filter(function(a){
       var ms=!ql||[a.name,a.serialNumber,a.ownerName,a.ownerContact,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
-      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
-      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
+      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim(),ao=(a.ownerName||'').trim();
+      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year)&&(!f.owner||ao===f.owner);
     });
   }
   window._detailList=list.map(function(a){return a.id;});
-  var cols=getCOACols();
+  var cols=getListCols('coa');
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
   var totalW=cols.reduce(function(s,k){return s+cw(k);},80)+90;
@@ -1203,14 +1227,14 @@ function rCOA(){
   if(!list.length){h+='<div class="empty">No items match filter.</div>';return h+'</div>';}
   h+='<div class="twrap"><table class="tbl" id="COATB" style="width:'+totalW+'px;">';
   h+='<thead><tr><th style="width:70px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">ID</span></div></th>';
-  cols.forEach(function(key){
-    if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">Photo</span></div></th>';return;}
+  cols.forEach(function(key,i){
+    if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'coa\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'coa\')" ondragend="cdE()"><div class="thin"><span class="thlbl">📷</span></div></th>';return;}
     var fd=fds.find(function(f){return f.k===key;})||{lbl:key};
     var lbl=renames[key]||fd.lbl;
     var w=cw(key);
-    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);">';
-    h+='<div class="thin"><span class="thlbl">'+esc(lbl)+'</span>';
-    h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">\u2715</span></div></th>';
+    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'coa\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'coa\')" ondragend="cdE()">';
+    h+='<div class="thin"><span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>';
+    h+='<span class="colx" onclick="hideCol(\''+key+'\',\'coa\')" title="Hide">\u2715</span></div></th>';
   });
   h+='<th class="no-print" style="width:120px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
   h+='</tr></thead><tbody>';
@@ -1301,14 +1325,14 @@ function rSold(){
   h+='</div>';
   if(!soldAssets.length){h+='<div class="empty"><div class="big">&#x1F4B0;</div>No sold assets yet.</div>';return h+'</div>';}
   if(!list.length){h+='<div class="empty">No sold assets match filter.</div>';return h+'</div>';}
-  h+='<div class="twrap"><table class="tbl" style="width:'+totalW+'px;">';
-  h+='<thead><tr><th style="width:70px;position:sticky;top:0;"><div class="thin"><span class="thlbl">ID</span></div></th>';
-  cols.forEach(function(key){
+  h+='<div class="twrap"><table class="tbl" id="STB" style="width:'+totalW+'px;">';
+  h+='<thead><tr><th style="width:70px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">ID</span></div></th>';
+  cols.forEach(function(key,i){
     var lbl=key==="photo"?"Photo":key==="soldAt"?"Sold At $":key==="soldDate"?"Sold Date":(renames[key]||(fds.find(function(f){return f.k===key;})||{lbl:key}).lbl);
     var w=cw(key);
-    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);">';
-    h+='<div class="thin"><span class="thlbl">'+esc(lbl)+'</span>';
-    h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">✕</span></div></th>';
+    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'sold\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'sold\')" ondragend="cdE()">';
+    h+='<div class="thin">'+(key==="photo"?'<span class="thlbl">📷</span>':'<span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>');
+    h+='<span class="colx" onclick="hideCol(\''+key+'\',\'sold\')" title="Hide">✕</span></div></th>';
   });
   h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
   h+='</tr></thead><tbody>';
@@ -1434,7 +1458,7 @@ function rDash(){
   var inPossessionVal=val+conVal+framVal;
   var grandTotal=inPossession+soldTotal;
   var grandVal=inPossessionVal+soldFaceVal;
-  h+='<div style="font-size:10px;color:var(--mu);font-family:var(--mo);padding:0 2px 8px;"> Total tracked: <b>'+grandTotal+'</b> assets &nbsp;·&nbsp; face value: <b>$'+grandVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></div>';
+  h+='<div style="font-size:10px;color:var(--mu);font-family:var(--mo);padding:0 2px 8px;white-space:nowrap;overflow-x:auto;">Total tracked: <b>'+grandTotal+'</b> assets &nbsp;\u00b7&nbsp; face value: <b>$'+grandVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></div>';
   h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl">In Possession <span style="font-size:10px;color:var(--mu);">(inv+con+framing)</span></div><div class="sv" style="font-size:13px;">'+inPossession+' items</div></div><div class="sv ac" style="font-size:16px;">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div></div>';
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'table\')" title="Inventory"><div class="sl" style="color:#1a3a6b">Inventory ('+total+')</div><div class="sv" style="color:#1a3a6b">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'consign\')" title="Consignment"><div class="sl" style="color:#2e6da4">Consignment ('+conTotal+')</div><div class="sv" style="color:#2e6da4">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
@@ -1537,7 +1561,7 @@ function rList(){
   var _solV=soldAssets.reduce(function(s,a){return s+parseFloat(a.soldAt||0);},0);
   var _framV=framingAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
   var _wshV=wishAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
-  var _totN=_inv+_con+_sol+_fram+_wsh, _posN=_inv+_con+_fram, _posV=_invV+_conV+_framV;
+  var _totN=_inv+_con+_fram, _posN=_inv+_con+_fram, _posV=_invV+_conV+_framV;
   h+='<div style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 0 8px;font-size:11px;font-family:var(--mo);">';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Total: <b>'+_totN+'</b></span>';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Possession: <b>'+_posN+'</b> · <b>$'+_posV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
@@ -1595,15 +1619,8 @@ function rList(){
 
 
 // Inventory Table
-function getSTCols(){
-  // Sold table columns = same as inventory defaults + soldAt
-  return ["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","currentValue","soldAt","soldDate","location","assignedTo","notes"];
-}
-function getTCols(){
-  if(!tableCols)tableCols=["photo", "category", "artist", "serialNumber", "name", "yearCreated", "medium", "dimensions", "condition", "framed", "authenticCert", "exhibitionHistory", "location", "currentValue", "assignedTo", "notes"];
-  customCols.forEach(c=>{if(!tableCols.includes(c.key))tableCols.push(c.key);});
-  return tableCols;
-}
+function getSTCols(){return getListCols("sold");}
+function getTCols(){return getListCols("inventory");}
 function defW(k){
   // Widths tuned for A3 landscape (420mm = ~1587px at 96dpi, minus scrollbar ~1560px)
   // Default inventory cols total ~1414px - fits A3 landscape
@@ -1720,7 +1737,7 @@ function rWish(){
     });
   }
   window._detailList=list.map(function(a){return a.id;});
-  var cols=getTCols();
+  var cols=getListCols('wish');
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
   var totalW=cols.reduce(function(s,k){return s+cw(k);},80)+90;
@@ -1739,14 +1756,14 @@ function rWish(){
   if(!list.length){h+='<div class="empty">No items match filter.</div>';return h+'</div>';}
   h+='<div class="twrap"><table class="tbl" id="WTB" style="width:'+totalW+'px;">';
   h+='<thead><tr><th style="width:70px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">ID</span></div></th>';
-  cols.forEach(function(key){
-    if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">Photo</span></div></th>';return;}
+  cols.forEach(function(key,i){
+    if(key==="photo"){h+='<th style="width:'+cw(key)+'px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'wish\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'wish\')" ondragend="cdE()"><div class="thin"><span class="thlbl">📷</span></div></th>';return;}
     var fd=fds.find(function(f){return f.k===key;})||{lbl:key};
     var lbl=renames[key]||fd.lbl;
     var w=cw(key);
-    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);">';
-    h+='<div class="thin"><span class="thlbl">'+esc(lbl)+'</span>';
-    h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">\u2715</span></div></th>';
+    h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'wish\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'wish\')" ondragend="cdE()">';
+    h+='<div class="thin"><span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>';
+    h+='<span class="colx" onclick="hideCol(\''+key+'\',\'wish\')" title="Hide">\u2715</span></div></th>';
   });
   h+='<th class="no-print" style="width:100px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
   h+='</tr></thead><tbody>';
@@ -1786,10 +1803,10 @@ function setRH(v){rowH=parseInt(v);var l=G("rhLbl");if(l)l.textContent=v+"px";LS
 function bindTbl(){}
 
 // Col drag
-function cdS(e,i){colDragSrc=i;e.currentTarget.classList.add("cdrag");}
+function cdS(e,i,listName){colDragSrc=i;colDragList=listName||"inventory";e.currentTarget.classList.add("cdrag");}
 function cdO(e,i){e.preventDefault();document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrop");});e.currentTarget.classList.add("cdrop");var w=G("TW");if(w){var r=w.getBoundingClientRect();if(e.clientX-r.left<60)w.scrollLeft-=12;else if(r.right-e.clientX<60)w.scrollLeft+=12;}}
-function cdD(e,i){e.preventDefault();document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrop");t.classList.remove("cdrag");});if(colDragSrc===null||colDragSrc===i)return;var cols=getTCols();var m=cols.splice(colDragSrc,1)[0];cols.splice(i,0,m);tableCols=cols;colDragSrc=null;saveAll();render();}
-function cdE(){document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrag");t.classList.remove("cdrop");});}
+function cdD(e,i,listName){e.preventDefault();document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrop");t.classList.remove("cdrag");});listName=listName||"inventory";if(colDragSrc===null||colDragSrc===i||colDragList!==listName){colDragSrc=null;colDragList=null;return;}var cols=getListCols(listName).slice();var m=cols.splice(colDragSrc,1)[0];cols.splice(i,0,m);setListCols(listName,cols);colDragSrc=null;colDragList=null;saveAll();render();}
+function cdE(){document.querySelectorAll(".tbl th").forEach(function(t){t.classList.remove("cdrag");t.classList.remove("cdrop");});colDragSrc=null;colDragList=null;}
 
 // Col resize
 
@@ -1895,18 +1912,20 @@ function editCellPhoto(aid){
   }inp.click();
 }
 
-// Hide/Unhide cols
-function hideCol(key){tableCols=getTCols().filter(function(k){return k!==key;});saveAll();render();toast("Hidden — tap 👁 Unhide to restore","i",10000);}
+// Hide/Unhide cols (independent per list)
+function hideCol(key,listName){listName=listName||_viewList(view);var cols=getListCols(listName).filter(function(k){return k!==key;});setListCols(listName,cols);saveAll();render();toast("Hidden — tap 👁 Unhide to restore","i",10000);}
 function showUnhide(){
+  var listName=_viewList(view);
   var allFds2=[{k:"photo",lbl:"Photo",sec:""}].concat(allFDs());
-  var cols=getTCols();
+  var cols=getListCols(listName);
   var hidden=allFds2.filter(function(f){return!cols.includes(f.k);});
   var body=G("mUnhideBody");
-  if(body)body.innerHTML=hidden.length?hidden.map(function(f){return'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--b);font-size:13px;"><span>'+esc(f.lbl)+'</span><button class="btn bok" style="font-size:11px;" onclick="unhideCol(\''+f.k+'\')">Show</button></div>';}).join(''):'<div style="color:var(--mu);font-size:13px;padding:7px 0;">All columns visible.</div>';
+  if(body)body.innerHTML=hidden.length?hidden.map(function(f){return'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--b);font-size:13px;"><span>'+esc(f.lbl)+'</span><button class="btn bok" style="font-size:11px;" onclick="unhideCol(\''+f.k+'\',\''+listName+'\')">Show</button></div>';}).join(''):'<div style="color:var(--mu);font-size:13px;padding:7px 0;">All columns visible.</div>';
   var m=G("mUnhide");if(m)m.style.display="flex";
 }
-function unhideCol(key){
-  var cols=getTCols();
+function unhideCol(key,listName){
+  listName=listName||_viewList(view);
+  var cols=getListCols(listName).slice();
   if(!cols.includes(key)){
     var masterOrder=["photo"].concat(CFIELDS.map(function(f){return f.k;}),customCols.map(function(c){return c.key;}));
     var origIdx=masterOrder.indexOf(key);var inserted=false;
@@ -1915,14 +1934,15 @@ function unhideCol(key){
       if(!inserted){for(var i=origIdx-1;i>=0;i--){var pos=cols.indexOf(masterOrder[i]);if(pos>=0){cols.splice(pos+1,0,key);inserted=true;break;}}}
     }if(!inserted)cols.unshift(key);
   }
-  tableCols=cols;saveAll();render();closeM("mUnhide");toast("Column restored");
+  setListCols(listName,cols);saveAll();render();closeM("mUnhide");toast("Column restored");
 }
 function renameCol(key,lbl){var r=LS.get("acap_renames_v3",{});if(lbl)r[key]=lbl;else delete r[key];LS.set("acap_renames_v3",r);}
 function showAddCol(){var el=G("mAddCol");if(el)el.style.display="flex";}
 function addCol(){
   var lbl=(G("nColName")||{value:""}).value.trim();if(!lbl){toast("Name required","e");return;}
   var key="cc_"+Date.now();customCols.push({key:key,label:lbl,type:(G("nColType")||{value:"text"}).value});
-  var cols=getTCols();cols.push(key);tableCols=cols;saveAll();closeM("mAddCol");goTo("table");toast("Column added");
+  var listName=_viewList(view);
+  var cols=getListCols(listName);cols.push(key);setListCols(listName,cols);saveAll();closeM("mAddCol");render();toast("Column added");
 }
 
 // Print
@@ -1941,7 +1961,7 @@ function doPrint(){
   var arr=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:view==="coa"?coaAssets:assets;
   // Apply current filter - filtered[] is now correctly populated by doFilter() for all views
   if(hasFilter()&&filtered.length)arr=filtered;
-  var cols=view==="sold"?getSTCols():view==="coa"?getCOACols():getTCols();
+  var cols=getListCols(_viewList(view));
   var fds=allFDs(),renames=LS.get("acap_renames_v3",{});
   var legKey=view==="sold"?"acap_sold_legend":view==="consign"?"acap_consign_legend":view==="framing"?"acap_framing_legend":view==="wish"?"acap_wish_legend":view==="coa"?"acap_coa_legend":"acap_tbl_legend";
   var psKey=view==="sold"?"acap_sold_ps":view==="consign"?"acap_consign_ps":view==="framing"?"acap_framing_ps":view==="wish"?"acap_wish_ps":view==="coa"?"acap_coa_ps":"acap_tbl_ps";
@@ -2048,7 +2068,7 @@ function rForm(){
   if(!editId&&editMode==="coa"){a=Object.assign({category:"Artworks",artist:"Jean Khalifé",authResult:"Pending",coaIssued:"No",dateSubmitted:today()},a);}
   var cat=a.category||"Electronics";
   var fds=ordDefs(cat,editMode);
-  var tblKeys=(editMode==="coa"?getCOACols():getTCols()).filter(function(k){return k!=="photo";});
+  var tblKeys=getListCols(_viewList(editMode)).filter(function(k){return k!=="photo";});
   var allF=allFDs();
   tblKeys.forEach(function(k){
     var fd=allF.find(function(f){return f.k===k;});
@@ -2225,7 +2245,7 @@ function rDetail(){
   var _srcColors={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52",coa:"#b06800"};
   h+='<div style="display:inline-flex;align-items:center;gap:6px;background:'+_srcColors[_detailSrc]+';color:#fff;font-size:11px;font-family:var(--mo);padding:4px 12px;border-radius:12px;margin-bottom:8px;">&#x1F4CC; Currently in: '+_srcLabels[_detailSrc]+(_detailSrc==='coa'?' <span style="opacity:.8;">(not owned)</span>':'')+'</div>';
   h+='<div class="dh'+(art?" art":"")+'">';
-  var _xp=a.photo||_photoCache[a.id]||'';h+='<div class="dp">'+(_xp?'<img src="'+_xp+'" alt=""/>':art?'🖼':'📦')+'</div>';
+  var _xp=a.photo||_photoCache[a.id]||'';h+='<div class="dp">'+(_xp?'<img src="'+_xp+'" alt="" style="cursor:zoom-in;" onclick="showPhoto(this.src,event)"/>':art?'🖼':'📦')+'</div>';
   h+='<div style="flex:1;min-width:155px;">';
   h+='<div style="font-family:var(--mo);font-size:10px;color:var(--mu);margin-bottom:3px;">'+a.id+' · '+(a.createdAt||"")+'</div>';
   h+='<div style="font-size:17px;font-weight:600;margin-bottom:5px;">'+esc(a.name)+'</div>';
@@ -2285,24 +2305,32 @@ function togFV(key,show){if(show)hiddenFlds=hiddenFlds.filter(function(k){return
 function resetFO(){fOrder=DORDER.slice();hiddenFlds=[];saveAll();render();toast("Reset","i");}
 
 // Manage Columns
+let _colsSettingsList="inventory";
+function setColsSettingsList(l){_colsSettingsList=l;render();}
 function rCols(){
+  var listName=_colsSettingsList||"inventory";
   var allFds2=[{k:"photo",lbl:"Photo (thumbnail)",sec:""}].concat(allFDs());
-  var cols=getTCols();
-  var h='<div class="sw"><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);margin-bottom:11px;">';
+  var cols=getListCols(listName);
+  var LIST_TABS=[["inventory","Inventory"],["consign","Consignment"],["framing","Framing"],["wish","Wish List"],["sold","Sold"],["coa","Private Collection"]];
+  var h='<div class="sw">';
+  h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:11px;">';
+  LIST_TABS.forEach(function(t){h+='<button class="btn '+(listName===t[0]?"bs":"bg")+'" style="font-size:11px;" onclick="setColsSettingsList(\''+t[0]+'\')">'+t[1]+'</button>';});
+  h+='</div>';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);margin-bottom:11px;">';
   h+='<div style="padding:10px 12px;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">';
-  h+='<div style="font-family:var(--mo);font-size:12px;font-weight:600;letter-spacing:.06em;">TABLE COLUMNS</div>';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="resetTCols()">↺ Reset</button></div>';
-  // Default 16 columns first, then extras
-  var DEFAULT16=["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","exhibitionHistory","location","currentValue","assignedTo","notes"];
+  h+='<div><div style="font-family:var(--mo);font-size:12px;font-weight:600;letter-spacing:.06em;">'+esc((LIST_TABS.find(function(t){return t[0]===listName;})||["","TABLE"])[1]).toUpperCase()+' COLUMNS</div><div style="font-size:10px;color:var(--mu);margin-top:2px;">Independent from other lists \u00b7 drag column headers in the table to reorder</div></div>';
+  h+='<button class="btn bg" style="font-size:11px;" onclick="resetListColsUI(\''+listName+'\')">\u21BA Reset to Default</button></div>';
+  // Default columns for this list, then extras
+  var DEFAULT16=_defaultListCols(listName);
   var defFds=DEFAULT16.map(function(k){return allFds2.find(function(f){return f.k===k;});}).filter(Boolean);
-  var extFds=allFds2.filter(function(fd){return DEFAULT16.indexOf(fd.k)<0&&!fd.coaOnly;});
+  var extFds=allFds2.filter(function(fd){return DEFAULT16.indexOf(fd.k)<0&&(listName==="coa"||!fd.coaOnly);});
   h+='<div style="padding:4px 12px;font-size:9px;font-family:var(--mo);letter-spacing:.08em;text-transform:uppercase;color:var(--mu);background:var(--s2);border-bottom:1px solid var(--b);">Default columns</div>';
   defFds.forEach(function(fd){
     var vis=cols.includes(fd.k);
     h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--b);font-size:12px;">';
-    h+='<span style="flex:1;">'+esc(fd.lbl)+(fd.artOnly?'<span class="fibdg aw" style="margin-left:5px;">Artwork</span>':"")+'</span>';
+    h+='<span style="flex:1;">'+esc(fd.lbl)+(fd.artOnly?'<span class="fibdg aw" style="margin-left:5px;">Artwork</span>':"")+(fd.coaOnly?'<span class="fibdg aw" style="margin-left:5px;background:#fdf0da;color:#b06800;">Private Coll.</span>':"")+'</span>';
     h+='<span style="font-size:10px;color:var(--mu);font-family:var(--mo);width:76px;">'+esc(fd.sec||"")+'</span>';
-    h+='<label class="tog"><input type="checkbox" '+(vis?"checked":"")+' onchange="togTCol(\''+fd.k+'\',this.checked)"/><span class="tsl"></span></label></div>';
+    h+='<label class="tog"><input type="checkbox" '+(vis?"checked":"")+' onchange="togListCol(\''+listName+'\',\''+fd.k+'\',this.checked)"/><span class="tsl"></span></label></div>';
   });
   if(extFds.length){
     h+='<div style="padding:4px 12px;font-size:9px;font-family:var(--mo);letter-spacing:.08em;text-transform:uppercase;color:var(--mu);background:var(--s2);border-bottom:1px solid var(--b);">Additional columns</div>';
@@ -2311,10 +2339,9 @@ function rCols(){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--b);font-size:12px;">';
     h+='<span style="flex:1;">'+esc(fd.lbl)+(fd.artOnly?'<span class="fibdg aw" style="margin-left:5px;">Artwork</span>':"")+'</span>';
     h+='<span style="font-size:10px;color:var(--mu);font-family:var(--mo);width:76px;">'+esc(fd.sec||"")+'</span>';
-    h+='<label class="tog"><input type="checkbox" '+(vis?"checked":"")+' onchange="togTCol(\''+fd.k+'\',this.checked)"/><span class="tsl"></span></label></div>';
+    h+='<label class="tog"><input type="checkbox" '+(vis?"checked":"")+' onchange="togListCol(\''+listName+'\',\''+fd.k+'\',this.checked)"/><span class="tsl"></span></label></div>';
   });
   }
-  h+='<div style="padding:4px 12px;font-size:9px;font-family:var(--mo);letter-spacing:.08em;text-transform:uppercase;color:#b06800;background:#fdf3e3;border-bottom:1px solid var(--b);">Private Collection columns are managed separately (fixed set) on the Private Collection page.</div>';
   customCols.forEach(function(fd){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--b);">';
     h+='<input type="text" value="'+esc(fd.label)+'" onblur="renCC(\''+fd.key+'\',this.value)" style="flex:1;border:1px solid var(--b);border-radius:4px;padding:4px 7px;font-size:12px;font-family:var(--sa);outline:none;color:var(--tx);"/>';
@@ -2349,10 +2376,10 @@ function rCols(){
   h+='<button class="btn bp" style="font-size:11px;" onclick="saveAN()">Save</button></div></div></div>';
   return h;
 }
-function togTCol(key,show){var cols=getTCols();if(show&&!cols.includes(key))cols.push(key);if(!show){var i=cols.indexOf(key);if(i>-1)cols.splice(i,1);}tableCols=cols;saveAll();render();}
-function resetTCols(){tableCols=null;saveAll();render();toast("Reset","i");}
+function togListCol(listName,key,show){var cols=getListCols(listName).slice();if(show&&!cols.includes(key))cols.push(key);if(!show){var i=cols.indexOf(key);if(i>-1)cols.splice(i,1);}setListCols(listName,cols);saveAll();render();}
+function resetListColsUI(listName){resetListCols(listName);saveAll();render();toast("Reset to default \u2713","i");}
 function renCC(key,lbl){var cc=customCols.find(function(c){return c.key===key;});if(cc)cc.label=lbl;saveAll();}
-function delCC(key){customCols=customCols.filter(function(c){return c.key!==key;});tableCols=getTCols().filter(function(k){return k!==key;});saveAll();render();toast("Removed","i");}
+function delCC(key){customCols=customCols.filter(function(c){return c.key!==key;});Object.keys(LIST_COLS_KEYS).forEach(function(ln){setListCols(ln,getListCols(ln).filter(function(k){return k!==key;}));});saveAll();render();toast("Removed","i");}
 function saveListEdit(btn){
   var row=btn.parentElement;while(row&&!row.querySelector("textarea"))row=row.parentElement;
   var ta=row?row.querySelector("textarea"):null;if(!ta)return;
@@ -2452,7 +2479,8 @@ async function exportJSON(){
   var _framLeg=LS.get("acap_framing_legend",""),_framPs=LS.get("acap_framing_ps","");
   var _wishLeg=LS.get("acap_wish_legend",""),_wishPs=LS.get("acap_wish_ps","");
   var _coaLeg=LS.get("acap_coa_legend",""),_coaPs=LS.get("acap_coa_ps","");
-  dl(JSON.stringify({assets:withPhotos,soldAssets:withSold,consignAssets:withConsign,framingAssets:withFraming,wishAssets:withWish,coaAssets:withCoa,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,colW:colW,rowH:rowH,legend:_leg,ps:_ps,consignLegend:_consignLeg,consignPs:_consignPs,soldLegend:_soldLeg,soldPs:_soldPs,framingLegend:_framLeg,framingPs:_framPs,wishLegend:_wishLeg,wishPs:_wishPs,coaLegend:_coaLeg,coaPs:_coaPs},null,2),"application/json","assets_backup.json");
+  var _listCols2={};Object.keys(LIST_COLS_KEYS).forEach(function(ln){_listCols2[ln]=getListCols(ln);});
+  dl(JSON.stringify({assets:withPhotos,soldAssets:withSold,consignAssets:withConsign,framingAssets:withFraming,wishAssets:withWish,coaAssets:withCoa,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,colW:colW,rowH:rowH,listCols:_listCols2,legend:_leg,ps:_ps,consignLegend:_consignLeg,consignPs:_consignPs,soldLegend:_soldLeg,soldPs:_soldPs,framingLegend:_framLeg,framingPs:_framPs,wishLegend:_wishLeg,wishPs:_wishPs,coaLegend:_coaLeg,coaPs:_coaPs},null,2),"application/json","assets_backup.json");
   var _total=assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length;
   toast("Backup complete: "+assets.length+" inv · "+consignAssets.length+" con · "+framingAssets.length+" fram · "+soldAssets.length+" sold · "+wishAssets.length+" wish · "+coaAssets.length+" priv.coll ("+_total+" total)","s",6000);
 }
@@ -2498,7 +2526,8 @@ async function importJSON(inp){
       if(d.fOrder)fOrder=d.fOrder;if(d.hiddenFlds)hiddenFlds=d.hiddenFlds;
       if(d.customCols)customCols=d.customCols;if(d.appName){appName=d.appName;document.title=appName;}
       if(d.colW)colW=d.colW;if(d.rowH)rowH=d.rowH;
-      if(d.tableCols)tableCols=d.tableCols;
+      if(d.listCols){Object.keys(LIST_COLS_KEYS).forEach(function(ln){if(d.listCols[ln])setListCols(ln,d.listCols[ln]);});}
+      else if(d.tableCols){setListCols("inventory",d.tableCols);}
       // saveAll handles __ref__ for long fields and saves everything
       saveAll();
       // After saveAll, reload long fields into memory so display is correct
@@ -2790,9 +2819,12 @@ function printCurrentListStickers(){
 }
 function printAllLists(){
   // Build a print window showing all lists with their columns and photos
-  var cols=getTCols();
-  var soldCols=getSTCols();
-  var coaCols=getCOACols();
+  var invCols=getListCols('inventory');
+  var consignCols=getListCols('consign');
+  var framingCols=getListCols('framing');
+  var wishCols=getListCols('wish');
+  var soldCols=getListCols('sold');
+  var coaCols=getListCols('coa');
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
   function colLbl(k){return k==="photo"?"Photo":k==="soldAt"?"Sold At":k==="soldDate"?"Sold Date":(renames[k]||(fds.find(function(f){return f.k===k;})||{lbl:k}).lbl);}
@@ -2823,11 +2855,11 @@ function printAllLists(){
       +'<table><thead><tr><th>ID</th>'+hdr+'</tr></thead><tbody>'+makeRows(arr,colList)+'</tbody></table>';
   }
   var w=window.open("","_blank");
-  var content=makeTable(assets,"Inventory","#333",cols)
-    +makeTable(consignAssets,"Consignment","#4a6b8a",cols)
-    +makeTable(framingAssets,"Framing / Restoration","#8a6a2e",cols)
+  var content=makeTable(assets,"Inventory","#333",invCols)
+    +makeTable(consignAssets,"Consignment","#4a6b8a",consignCols)
+    +makeTable(framingAssets,"Framing / Restoration","#8a6a2e",framingCols)
     +makeTable(soldAssets,"Sold","#8a5a2e",soldCols)
-    +makeTable(wishAssets,"Wish List","#2e7d52",cols)
+    +makeTable(wishAssets,"Wish List","#2e7d52",wishCols)
     +makeTable(coaAssets,"Private Collection (not owned \u2014 COA)","#b06800",coaCols);
   w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>'
     +'body{font-family:Arial,sans-serif;font-size:9pt;padding:10px;}'
