@@ -399,6 +399,10 @@ body.app-locked .shell * { pointer-events: none !important; }
         <label style="font-size:12px;font-family:var(--mo);color:var(--mu);">Sold at price ($)</label>
         <input id="mActPriceVal" type="number" min="0" step="0.01" placeholder="Leave blank to skip" style="width:100%;padding:7px 9px;border:1px solid var(--b);border-radius:var(--r);font-size:14px;background:var(--s);color:var(--tx);margin-top:4px;"/>
       </div>
+      <div id="mActFrame" style="display:none;margin-bottom:10px;">
+        <label style="font-size:12px;font-family:var(--mo);color:var(--mu);">Frame Status</label>
+        <select id="mActFrameSel" style="width:100%;padding:7px 9px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;background:var(--s);color:var(--tx);margin-top:4px;"></select>
+      </div>
       <div style="margin-bottom:10px;">
         <label style="font-size:12px;font-family:var(--mo);color:var(--mu);" id="mActLocLabel">Location</label>
         <select id="mActLocSel" style="width:100%;padding:7px 9px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;background:var(--s);color:var(--tx);margin-top:4px;" onchange="if(this.value==='__new__'){document.getElementById('mActLocNew').style.display='';document.getElementById('mActLocNew').focus();}else{document.getElementById('mActLocNew').style.display='none';}">
@@ -3026,11 +3030,17 @@ function _allLocs(){
   var all=assets.concat(consignAssets).concat(soldAssets).concat(framingAssets).concat(wishAssets);
   return [...new Set(all.map(function(a){return(a.location||"").trim();}).filter(Boolean))].sort();
 }
-function _openActionModal(title,showPrice,currentLoc,callback){
+function _openActionModal(title,showPrice,currentLoc,callback,showFrame,currentFrame){
   var G2=function(id){return document.getElementById(id);};
   var titleEl=G2("mActTitle");if(titleEl)titleEl.textContent=title;
   var priceDiv=G2("mActPrice");if(priceDiv)priceDiv.style.display=showPrice?"block":"none";
   var priceEl=G2("mActPriceVal");if(priceEl)priceEl.value="";
+  var frameDiv=G2("mActFrame");if(frameDiv)frameDiv.style.display=showFrame?"block":"none";
+  var frameSel=G2("mActFrameSel");
+  if(frameSel&&showFrame){
+    var fOpts=getUserFramed();
+    frameSel.innerHTML=fOpts.map(function(o){return'<option'+(o===currentFrame?" selected":"")+">"+o+"</option>";}).join("");
+  }
   var locLabel=G2("mActLocLabel");
   if(locLabel)locLabel.textContent=showPrice?"Buyer / new owner / auction house":"New location";
   var sel=G2("mActLocSel");
@@ -3049,22 +3059,27 @@ function mActConfirm(){
   var sel=document.getElementById("mActLocSel");
   var newEl=document.getElementById("mActLocNew");
   var priceEl=document.getElementById("mActPriceVal");
+  var frameSel=document.getElementById("mActFrameSel");
+  var frameDiv=document.getElementById("mActFrame");
   var loc=sel&&sel.value==="__new__"?(newEl?newEl.value.trim():""):(sel?sel.value:"");
   var price=priceEl?priceEl.value.trim():"";
+  var frame=(frameDiv&&frameDiv.style.display!=="none"&&frameSel)?frameSel.value:undefined;
   closeM("mAction");closeM("mConfirm");
-  if(window._mActCallback)window._mActCallback(loc,price);
+  if(window._mActCallback)window._mActCallback(loc,price,frame);
 }
 function moveToConsign(id){
   var a=_findAsset(id);if(!a)return;
-  _openActionModal("SEND TO CONSIGNMENT",false,a.location||"",function(loc){
+  var fromFraming=framingAssets.some(function(x){return x.id===id;});
+  _openActionModal("SEND TO CONSIGNMENT",false,a.location||"",function(loc,price,frame){
     var c=Object.assign({},a);
     c.consignDate=today();c.status="consignment";
     c.originalLocation=a.location||"";
     c.location=loc||a.location||"";
+    if(fromFraming&&frame!==undefined)c.framed=frame;
     _removeFromAllLists(id);
     consignAssets.push(c);
     saveAll();render();toast("Moved to Consignment ✓","s");
-  });
+  },fromFraming,a.framed||"");
 }
 function moveToFraming(id){
   var a=_findAsset(id);if(!a)return;
@@ -3080,34 +3095,38 @@ function moveToFraming(id){
 }
 function moveToSold(id){
   var a=_findAsset(id);if(!a)return;
-  _openActionModal("MARK AS SOLD",true,a.location||"",function(loc,price){
+  var fromFraming=framingAssets.some(function(x){return x.id===id;});
+  _openActionModal("MARK AS SOLD",true,a.location||"",function(loc,price,frame){
     var sold=Object.assign({},a);
     sold.soldDate=today();sold.status="sold";
     sold.originalLocation=a.location||"";
     sold.location=loc||a.location||"";
     if(price)sold.soldAt=price.replace(/[^0-9.]/g,"");
+    if(fromFraming&&frame!==undefined)sold.framed=frame;
     _removeFromAllLists(id);
     soldAssets.push(sold);
     saveAll();render();toast("Moved to Sold Assets ✓","s");
-  });
+  },fromFraming,a.framed||"");
 }
 function restoreToInventory(id){
   var a=_findAsset(id);if(!a)return;
+  var fromFraming=framingAssets.some(function(x){return x.id===id;});
   var autoLoc=a.originalLocation;
-  if(autoLoc){
+  if(autoLoc&&!fromFraming){
     var restored=Object.assign({},a);
     delete restored.consignDate;delete restored.framingDate;delete restored.status;
     restored.location=autoLoc;delete restored.originalLocation;
     _removeFromAllLists(id);assets.push(restored);
     saveAll();render();toast("Restored to Inventory ✓");
   } else {
-    _openActionModal("RESTORE TO INVENTORY",false,a.location||"",function(loc){
+    _openActionModal("RESTORE TO INVENTORY",false,autoLoc||a.location||"",function(loc,price,frame){
       var restored=Object.assign({},a);
       delete restored.consignDate;delete restored.framingDate;delete restored.status;
-      restored.location=loc||a.location||"";delete restored.originalLocation;
+      restored.location=loc||autoLoc||a.location||"";delete restored.originalLocation;
+      if(fromFraming&&frame!==undefined)restored.framed=frame;
       _removeFromAllLists(id);assets.push(restored);
       saveAll();render();toast("Restored to Inventory ✓");
-    });
+    },fromFraming,a.framed||"");
   }
 }
 function doListAction(btn){confirmId=btn.getAttribute("data-id");showListAction(btn.getAttribute("data-list"));}
