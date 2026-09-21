@@ -291,7 +291,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <div class="sbi" id="ni-framing"     onclick="goTo('framing')">&#x1F58C; Framing / Restoration</div>
       <div class="sbi" id="ni-sold"        onclick="goTo('sold')">&#x1F4B0; Sold Assets</div>
       <div class="sbi" id="ni-wish"        onclick="goTo('wish')">&#x2B50; Wish List</div>
-      <div class="sbi" id="ni-coa"         onclick="goTo('coa')">&#x1F4DC; Private Collection</div>
+      <div class="sbi" id="ni-coa"         onclick="goTo('coa')">&#x1F4DC; Private COAs</div>
       <div class="sbi" id="ni-new"         onclick="newAsset()">＋ Add Asset</div>
       <div class="sbi" id="ni-settings"    onclick="goTo('settings')">⚙ Field Order</div>
       <div class="sbi" id="ni-cols"        onclick="goTo('cols')">⬝ Manage Columns</div>
@@ -314,10 +314,12 @@ body.app-locked .shell * { pointer-events: none !important; }
       <select class="sel" id="fCond" onchange="doFilter()" style="display:none"></select>
       <select class="sel" id="fLoc"  onchange="doFilter()" style="display:none"></select>
       <select class="sel" id="fAsgn" onchange="doFilter()" style="display:none"></select>
-      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="framing">Framing</option><option value="sold">Sold</option><option value="wish">Wish List</option><option value="coa">Private Collection</option></select>
+      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="framing">Framing</option><option value="sold">Sold</option><option value="wish">Wish List</option><option value="coa">Private COAs</option></select>
       <select class="sel" id="fMed" onchange="doFilter()" style="display:none"><option value="">All Mediums</option></select>
       <select class="sel" id="fYear" onchange="doFilter()" style="display:none"><option value="">All Years</option></select>
       <select class="sel" id="fOwner" onchange="doFilter()" style="display:none"><option value="">All Owners</option></select>
+      <select class="sel" id="fFrame" onchange="doFilter()" style="display:none"><option value="">All Frame Status</option></select>
+      <button class="btn bg no-print" id="bMarked" style="display:none" onclick="toggleMarkedFilter()">☆ Marked</button>
       <select class="sel" id="fSort" onchange="doFilter()" style="display:none">
         <option value="name">Name</option><option value="cat">Category</option>
         <option value="val">Value ↓</option><option value="date">Date</option><option value="id">ID</option>
@@ -349,12 +351,10 @@ body.app-locked .shell * { pointer-events: none !important; }
   </div>
 </div>
 <div id="photoLB" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:5000;align-items:center;justify-content:center;flex-direction:column;" onclick="G('photoLB').style.display='none'">
-  <img id="photoLBimg" src="" style="max-width:95vw;max-height:88vh;object-fit:contain;border-radius:4px;"/>
+  <div id="photoLBwrap" style="display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:96vw;max-height:88vh;">
+    <img id="photoLBimg" src="" style="max-width:90vw;max-height:88vh;object-fit:contain;border-radius:4px;"/>
+  </div>
   <div style="color:#aaa;font-size:12px;margin-top:10px;font-family:var(--mo);">Tap anywhere to close</div>
-</div>
-<div id="photoLB" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:8000;align-items:center;justify-content:center;flex-direction:column;cursor:zoom-out;">
-  <img id="photoLBimg" src="" style="max-width:96vw;max-height:88vh;object-fit:contain;border-radius:4px;"/>
-  <div style="color:#888;font-size:12px;margin-top:10px;font-family:var(--mo);">Tap to close</div>
 </div>
 <div class="ubar no-print" id="UB" style="display:none">
   <span id="UBmsg"></span><button onclick="doUndo()">↩ Undo</button><span id="UBt" style="font-size:10px;color:#666;"></span>
@@ -573,6 +573,28 @@ async function deletePhoto(id){
   delete _photoCache[id];
   try{const db=await openPhotoDB();db.transaction("photos","readwrite").objectStore("photos").delete(id);}catch{}
 }
+async function savePhoto2(id,data){
+  if(!id||!data)return;
+  _photoCache2[id]=data;
+  try{const db=await openPhotoDB();db.transaction("photos","readwrite").objectStore("photos").put({id:id+"__p2",data});}catch(e){console.warn("photo2 save error",e);}
+}
+async function loadAllPhotos2(){
+  var m={};
+  try{
+    var db=await openPhotoDB();
+    var idbPhotos=await new Promise(function(res){
+      var r=db.transaction("photos","readonly").objectStore("photos").getAll();
+      r.onsuccess=function(e){res(e.target.result||[]);};
+      r.onerror=function(){res([]);};
+    });
+    idbPhotos.forEach(function(p){if(p.id&&p.id.endsWith("__p2")&&p.data)m[p.id.slice(0,-4)]=p.data;});
+  }catch(e){}
+  return m;
+}
+async function deletePhoto2(id){
+  delete _photoCache2[id];
+  try{const db=await openPhotoDB();db.transaction("photos","readwrite").objectStore("photos").delete(id+"__p2");}catch{}
+}
 function compressPhoto(dataUrl){
   return new Promise(res=>{
     const img=new Image();
@@ -612,6 +634,7 @@ function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h)^s.charCod
 
 let assets=loadAssets();
 let _photoCache={}; // in-memory photo cache, survives renders
+let _photoCache2={}; // in-memory cache for the second photo
 let consignAssets=(function(){try{var r=localStorage.getItem("acap_consign_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return loadLongFields(p);}}catch(e){}return[];})();
 let soldAssets=(function(){try{var r=localStorage.getItem("acap_sold_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return loadLongFields(p);}}catch(e){}return[];})();
 let framingAssets=(function(){try{var r=localStorage.getItem("acap_framing_v3");if(r){var p=JSON.parse(r);if(Array.isArray(p))return loadLongFields(p);}}catch(e){}return[];})();
@@ -645,7 +668,7 @@ let appName=LS.get("acap_name_v3","Asset Capitalizer");
 let rowH=LS.get("acap_rowh_v3",36);
 let colW=(function(){var s=LS.get("acap_colw_v3",{});return(s&&s._v===5)?s:{_v:5};})();
 let authCfg=LS.get("acap_auth_v3",{u:hashStr("admin"),p:hashStr("admin1234"),pin:hashStr("1234")});
-let view="dash",listMode="grid",filtered=[],editId=null,confirmId=null,detailId=null;
+let view="dash",listMode="grid",filtered=[],editId=null,confirmId=null,detailId=null,markedOnly=false;
 let gridCols=LS.get("acap_gridcols_v3","");
 function setGridCols(v){gridCols=v;LS.set("acap_gridcols_v3",v);render();}
 let camStream=null,scanStream=null,scanIv=null,lkTarget=null,cellPhotoId=null,deferredInstall=null;
@@ -665,8 +688,9 @@ function saveAll(){
   // Build slim assets - no photos, save photos separately
   const slim=assets.map(a=>{
     if(a.photo)savePhoto(a.id,a.photo);
+    if(a.photo2)savePhoto2(a.id,a.photo2);
     var r=Object.assign({},a);
-    delete r.photo;
+    delete r.photo;delete r.photo2;
     return r;
   });
   // Save long text fields to separate keys for any asset that has them
@@ -697,23 +721,23 @@ function saveAll(){
   if(!saved)console.error('saveAll: could not save assets');
   // Save other lists
   try{
-    var slimSold=soldAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+    var slimSold=soldAssets.map(function(a){if(a.photo2)savePhoto2(a.id,a.photo2);var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
     localStorage.setItem('acap_sold_v3',JSON.stringify(slimSold));
   }catch(e){console.warn('saveAll sold',e);}
   try{
-    var slimConsign=consignAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+    var slimConsign=consignAssets.map(function(a){if(a.photo2)savePhoto2(a.id,a.photo2);var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
     localStorage.setItem('acap_consign_v3',JSON.stringify(slimConsign));
   }catch(e){console.warn('saveAll consign',e);}
   try{
-    var slimFraming=framingAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+    var slimFraming=framingAssets.map(function(a){if(a.photo2)savePhoto2(a.id,a.photo2);var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
     localStorage.setItem('acap_framing_v3',JSON.stringify(slimFraming));
   }catch(e){console.warn('saveAll framing',e);}
   try{
-    var slimWish=wishAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+    var slimWish=wishAssets.map(function(a){if(a.photo2)savePhoto2(a.id,a.photo2);var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
     localStorage.setItem('acap_wish_v3',JSON.stringify(slimWish));
   }catch(e){console.warn('saveAll wish',e);}
   try{
-    var slimCoa=coaAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+    var slimCoa=coaAssets.map(function(a){if(a.photo2)savePhoto2(a.id,a.photo2);var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
     localStorage.setItem('acap_coa_v3',JSON.stringify(slimCoa));
   }catch(e){console.warn('saveAll coa',e);}
   LS.set('acap_order_v3',fOrder);LS.set('acap_hidden_v3',hiddenFlds);LS.set('acap_custom_v3',customCols);
@@ -772,6 +796,10 @@ async function loadPhotosAndRender(){
     var pm=await loadAllPhotos();
     Object.assign(_photoCache,pm);
   }catch(e){console.warn("photo load error",e);}
+  try{
+    var pm2=await loadAllPhotos2();
+    Object.assign(_photoCache2,pm2);
+  }catch(e){console.warn("photo2 load error",e);}
   // Also check localStorage for any legacy photos not yet migrated
   for(var _i=0;_i<localStorage.length;_i++){
     var _k=localStorage.key(_i);
@@ -781,12 +809,12 @@ async function loadPhotosAndRender(){
     }
   }
   // Merge cache into assets
-  assets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
-  soldAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
-  consignAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
-  framingAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
-  wishAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
-  coaAssets.forEach(function(a){if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];});
+  [assets,soldAssets,consignAssets,framingAssets,wishAssets,coaAssets].forEach(function(arr){
+    arr.forEach(function(a){
+      if(!a.photo&&_photoCache[a.id])a.photo=_photoCache[a.id];
+      if(!a.photo2&&_photoCache2[a.id])a.photo2=_photoCache2[a.id];
+    });
+  });
   render();
 }
 
@@ -835,7 +863,7 @@ function doUndo(){
 }
 
 // Navigation
-const TITLES={dash:"Dashboard",list:"All Assets",table:"Inventory Table",consign:"Consignment",framing:"Framing / Restoration",wish:"Wish List",coa:"Private Collection",sold:"Sold Assets",settings:"Field Order",cols:"Manage Columns",security:"Security",io:"Import / Export",detail:"Asset Detail"};
+const TITLES={dash:"Dashboard",list:"All Assets",table:"Inventory Table",consign:"Consignment",framing:"Framing / Restoration",wish:"Wish List",coa:"Private COAs",sold:"Sold Assets",settings:"Field Order",cols:"Manage Columns",security:"Security",io:"Import / Export",detail:"Asset Detail"};
 function goTo(v){
   view=v;
   document.querySelectorAll(".sbi").forEach(el=>el.classList.remove("on"));
@@ -845,6 +873,8 @@ function goTo(v){
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear"].forEach(id=>{const el=G(id);if(el)el.style.display=isL?"":"none";});
   var flEl=G("fList");if(flEl)flEl.style.display=v==="list"?"":"none";
   var foEl=G("fOwner");if(foEl)foEl.style.display=v==="coa"?"":"none";
+  var ffEl=G("fFrame");if(ffEl)ffEl.style.display=v==="table"?"":"none";
+  var bMk=G("bMarked");if(bMk){bMk.style.display=v==="table"?"":"none";bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
   const vgc=G("vtCols");if(vgc){vgc.style.display=v==="list"?"":"none";vgc.value=gridCols||"";}
   ["bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
@@ -905,25 +935,29 @@ function updSidebar(){
   var _svo=fo?fo.value:"";
   if(fo){var owners=[...new Set(coaAssets.map(a=>(a.ownerName||"").trim()).filter(Boolean))].sort();fo.innerHTML='<option value="">All Owners</option>'+owners.map(o=>'<option>'+esc(o)+'</option>').join("");}
   if(fo&&_svo)fo.value=_svo;
+  var ff=G("fFrame");
+  var _svf=ff?ff.value:"";
+  if(ff){var frames=[...new Set(assets.map(a=>(a.framed||"").trim()).filter(Boolean))];var frameOrder=getUserFramed();frames.sort(function(a,b){var ia=frameOrder.indexOf(a),ib=frameOrder.indexOf(b);if(ia===-1)ia=99;if(ib===-1)ib=99;return ia-ib;});ff.innerHTML='<option value="">All Frame Status</option>'+frames.map(fr=>'<option>'+esc(fr)+'</option>').join("");}
+  if(ff&&_svf)ff.value=_svf;
 }
 function filterByCat(c){const el=G("fCat");if(el)el.value=c;goTo("list");}
 
 // Filtering
 function getFS(){
   function v(id){const el=G(id);return el?el.value:"";}
-  return{q:(v("srchIn")||"").trim(),cat:v("fCat"),cond:v("fCond"),loc:v("fLoc"),asgn:v("fAsgn"),med:v("fMed"),year:v("fYear"),owner:v("fOwner"),list:v("fList"),sort:v("fSort")||"name"};
+  return{q:(v("srchIn")||"").trim(),cat:v("fCat"),cond:v("fCond"),loc:v("fLoc"),asgn:v("fAsgn"),med:v("fMed"),year:v("fYear"),owner:v("fOwner"),frame:v("fFrame"),marked:(view==="table"&&markedOnly),list:v("fList"),sort:v("fSort")||"name"};
 }
-function hasFilter(){const f=getFS();return !!(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year||f.owner);}
+function hasFilter(){const f=getFS();return !!(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year||f.owner||f.frame||f.marked);}
 function doFilter(){
   const f=getFS(),ql=f.q.toLowerCase();
   // Pick source array based on current view
   var src=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:view==="coa"?coaAssets:assets;
-  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year&&!f.owner){filtered=[];window._filteredView=null;render();return;}
+  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year&&!f.owner&&!f.frame&&!f.marked){filtered=[];window._filteredView=null;render();return;}
   window._filteredView=view;
   filtered=src.filter(a=>{
     const ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(v=>v&&v.toLowerCase().includes(ql));
-    var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim(),ao=(a.ownerName||'').trim();
-    return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year)&&(!f.owner||ao===f.owner);
+    var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim(),ao=(a.ownerName||'').trim(),af=(a.framed||'').trim();
+    return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year)&&(!f.owner||ao===f.owner)&&(!f.frame||af===f.frame)&&(!f.marked||!!a.marked);
   }).sort((a,b)=>{
     if(f.sort==="cat") return(a.category||"").localeCompare(b.category||"");
     if(f.sort==="val") return parseFloat(b.currentValue||0)-parseFloat(a.currentValue||0);
@@ -932,6 +966,15 @@ function doFilter(){
     return(a.name||"").localeCompare(b.name||"");
   });
   render();
+}
+function toggleMarkedFilter(){markedOnly=!markedOnly;var bMk=G("bMarked");if(bMk){bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}doFilter();}
+function toggleMark(id){
+  const a=assets.find(x=>x.id===id);
+  if(!a)return;
+  a.marked=!a.marked;
+  saveAll();
+  toast(a.marked?"Marked ★":"Unmarked");
+  if(markedOnly)doFilter();else render();
 }
 
 // Render
@@ -953,7 +996,7 @@ function render(){
   else if(view==="wish")     ct.innerHTML=rWish();
   else if(view==="coa")      ct.innerHTML=rCOA();
 
-  ["fCat","fCond","fLoc","fAsgn","fMed","fYear","fOwner","fList"].forEach(function(id){var el=G(id);if(el)el.classList.toggle("active-filter",!!(el.value));});var _si=G("srchIn");if(_si)_si.classList.toggle("active-filter",!!_si.value);}
+  ["fCat","fCond","fLoc","fAsgn","fMed","fYear","fOwner","fFrame","fList"].forEach(function(id){var el=G(id);if(el)el.classList.toggle("active-filter",!!(el.value));});var _si=G("srchIn");if(_si)_si.classList.toggle("active-filter",!!_si.value);}
 
 // Consignment
 function rConsign(){
@@ -1118,7 +1161,7 @@ function restoreFramingToInventory(id){restoreToInventory(id);}
 function delFramingAsset(id){
   if(!confirm("Delete this framing/restoration entry?"))return;
   framingAssets=framingAssets.filter(function(x){return x.id!==id;});
-  deletePhoto(id);saveAll();
+  deletePhoto(id);deletePhoto2(id);saveAll();
   if(view==="detail")goTo("list");else render();
   toast("Deleted","i");
 }
@@ -1134,7 +1177,7 @@ function confirmFraming(){moveToFraming(confirmId);}
 function delWishAsset(id){
   if(!confirm("Delete this wish list item?"))return;
   wishAssets=wishAssets.filter(function(x){return x.id!==id;});
-  deletePhoto(id);saveAll();
+  deletePhoto(id);deletePhoto2(id);saveAll();
   if(view==="detail")goTo("list");else render();
   toast("Deleted","i");
 }
@@ -1164,6 +1207,9 @@ function buyWishAsset(id){
       var pm=await loadAllPhotos();
       if(pm[a.id]){await savePhoto(moved.id,pm[a.id]);await deletePhoto(a.id);}
       else if(moved.photo){await savePhoto(moved.id,moved.photo);}
+      var pm2=await loadAllPhotos2();
+      if(pm2[a.id]){await savePhoto2(moved.id,pm2[a.id]);await deletePhoto2(a.id);}
+      else if(moved.photo2){await savePhoto2(moved.id,moved.photo2);}
     }catch(e){}
   })();
   assets.push(moved);
@@ -1186,7 +1232,7 @@ function sellConsignAsset(id){
 function delConsignAsset(id){
   if(!confirm("Delete this consignment asset?"))return;
   consignAssets=consignAssets.filter(function(x){return x.id!==id;});
-  deletePhoto(id);saveAll();
+  deletePhoto(id);deletePhoto2(id);saveAll();
   if(view==="detail")goTo("list");else render();
   toast("Deleted","i");
 }
@@ -1198,7 +1244,7 @@ function exportConsignCSV(){
   dl(hdr+"\n"+rows.join("\n"),"text/csv","consignment.csv");toast("Exported");
 }
 
-// Private Collection (COA / Authentication requests)
+// Private COAs (COA / Authentication requests)
 function getCOACols(){return getListCols("coa");}
 function rCOA(){
   var f=getFS(),ql=f.q.toLowerCase();
@@ -1278,7 +1324,7 @@ function rCOA(){
 function delCOAAsset(id){
   if(!confirm("Delete this authentication record?"))return;
   coaAssets=coaAssets.filter(function(x){return x.id!==id;});
-  deletePhoto(id);saveAll();
+  deletePhoto(id);deletePhoto2(id);saveAll();
   if(view==="detail")goTo("list");else render();
   toast("Deleted","i");
 }
@@ -1291,7 +1337,7 @@ function exportCOACSV(){
 }
 async function addCOAToWish(id){
   var a=coaAssets.find(function(x){return x.id===id;});if(!a)return;
-  if(!confirm("Add \""+(a.name||id)+"\" to your Wish List?\n\nIt will stay in Private Collection too, and get a new Wish List ID."))return;
+  if(!confirm("Add \""+(a.name||id)+"\" to your Wish List?\n\nIt will stay in Private COAs too, and get a new Wish List ID."))return;
   var copy=Object.assign({},a);
   copy.id=_nextWishId();
   copy.seq=_nextSeq();
@@ -1301,6 +1347,8 @@ async function addCOAToWish(id){
   delete copy.authResult;delete copy.coaIssued;delete copy.coaNumber;delete copy.coaDate;delete copy.fee;
   var photoData=a.photo||_photoCache[a.id]||"";
   if(photoData){copy.photo=photoData;await savePhoto(copy.id,photoData);}
+  var photoData2=a.photo2||_photoCache2[a.id]||"";
+  if(photoData2){copy.photo2=photoData2;await savePhoto2(copy.id,photoData2);}
   wishAssets.push(copy);
   saveAll();render();
   toast("Added to Wish List as "+copy.id+" ✓","s");
@@ -1396,7 +1444,7 @@ function deleteSold(btn){
   var id=btn.getAttribute('data-id');
   if(!confirm("Permanently delete this sold asset?"))return;
   soldAssets=soldAssets.filter(function(x){return x.id!==id;});
-  deletePhoto(id);saveAll();render();toast("Deleted","i");
+  deletePhoto(id);deletePhoto2(id);saveAll();render();toast("Deleted","i");
 }
 function restoreConsignToInventory(id){restoreToInventory(id);}
 function exportSoldCSV(){
@@ -1469,7 +1517,7 @@ function rDash(){
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'framing\')" title="Framing"><div class="sl" style="color:#5aaccf">Framing ('+framTotal+')</div><div class="sv" style="color:#5aaccf">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'wish\')" title="Wish List"><div class="sl" style="color:#2e7d52">Wish List ('+wishTotal+')</div><div class="sv" style="color:#2e7d52">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'sold\')" title="Sold Assets"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl" style="color:#c0392b">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#c0392b;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span></div></div></div>';
-  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'coa\')" title="Private Collection"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl" style="color:#b06800">Private Collection <span style="font-size:10px;color:var(--mu);">(not owned \u2014 COA)</span></div><div class="sv" style="font-size:13px;color:#b06800;">'+coaTotal+' pieces</div></div><div class="sv" style="color:#b06800;font-size:14px;">'+coaIssuedN+' COA issued</div></div></div>';
+  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'coa\')" title="Private COAs"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl" style="color:#b06800">Private COAs <span style="font-size:10px;color:var(--mu);">(not owned \u2014 COA)</span></div><div class="sv" style="font-size:13px;color:#b06800;">'+coaTotal+' pieces</div></div><div class="sv" style="color:#b06800;font-size:14px;">'+coaIssuedN+' COA issued</div></div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
   // All lists - inventory, consignment, sold, etc.
@@ -1495,7 +1543,7 @@ function rDash(){
   if(framRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Framing</div>'+framRows;
   if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#7a5c2e;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
   if(wishRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#2e7d52;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Wish List</div>'+wishRows;
-  if(coaRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#b06800;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Private Collection</div>'+coaRows;
+  if(coaRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#b06800;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Private COAs</div>'+coaRows;
   h+='</div></div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Recent Assets</div>';
   window._detailList=assets.map(function(a){return a.id;});
@@ -1536,11 +1584,11 @@ function rList(){
       return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
     });
   }
-  // Group by list (Inventory → Consignment → Framing → Sold → Wish → Private Collection), matching dashboard/sidebar order.
+  // Group by list (Inventory → Consignment → Framing → Sold → Wish → Private COAs), matching dashboard/sidebar order.
   // Within each group, apply the selected secondary sort (name/category/value).
   var GROUP_ORDER={inventory:0,consign:1,framing:2,sold:3,wish:4,coa:5};
   var GROUP_HEX={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52",coa:"#b06800"};
-  var GROUP_NAMES={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private Collection"};
+  var GROUP_NAMES={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private COAs"};
   function _hexA(hex,a){var h=hex.replace('#','');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return 'rgba('+r+','+g+','+b+','+a+')';}
   allItems.sort(function(a,b){
     var go=GROUP_ORDER[a._src]-GROUP_ORDER[b._src];
@@ -1574,7 +1622,7 @@ function rList(){
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#5aaccf;">Fram: <b>'+_fram+'</b> · <b>$'+_framV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#c0392b;">Sold: <b>'+_sol+'</b> · <b>$'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#2e7d52;">Wish: <b>'+_wsh+'</b> · <b>$'+_wshV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#b06800;">Private Collection: <b>'+_cn+'</b> <span style="opacity:.7;">(not owned)</span></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#b06800;">Private COAs: <b>'+_cn+'</b> <span style="opacity:.7;">(not owned)</span></span>';
   h+='</div>';
   if(listMode==="tbl"){
   h+='<div style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
@@ -1695,8 +1743,8 @@ function rTable(){
   });
   h+='<th class="no-print" style="width:66px;min-width:50px;"><div class="thin">Actions</div></th></tr></thead><tbody>';
   tblA.forEach(function(a){
-    h+='<tr data-id="'+a.id+'" class="'+(isArt(a.category)?"artrow":"")+'">';
-    h+='<td style="height:'+rowH+'px;"><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+a.id+'\')">'+a.id+'</div></td>';
+    h+='<tr data-id="'+a.id+'" class="'+(isArt(a.category)?"artrow":"")+'" style="'+(a.marked?"background:rgba(230,168,23,.12);":"")+'">';
+    h+='<td style="height:'+rowH+'px;"><div class="tdin" style="display:flex;align-items:center;gap:3px;"><span class="no-print" style="cursor:pointer;font-size:12px;color:'+(a.marked?"#e6a817":"#ccc")+';" onclick="event.stopPropagation();toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★":"☆")+'</span><span style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+a.id+'\')">'+a.id+'</span></div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(cw(key)-8,50),hsz=Math.min(rowH-6,40);
@@ -1952,7 +2000,7 @@ function addCol(){
 // Print
 function openPrintDlg(){
   var el=G("mPrint");if(el)el.style.display="flex";
-  var titles={table:"Inventory",sold:"Sold Assets",consign:"Consignment",framing:"Framing / Restoration",wish:"Wish List",coa:"Private Collection / COA Register"};
+  var titles={table:"Inventory",sold:"Sold Assets",consign:"Consignment",framing:"Framing / Restoration",wish:"Wish List",coa:"Private COAs Register"};
   var pt=G("pTitle");if(pt)pt.value=titles[view]||"Asset Inventory";
 }
 function doPrint(){
@@ -2103,7 +2151,7 @@ function rForm(){
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;flex-wrap:wrap;gap:6px;">';
   h+='<h2 style="font-family:var(--mo);font-size:13px;letter-spacing:.06em;">'+(editId?("EDITING: "+editId+' <button type="button" class="btn bg" style="font-size:10px;padding:2px 8px;margin-left:6px;" onclick="changeAssetId(\''+editId+'\')">✏ Change ID</button>'):'NEW ASSET')+'</h2>';
   if(editId){
-    var _listLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private Collection"};
+    var _listLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private COAs"};
     var _listColors={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52",coa:"#b06800"};
     var _lbl=_listLabels[editMode]||editMode;
     var _clr=_listColors[editMode]||"#888";
@@ -2114,13 +2162,20 @@ function rForm(){
   h+='<div class="fs"><div class="fsh">Asset Photo</div><div class="pa">';
   h+='<div class="pp" id="pprev">'+(a.photo?'<img src="'+a.photo+'" alt=""/>':'📷')+'</div>';
   h+='<div style="display:flex;flex-direction:column;gap:5px;">';
-  h+='<button class="btn bs" style="font-size:11px;" onclick="openCam()">📷 Camera</button>';
+  h+='<button class="btn bs" style="font-size:11px;" onclick="openCam(1)">📷 Camera</button>';
   h+='<button class="btn bg" style="font-size:11px;" onclick="G(\'fpick\').click()">📁 Upload</button>';
-  if(a.photo)h+='<button class="btn bg" style="font-size:11px;" onclick="clearPhoto()">✕ Remove</button>';
+  if(a.photo)h+='<button class="btn bg" style="font-size:11px;" onclick="clearPhoto(1)">✕ Remove</button>';
   h+='</div></div></div>';
-  h+='<form id="aForm"><input type="hidden" name="photo" id="pdata" value="'+(a.photo||"")+'"/>';
+  h+='<div class="fs"><div class="fsh">Second Photo <span style="font-size:10px;color:var(--mu);font-weight:400;">(optional)</span></div><div class="pa">';
+  h+='<div class="pp" id="pprev2">'+(a.photo2?'<img src="'+a.photo2+'" alt=""/>':'📷')+'</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:5px;">';
+  h+='<button class="btn bs" style="font-size:11px;" onclick="openCam(2)">📷 Camera</button>';
+  h+='<button class="btn bg" style="font-size:11px;" onclick="G(\'fpick2\').click()">📁 Upload</button>';
+  if(a.photo2)h+='<button class="btn bg" style="font-size:11px;" onclick="clearPhoto(2)">✕ Remove</button>';
+  h+='</div></div></div>';
+  h+='<form id="aForm"><input type="hidden" name="photo" id="pdata" value="'+(a.photo||"")+'"/><input type="hidden" name="photo2" id="pdata2" value="'+(a.photo2||"")+'"/>';
   sOrd.forEach(function(sec){
-    h+='<div class="fs"><div class="fsh">'+sec+(sec==="Artwork"?'<span class="ab">Artwork Only</span>':"")+(sec==="Authentication"?'<span class="ab" style="background:#b06800;">Private Collection Only</span>':"")+'</div><div class="fg">';
+    h+='<div class="fs"><div class="fsh">'+sec+(sec==="Artwork"?'<span class="ab">Artwork Only</span>':"")+(sec==="Authentication"?'<span class="ab" style="background:#b06800;">Private COAs Only</span>':"")+'</div><div class="fg">';
     sMap[sec].forEach(function(fd){h+=bldField(fd);});
     h+='</div></div>';
   });
@@ -2158,6 +2213,9 @@ function submitForm(){
   }
   var pd=G("pdata");entry.photo=pd?pd.value||"":"";entry.updatedAt=today();
   if(entry.photo){savePhoto(entry.id,entry.photo);_photoCache[entry.id]=entry.photo;}
+  var pd2=G("pdata2");entry.photo2=pd2?pd2.value||"":"";
+  if(entry.photo2){savePhoto2(entry.id,entry.photo2);_photoCache2[entry.id]=entry.photo2;}
+  else{deletePhoto2(entry.id);delete _photoCache2[entry.id];}
   if(existing){var i=targetArr.findIndex(function(x){return x.id===editId;});if(i>-1)targetArr[i]=entry;}
   else targetArr.push(entry);
   saveAll();
@@ -2180,7 +2238,7 @@ function submitForm(){
     toast("Saved to Wish List ✓ ("+wishAssets.length+")");
   } else if(savedMode==="coa"){
     goTo("coa");
-    toast("Saved to Private Collection ✓ ("+coaAssets.length+")");
+    toast("Saved to Private COAs ✓ ("+coaAssets.length+")");
   } else {
     goTo("list");
     toast("Saved ✓ ("+assets.length+" assets)");
@@ -2240,16 +2298,23 @@ function rDetail(){
   h+='<button class="btn bg" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Label</button>';
   h+='<button class="btn bs" style="font-size:11px;" onclick="editAsset(\''+a.id+'\')">✏ Edit</button>';
   if(_detailSrc==='inventory'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="confirmId=\''+a.id+'\';G(\'mConfirm\').style.display=\'flex\'">💰 Sell/Move</button>';}
+  if(_detailSrc==='inventory'){h+='<button class="btn" style="font-size:11px;'+(a.marked?"background:#e6a817;color:#000;":"background:none;border:1px solid var(--b);")+'" onclick="toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★ Marked":"☆ Mark")+'</button>';}
   if(_detailSrc==='wish'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="buyWishAsset(\''+a.id+'\')">💰 Buy \u2192 Inventory</button>';}
   if(_detailSrc==='framing'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreFramingToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
   if(_detailSrc==='consign'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreConsignToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
   if(_detailSrc==='coa'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="addCOAToWish(\''+a.id+'\')">\u2B50 Add to Wish List</button>';}
   h+='<button class="btn bd" style="font-size:11px;" onclick="confirmId=\''+a.id+'\';safeDelete(\''+_detailSrc+'\')">🗑</button></div>';
-  var _srcLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private Collection"};
+  var _srcLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private COAs"};
   var _srcColors={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52",coa:"#b06800"};
   h+='<div style="display:inline-flex;align-items:center;gap:6px;background:'+_srcColors[_detailSrc]+';color:#fff;font-size:11px;font-family:var(--mo);padding:4px 12px;border-radius:12px;margin-bottom:8px;">&#x1F4CC; Currently in: '+_srcLabels[_detailSrc]+(_detailSrc==='coa'?' <span style="opacity:.8;">(not owned)</span>':'')+'</div>';
   h+='<div class="dh'+(art?" art":"")+'">';
-  var _xp=a.photo||_photoCache[a.id]||'';h+='<div class="dp">'+(_xp?'<img src="'+_xp+'" alt="" style="cursor:zoom-in;" onclick="showPhoto(this.src,event)"/>':art?'🖼':'📦')+'</div>';
+  var _xp=a.photo||_photoCache[a.id]||'';
+  var _xp2=a.photo2||_photoCache2[a.id]||'';
+  h+='<div style="display:flex;flex-direction:column;gap:5px;">';
+  h+='<div class="dp">'+(_xp?'<img src="'+_xp+'" alt="" style="cursor:zoom-in;" onclick="showPhoto(this.src,event)"/>':art?'🖼':'📦')+'</div>';
+  if(_xp2)h+='<div class="dp" style="max-height:70px;overflow:hidden;"><img src="'+_xp2+'" alt="" style="cursor:zoom-in;object-fit:cover;" onclick="showPhoto(this.src,event)"/></div>';
+  if(_xp&&_xp2)h+='<button class="btn bg" style="font-size:10px;" onclick="showBothPhotos(\''+a.id+'\',event)">⛶ View Both</button>';
+  h+='</div>';
   h+='<div style="flex:1;min-width:155px;">';
   h+='<div style="font-family:var(--mo);font-size:10px;color:var(--mu);margin-bottom:3px;">'+a.id+' · '+(a.createdAt||"")+'</div>';
   h+='<div style="font-size:17px;font-weight:600;margin-bottom:5px;">'+esc(a.name)+'</div>';
@@ -2315,7 +2380,7 @@ function rCols(){
   var listName=_colsSettingsList||"inventory";
   var allFds2=[{k:"photo",lbl:"Photo (thumbnail)",sec:""}].concat(allFDs());
   var cols=getListCols(listName);
-  var LIST_TABS=[["inventory","Inventory"],["consign","Consignment"],["framing","Framing"],["wish","Wish List"],["sold","Sold"],["coa","Private Collection"]];
+  var LIST_TABS=[["inventory","Inventory"],["consign","Consignment"],["framing","Framing"],["wish","Wish List"],["sold","Sold"],["coa","Private COAs"]];
   var h='<div class="sw">';
   h+='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:11px;">';
   LIST_TABS.forEach(function(t){h+='<button class="btn '+(listName===t[0]?"bs":"bg")+'" style="font-size:11px;" onclick="setColsSettingsList(\''+t[0]+'\')">'+t[1]+'</button>';});
@@ -2471,13 +2536,14 @@ function rIO(){
 async function exportJSON(){
   toast("Preparing…","i",8000);
   var pm=await loadAllPhotos();
-  var withPhotos=assets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
+  var pm2=await loadAllPhotos2();
+  var withPhotos=assets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||"",photo2:a.photo2||_photoCache2[a.id]||pm2[a.id]||""});});
   var _leg=LS.get("acap_tbl_legend",""),_ps=LS.get("acap_tbl_ps","");
-  var withConsign=consignAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
-  var withSold=soldAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
-  var withFraming=framingAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
-  var withWish=wishAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
-  var withCoa=coaAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||""});});
+  var withConsign=consignAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||"",photo2:a.photo2||_photoCache2[a.id]||pm2[a.id]||""});});
+  var withSold=soldAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||"",photo2:a.photo2||_photoCache2[a.id]||pm2[a.id]||""});});
+  var withFraming=framingAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||"",photo2:a.photo2||_photoCache2[a.id]||pm2[a.id]||""});});
+  var withWish=wishAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||"",photo2:a.photo2||_photoCache2[a.id]||pm2[a.id]||""});});
+  var withCoa=coaAssets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||"",photo2:a.photo2||_photoCache2[a.id]||pm2[a.id]||""});});
   var _consignLeg=LS.get("acap_consign_legend",""),_consignPs=LS.get("acap_consign_ps","");
   var _soldLeg=LS.get("acap_sold_legend",""),_soldPs=LS.get("acap_sold_ps","");
   var _framLeg=LS.get("acap_framing_legend",""),_framPs=LS.get("acap_framing_ps","");
@@ -2505,21 +2571,22 @@ async function importJSON(inp){
     try{
       var d=JSON.parse(ev.target.result);
       if(!d.assets||!Array.isArray(d.assets)){toast("Invalid backup","e");return;}
-      var photosToSave=[];
+      var photosToSave=[];var photos2ToSave=[];
       // Normalize IDs to 3-digit format before processing
       d.assets.forEach(function(a){
         if(a.id&&a.id.length===8&&a.id.indexOf("AST-0")===0)a.id="AST-"+a.id.slice(5);
       });
       var slim=d.assets.map(function(a){
         if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});
-        var r=Object.assign({},a);delete r.photo;return r;
+        if(a.photo2&&a.photo2.startsWith("data:"))photos2ToSave.push({id:a.id,photo:a.photo2});
+        var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;
       });
       // Also collect photos from soldAssets, consignAssets, framingAssets, wishAssets, coaAssets
-      if(d.soldAssets)d.soldAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
-      if(d.consignAssets)d.consignAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
-      if(d.framingAssets)d.framingAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
-      if(d.wishAssets)d.wishAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
-      if(d.coaAssets)d.coaAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});});
+      if(d.soldAssets)d.soldAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});if(a.photo2&&a.photo2.startsWith("data:"))photos2ToSave.push({id:a.id,photo:a.photo2});});
+      if(d.consignAssets)d.consignAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});if(a.photo2&&a.photo2.startsWith("data:"))photos2ToSave.push({id:a.id,photo:a.photo2});});
+      if(d.framingAssets)d.framingAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});if(a.photo2&&a.photo2.startsWith("data:"))photos2ToSave.push({id:a.id,photo:a.photo2});});
+      if(d.wishAssets)d.wishAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});if(a.photo2&&a.photo2.startsWith("data:"))photos2ToSave.push({id:a.id,photo:a.photo2});});
+      if(d.coaAssets)d.coaAssets.forEach(function(a){if(a.photo&&a.photo.startsWith("data:"))photosToSave.push({id:a.id,photo:a.photo});if(a.photo2&&a.photo2.startsWith("data:"))photos2ToSave.push({id:a.id,photo:a.photo2});});
       // Load into memory
       assets=d.assets;
       soldAssets=d.soldAssets&&Array.isArray(d.soldAssets)?d.soldAssets:soldAssets;
@@ -2553,6 +2620,10 @@ async function importJSON(inp){
         var compressed=await compressPhoto(photosToSave[i].photo);
         await savePhoto(photosToSave[i].id,compressed);
       }
+      for(var i2=0;i2<photos2ToSave.length;i2++){
+        var compressed2=await compressPhoto(photos2ToSave[i2].photo);
+        await savePhoto2(photos2ToSave[i2].id,compressed2);
+      }
       if(d.legend!==undefined)LS.set("acap_tbl_legend",d.legend);
       if(d.ps!==undefined)LS.set("acap_tbl_ps",d.ps);
       if(d.consignLegend!==undefined)LS.set("acap_consign_legend",d.consignLegend);
@@ -2568,27 +2639,27 @@ async function importJSON(inp){
       if(d.soldAssets&&Array.isArray(d.soldAssets)){
         soldAssets=d.soldAssets;
         // Strip photos before saving to localStorage to avoid quota
-        var slimSold2=soldAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+        var slimSold2=soldAssets.map(function(a){var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
         try{localStorage.setItem("acap_sold_v3",JSON.stringify(slimSold2));}catch(e){console.warn("sold quota",e);}
       }
       if(d.consignAssets&&Array.isArray(d.consignAssets)){
         consignAssets=d.consignAssets;
-        var slimCon2=consignAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+        var slimCon2=consignAssets.map(function(a){var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
         try{localStorage.setItem("acap_consign_v3",JSON.stringify(slimCon2));}catch(e){console.warn("consign quota",e);}
       }
       if(d.framingAssets&&Array.isArray(d.framingAssets)){
         framingAssets=d.framingAssets;
-        var slimFram2=framingAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+        var slimFram2=framingAssets.map(function(a){var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
         try{localStorage.setItem("acap_framing_v3",JSON.stringify(slimFram2));}catch(e){console.warn("framing quota",e);}
       }
       if(d.wishAssets&&Array.isArray(d.wishAssets)){
         wishAssets=d.wishAssets;
-        var slimWish2=wishAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+        var slimWish2=wishAssets.map(function(a){var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
         try{localStorage.setItem("acap_wish_v3",JSON.stringify(slimWish2));}catch(e){console.warn("wish quota",e);}
       }
       if(d.coaAssets&&Array.isArray(d.coaAssets)){
         coaAssets=d.coaAssets;
-        var slimCoa2=coaAssets.map(function(a){var r=Object.assign({},a);delete r.photo;return r;});
+        var slimCoa2=coaAssets.map(function(a){var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
         try{localStorage.setItem("acap_coa_v3",JSON.stringify(slimCoa2));}catch(e){console.warn("coa quota",e);}
       }
       await loadPhotosAndRender();
@@ -2617,7 +2688,9 @@ function importCSV(inp){
 function dl(content,mime,name){var blob=new Blob([content],{type:mime});var url=URL.createObjectURL(blob);Object.assign(document.createElement("a"),{href:url,download:name}).click();URL.revokeObjectURL(url);}
 
 // Camera
-async function openCam(){
+let camSlot=1;
+async function openCam(slot){
+  camSlot=slot||1;
   var cm=G("CAM");if(cm)cm.style.display="flex";
   try{
     camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:"environment"},width:{ideal:640},height:{ideal:480}}}).catch(function(){return navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:640},height:{ideal:480}}});});
@@ -2631,24 +2704,25 @@ async function snapPhoto(){
   if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
   cv.width=w;cv.height=h;cv.getContext("2d").drawImage(v,0,0,w,h);
   var data=await compressPhoto(cv.toDataURL("image/jpeg",.7));
-  var pd=G("pdata");if(pd)pd.value=data;
-  var pp=G("pprev");if(pp)pp.innerHTML='<img src="'+data+'" alt=""/>';
+  var pd=G(camSlot===2?"pdata2":"pdata");if(pd)pd.value=data;
+  var pp=G(camSlot===2?"pprev2":"pprev");if(pp)pp.innerHTML='<img src="'+data+'" alt=""/>';
   closeCam();toast("Photo captured");
 }
-function pickFile(inp){
+function pickFile(inp,slot){
+  slot=slot||1;
   var f=inp.files[0];if(!f)return;
   var r=new FileReader();
   r.onload=function(e){
     compressPhoto(e.target.result).then(function(c){
-      var pd=G("pdata");if(pd)pd.value=c;
-      var pp=G("pprev");if(pp)pp.innerHTML='<img src="'+c+'" alt=""/>';
+      var pd=G(slot===2?"pdata2":"pdata");if(pd)pd.value=c;
+      var pp=G(slot===2?"pprev2":"pprev");if(pp)pp.innerHTML='<img src="'+c+'" alt=""/>';
     });
   };
   r.readAsDataURL(f);
   // Keep value so browser remembers folder, but allow same file again
   setTimeout(function(){},100);
 }
-function clearPhoto(){var pd=G("pdata");if(pd)pd.value="";var pp=G("pprev");if(pp)pp.innerHTML="📷";}
+function clearPhoto(slot){slot=slot||1;var pd=G(slot===2?"pdata2":"pdata");if(pd)pd.value="";var pp=G(slot===2?"pprev2":"pprev");if(pp)pp.innerHTML="📷";}
 
 // Scanner
 async function openScanner(){
@@ -2715,16 +2789,23 @@ function _listClick(el){
   if(src!=="sold")viewDetail(id);
 }
 function showPhoto(src,e){
-  if(e)e.stopPropagation();
-  var lb=G("photoLB"),img=G("photoLBimg");
-  if(!lb||!img||!src)return;
-  img.src=src;lb.style.display="flex";
-}
-function showPhoto(src,e){
   if(e){e.stopPropagation();e.preventDefault();}
-  var lb=G("photoLB"),img=G("photoLBimg");
-  if(!lb||!img||!src)return;
-  img.src=src;lb.style.display="flex";
+  var lb=G("photoLB"),wrap=G("photoLBwrap");
+  if(!lb||!wrap||!src)return;
+  wrap.innerHTML='<img id="photoLBimg" src="'+esc(src)+'" style="max-width:90vw;max-height:88vh;object-fit:contain;border-radius:4px;"/>';
+  lb.style.display="flex";
+}
+function showBothPhotos(id,e){
+  if(e){e.stopPropagation();e.preventDefault();}
+  var a=_findAsset(id);if(!a)return;
+  var p1=a.photo||_photoCache[id]||"";
+  var p2=a.photo2||_photoCache2[id]||"";
+  var imgs=[p1,p2].filter(Boolean);
+  if(!imgs.length)return;
+  var lb=G("photoLB"),wrap=G("photoLBwrap");
+  if(!lb||!wrap)return;
+  wrap.innerHTML=imgs.map(function(src){return'<img src="'+esc(src)+'" style="max-width:'+(imgs.length>1?"44vw":"90vw")+';max-height:88vh;object-fit:contain;border-radius:4px;"/>';}).join("");
+  lb.style.display="flex";
 }
 function askDel(id){confirmId=id;var m=G("mConfirm");if(m)m.style.display="flex";}
 function confirmConsign(){moveToConsign(confirmId);}
@@ -2732,7 +2813,7 @@ function confirmSell(){moveToSold(confirmId);}
 function confirmDel(){
   var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
   pushUndo("del",Object.assign({},a),"Deleted — undo available");
-  assets=assets.filter(function(x){return x.id!==confirmId;});deletePhoto(confirmId);saveAll();closeM("mConfirm");
+  assets=assets.filter(function(x){return x.id!==confirmId;});deletePhoto(confirmId);deletePhoto2(confirmId);saveAll();closeM("mConfirm");
   if(view==="detail")goTo("list");else render();toast("Deleted","i");
 }
 
@@ -2864,7 +2945,7 @@ function printAllLists(){
     +makeTable(framingAssets,"Framing / Restoration","#8a6a2e",framingCols)
     +makeTable(soldAssets,"Sold","#8a5a2e",soldCols)
     +makeTable(wishAssets,"Wish List","#2e7d52",wishCols)
-    +makeTable(coaAssets,"Private Collection (not owned \u2014 COA)","#b06800",coaCols);
+    +makeTable(coaAssets,"Private COAs (not owned \u2014 COA)","#b06800",coaCols);
   w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>'
     +'body{font-family:Arial,sans-serif;font-size:9pt;padding:10px;}'
     +'table{width:100%;border-collapse:collapse;margin-bottom:20px;}'
@@ -2989,6 +3070,8 @@ function changeAssetId(oldId){
     try{
       var pm=await loadAllPhotos();
       if(pm[oldId]){await savePhoto(newId,pm[oldId]);await deletePhoto(oldId);}
+      var pm2=await loadAllPhotos2();
+      if(pm2[oldId]){await savePhoto2(newId,pm2[oldId]);await deletePhoto2(oldId);}
     }catch(e){}
   })();
   // Move long-text fields (acap_txt_<oldId>_<field>)
@@ -3187,7 +3270,7 @@ function safeDelete(listType, btn){
   else if(listType==="framing"){delFramingAsset(id);}
   else if(listType==="sold"){
     soldAssets=soldAssets.filter(function(x){return x.id!==id;});
-    deletePhoto(id);saveAll();
+    deletePhoto(id);deletePhoto2(id);saveAll();
     if(view==="detail")goTo("list");else render();
     toast("Deleted","i");
   }
@@ -3289,6 +3372,7 @@ document.addEventListener("DOMContentLoaded",function(){
     <button onclick="this.parentElement.parentElement.style.display='none'" style="background:transparent;border:1px solid #555;color:#aaa;">✕</button>
   </div>
 </div>
-<input type="file" id="fpick" accept="image/*" style="display:none" onchange="pickFile(this)"/>
+<input type="file" id="fpick" accept="image/*" style="display:none" onchange="pickFile(this,1)"/>
+<input type="file" id="fpick2" accept="image/*" style="display:none" onchange="pickFile(this,2)"/>
 </body>
 </html>
