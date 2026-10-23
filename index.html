@@ -864,8 +864,7 @@ function doUndo(){
 
 // Navigation
 const TITLES={dash:"Dashboard",list:"All Assets",table:"Inventory Table",consign:"Consignment",framing:"Framing / Restoration",wish:"Wish List",coa:"Private COAs",sold:"Sold Assets",settings:"Field Order",cols:"Manage Columns",security:"Security",io:"Import / Export",detail:"Asset Detail"};
-function goTo(v){
-  view=v;
+function _applyViewChrome(v){
   document.querySelectorAll(".sbi").forEach(el=>el.classList.remove("on"));
   const ni=G("ni-"+v);if(ni)ni.classList.add("on");
   const t=G("pgTit");if(t)t.textContent=TITLES[v]||v;
@@ -874,7 +873,7 @@ function goTo(v){
   var flEl=G("fList");if(flEl)flEl.style.display=v==="list"?"":"none";
   var foEl=G("fOwner");if(foEl)foEl.style.display=v==="coa"?"":"none";
   var ffEl=G("fFrame");if(ffEl)ffEl.style.display=v==="table"?"":"none";
-  var bMk=G("bMarked");if(bMk){bMk.style.display=v==="table"?"":"none";bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}
+  var bMk=G("bMarked");if(bMk){bMk.style.display=LIST_VIEWS.indexOf(v)>=0?"":"none";bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
   const vgc=G("vtCols");if(vgc){vgc.style.display=v==="list"?"":"none";vgc.value=gridCols||"";}
   ["bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
@@ -884,6 +883,10 @@ function goTo(v){
   var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
   var ct=G("CT");if(ct){ct.classList.toggle("tbl-view",v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa");}
+}
+function goTo(v){
+  view=v;_scrollReset=true;
+  _applyViewChrome(v);
   filtered=[]; // clear stale filter results when switching views
   closeSB();render();
 }
@@ -939,48 +942,98 @@ function updSidebar(){
   var _svf=ff?ff.value:"";
   if(ff){var frames=[...new Set(assets.map(a=>(a.framed||"").trim()).filter(Boolean))];var frameOrder=getUserFramed();frames.sort(function(a,b){var ia=frameOrder.indexOf(a),ib=frameOrder.indexOf(b);if(ia===-1)ia=99;if(ib===-1)ib=99;return ia-ib;});ff.innerHTML='<option value="">All Frame Status</option>'+frames.map(fr=>'<option>'+esc(fr)+'</option>').join("");}
   if(ff&&_svf)ff.value=_svf;
+  // Safety net: if a selected value is not in a rebuilt list, keep it as an option so filters keep combining
+  [[fc,_sv.cat],[fd,_sv.cond],[fl,_sv.loc],[fa,_sv.asgn],[fm,_svm],[fy,_svy],[fo,_svo],[ff,_svf]].forEach(function(p){
+    var el=p[0],val=p[1];
+    if(el&&val&&el.value!==val){var o=document.createElement("option");o.textContent=val;el.appendChild(o);el.value=val;}
+  });
 }
 function filterByCat(c){const el=G("fCat");if(el)el.value=c;goTo("list");}
 
 // Filtering
-function getFS(){
-  function v(id){const el=G(id);return el?el.value:"";}
-  return{q:(v("srchIn")||"").trim(),cat:v("fCat"),cond:v("fCond"),loc:v("fLoc"),asgn:v("fAsgn"),med:v("fMed"),year:v("fYear"),owner:v("fOwner"),frame:v("fFrame"),marked:(view==="table"&&markedOnly),list:v("fList"),sort:v("fSort")||"name"};
+var LIST_VIEWS=["table","list","consign","framing","sold","wish","coa"];
+var detailOrigin=null,_backScroll=null,_formFrom=null,_lastRenderView=null,_scrollReset=false,_restoreScroll=null;
+function _listArr(v){return v==="sold"?soldAssets:v==="consign"?consignAssets:v==="framing"?framingAssets:v==="wish"?wishAssets:v==="coa"?coaAssets:assets;}
+function _viewOfItem(id){
+  return assets.some(function(x){return x.id===id;})?"table":consignAssets.some(function(x){return x.id===id;})?"consign":framingAssets.some(function(x){return x.id===id;})?"framing":soldAssets.some(function(x){return x.id===id;})?"sold":wishAssets.some(function(x){return x.id===id;})?"wish":coaAssets.some(function(x){return x.id===id;})?"coa":"list";
 }
-function hasFilter(){const f=getFS();return !!(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year||f.owner||f.frame||f.marked);}
-function doFilter(){
-  const f=getFS(),ql=f.q.toLowerCase();
-  // Pick source array based on current view
-  var src=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:view==="coa"?coaAssets:assets;
-  if(!f.q&&!f.cat&&!f.cond&&!f.loc&&!f.asgn&&!f.med&&!f.year&&!f.owner&&!f.frame&&!f.marked){filtered=[];window._filteredView=null;render();return;}
-  window._filteredView=view;
-  filtered=src.filter(a=>{
-    const ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(v=>v&&v.toLowerCase().includes(ql));
-    var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim(),ao=(a.ownerName||'').trim(),af=(a.framed||'').trim();
-    return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year)&&(!f.owner||ao===f.owner)&&(!f.frame||af===f.frame)&&(!f.marked||!!a.marked);
-  }).sort((a,b)=>{
+function _fview(){return(view==="detail"||view==="form")&&detailOrigin?detailOrigin:view;}
+// Filtering - ONE engine shared by all six lists + All Assets
+function getFS(v){
+  v=v||_fview();
+  function g(id){const el=G(id);return el?el.value:"";}
+  return{q:(g("srchIn")||"").trim(),cat:g("fCat"),cond:g("fCond"),loc:g("fLoc"),asgn:g("fAsgn"),med:g("fMed"),year:g("fYear"),
+    owner:v==="coa"?g("fOwner"):"",frame:v==="table"?g("fFrame"):"",
+    marked:!!(markedOnly&&LIST_VIEWS.indexOf(v)>=0),list:v==="list"?g("fList"):"",sort:g("fSort")||"name"};
+}
+function _anyFilter(f){return !!(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year||f.owner||f.frame||f.marked);}
+function hasFilter(){return _anyFilter(getFS());}
+// Search text = every stored field value of the item (incl. all COA columns), minus photos/internal flags
+function _searchText(a){
+  var parts=[];
+  for(var k in a){
+    if(k==="photo"||k==="photo2"||k==="marked"||k==="seq"||k==="_src")continue;
+    var v=a[k];if(v==null||typeof v==="object")continue;
+    var sv=String(v);if(sv==="__ref__")continue;
+    parts.push(sv);
+  }
+  return parts.join("\u0001").toLowerCase();
+}
+function _searchTerms(q){return(q||"").toLowerCase().split(/\s+/).filter(Boolean);}
+function _passes(a,f,terms){
+  if(terms.length){var t=_searchText(a);for(var i=0;i<terms.length;i++){if(t.indexOf(terms[i])<0)return false;}}
+  function eq(x,y){return !y||String(x==null?"":x).trim()===y;}
+  return eq(a.category,f.cat)&&eq(a.condition,f.cond)&&eq(a.location,f.loc)&&eq(a.assignedTo,f.asgn)&&eq(a.medium,f.med)&&eq(a.yearCreated,f.year)&&eq(a.ownerName,f.owner)&&eq(a.framed,f.frame)&&(!f.marked||!!a.marked);
+}
+function viewItems(v){
+  v=v||_fview();
+  var f=getFS(v);
+  var base=_listArr(v).slice();
+  if(v!=="table")base.reverse();
+  if(!_anyFilter(f))return base;
+  var terms=_searchTerms(f.q);
+  return base.filter(function(a){return _passes(a,f,terms);}).sort(function(a,b){
     if(f.sort==="cat") return(a.category||"").localeCompare(b.category||"");
     if(f.sort==="val") return parseFloat(b.currentValue||0)-parseFloat(a.currentValue||0);
-    if(f.sort==="date")return(b.purchaseDate||"").localeCompare(b.purchaseDate||"");
+    if(f.sort==="date")return(b.purchaseDate||"").localeCompare(a.purchaseDate||"");
     if(f.sort==="id")  return(a.seq||0)-(b.seq||0);
     return(a.name||"").localeCompare(b.name||"");
   });
+}
+function doFilter(keepScroll){
+  if(keepScroll!==true)_scrollReset=true;
   render();
 }
-function toggleMarkedFilter(){markedOnly=!markedOnly;var bMk=G("bMarked");if(bMk){bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}doFilter();}
+function toggleMarkedFilter(){markedOnly=!markedOnly;_syncMarkBtn();doFilter();}
+function _syncMarkBtn(){var bMk=G("bMarked");if(bMk){bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}}
+// Mark (star) - works for items in ANY of the six lists; the flag lives on the item so it moves with it
+function markStar(a){var m=!!a.marked;return '<span class="no-print mstar" style="cursor:pointer;font-size:13px;line-height:1;color:'+(m?"#e6a817":"#bbb")+';flex-shrink:0;" onclick="event.stopPropagation();toggleMark(\''+esc(a.id)+'\')" title="'+(m?"Unmark":"Mark")+'">'+(m?"★":"☆")+'</span>';}
+function markRowAttr(a){return a.marked?' style="background:rgba(230,168,23,.12);"':'';}
 function toggleMark(id){
-  const a=assets.find(x=>x.id===id);
+  const a=_findAsset(id);
   if(!a)return;
   a.marked=!a.marked;
+  if(!a.marked)delete a.marked;
   saveAll();
   toast(a.marked?"Marked ★":"Unmarked");
-  if(markedOnly)doFilter();else render();
+  render(); // render() keeps the scroll position; items stay put unless the Marked filter is on
 }
+// Scroll position keeping
+function _scrollEls(ct){var els=[ct];if(document.scrollingElement)els.push(document.scrollingElement);ct.querySelectorAll(".twrap,.scrollbox").forEach(function(e){els.push(e);});return els;}
+function _capScroll(ct){ct=ct||G("CT");if(!ct)return null;return _scrollEls(ct).map(function(e){return{t:e.scrollTop,l:e.scrollLeft};});}
+function _applyScroll(ct,sv){var els=_scrollEls(ct);sv.forEach(function(p,i){if(els[i]){els[i].scrollTop=p.t;els[i].scrollLeft=p.l;}});}
 
 // Render
 function render(){
   updSidebar();
   const ct=G("CT");if(!ct)return;
+  var sv=null;
+  if(_restoreScroll){sv=_restoreScroll;_restoreScroll=null;}
+  else if(_lastRenderView===view&&!_scrollReset)sv=_capScroll(ct);
+  var _wasNewView=_lastRenderView!==view;
+  _scrollReset=false;
+  // keep legacy `filtered` in sync (printing/stickers/detail navigation use it)
+  if(LIST_VIEWS.indexOf(view)>=0&&view!=="list"){filtered=hasFilter()?viewItems(view):[];window._filteredView=view;}
   if(view==="dash")     ct.innerHTML=rDash();
   else if(view==="list")     ct.innerHTML=rList();
   else if(view==="table"){   ct.innerHTML=rTable();bindTbl();}
@@ -995,20 +1048,15 @@ function render(){
   else if(view==="framing")  ct.innerHTML=rFraming();
   else if(view==="wish")     ct.innerHTML=rWish();
   else if(view==="coa")      ct.innerHTML=rCOA();
+  if(sv)_applyScroll(ct,sv);else if(_wasNewView){_scrollEls(ct).forEach(function(e){e.scrollTop=0;});}
+  _lastRenderView=view;
 
   ["fCat","fCond","fLoc","fAsgn","fMed","fYear","fOwner","fFrame","fList"].forEach(function(id){var el=G(id);if(el)el.classList.toggle("active-filter",!!(el.value));});var _si=G("srchIn");if(_si)_si.classList.toggle("active-filter",!!_si.value);}
 
 // Consignment
 function rConsign(){
-  var f=getFS(),ql=f.q.toLowerCase();
-  var list=(hasFilter()&&filtered.length&&window._filteredView==="consign")?filtered.slice():consignAssets.slice().reverse();
-  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
-    list=list.filter(function(a){
-      var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
-      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
-      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
-    });
-  }
+  var f=getFS();
+  var list=viewItems("consign");
   window._detailList=list.map(function(a){return a.id;});
   var cols=getListCols('consign');
   var fds=allFDs();
@@ -1041,7 +1089,7 @@ function rConsign(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"'+markRowAttr(a)+'><td><div class="tdin" style="display:flex;align-items:center;gap:3px;">'+markStar(a)+'<span style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</span></div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40),hsz=sz;
@@ -1074,15 +1122,8 @@ function rConsign(){
 
 // Framing / Restoration
 function rFraming(){
-  var f=getFS(),ql=f.q.toLowerCase();
-  var list=(hasFilter()&&filtered.length&&window._filteredView==="framing")?filtered.slice():framingAssets.slice().reverse();
-  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
-    list=list.filter(function(a){
-      var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
-      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
-      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
-    });
-  }
+  var f=getFS();
+  var list=viewItems("framing");
   window._detailList=list.map(function(a){return a.id;});
   var cols=getListCols('framing');
   var fds=allFDs();
@@ -1115,7 +1156,7 @@ function rFraming(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"'+markRowAttr(a)+'><td><div class="tdin" style="display:flex;align-items:center;gap:3px;">'+markStar(a)+'<span style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</span></div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40),hsz=sz;
@@ -1162,7 +1203,7 @@ function delFramingAsset(id){
   if(!confirm("Delete this framing/restoration entry?"))return;
   framingAssets=framingAssets.filter(function(x){return x.id!==id;});
   deletePhoto(id);deletePhoto2(id);saveAll();
-  if(view==="detail")goTo("list");else render();
+  if(view==="detail")backFromDetail();else render();
   toast("Deleted","i");
 }
 function exportFramingCSV(){
@@ -1178,7 +1219,7 @@ function delWishAsset(id){
   if(!confirm("Delete this wish list item?"))return;
   wishAssets=wishAssets.filter(function(x){return x.id!==id;});
   deletePhoto(id);deletePhoto2(id);saveAll();
-  if(view==="detail")goTo("list");else render();
+  if(view==="detail")backFromDetail();else render();
   toast("Deleted","i");
 }
 function exportWishCSV(){
@@ -1233,7 +1274,7 @@ function delConsignAsset(id){
   if(!confirm("Delete this consignment asset?"))return;
   consignAssets=consignAssets.filter(function(x){return x.id!==id;});
   deletePhoto(id);deletePhoto2(id);saveAll();
-  if(view==="detail")goTo("list");else render();
+  if(view==="detail")backFromDetail();else render();
   toast("Deleted","i");
 }
 function exportConsignCSV(){
@@ -1247,15 +1288,8 @@ function exportConsignCSV(){
 // Private COAs (COA / Authentication requests)
 function getCOACols(){return getListCols("coa");}
 function rCOA(){
-  var f=getFS(),ql=f.q.toLowerCase();
-  var list=(hasFilter()&&filtered.length&&window._filteredView==="coa")?filtered.slice():coaAssets.slice().reverse();
-  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
-    list=list.filter(function(a){
-      var ms=!ql||[a.name,a.serialNumber,a.ownerName,a.ownerContact,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
-      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim(),ao=(a.ownerName||'').trim();
-      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year)&&(!f.owner||ao===f.owner);
-    });
-  }
+  var f=getFS();
+  var list=viewItems("coa");
   window._detailList=list.map(function(a){return a.id;});
   var cols=getListCols('coa');
   var fds=allFDs();
@@ -1290,7 +1324,7 @@ function rCOA(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"'+markRowAttr(a)+'><td><div class="tdin" style="display:flex;align-items:center;gap:3px;">'+markStar(a)+'<span style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</span></div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40),hsz=sz;
@@ -1325,7 +1359,7 @@ function delCOAAsset(id){
   if(!confirm("Delete this authentication record?"))return;
   coaAssets=coaAssets.filter(function(x){return x.id!==id;});
   deletePhoto(id);deletePhoto2(id);saveAll();
-  if(view==="detail")goTo("list");else render();
+  if(view==="detail")backFromDetail();else render();
   toast("Deleted","i");
 }
 function exportCOACSV(){
@@ -1356,15 +1390,8 @@ async function addCOAToWish(id){
 
 // Sold Assets
 function rSold(){
-  var f=getFS(),ql=f.q.toLowerCase();
-  var list=(hasFilter()&&filtered.length&&window._filteredView==="sold")?filtered.slice():soldAssets.slice().reverse();
-  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
-    list=list.filter(function(a){
-      var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
-      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
-      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
-    });
-  }
+  var f=getFS();
+  var list=viewItems("sold");
   window._detailList=list.map(function(a){return a.id;});
   var cols=getSTCols();
   var fds=allFDs();
@@ -1390,7 +1417,7 @@ function rSold(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"'+markRowAttr(a)+'><td><div class="tdin" style="display:flex;align-items:center;gap:3px;">'+markStar(a)+'<span style="cursor:pointer;font-family:var(--mo);font-size:10px;" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</span></div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40);
@@ -1575,14 +1602,10 @@ function rList(){
   var allItems=inv.concat(con).concat(fram).concat(sol).concat(wsh).concat(coa);
   // Apply list filter
   if(f.list)allItems=allItems.filter(function(a){return a._src===f.list;});
-  // Apply other filters
-  if(f.q||f.cat||f.cond||f.loc||f.asgn||f.med||f.year){
-    var ql=f.q.toLowerCase();
-    allItems=allItems.filter(function(a){
-      var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
-      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
-      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
-    });
+  // Apply other filters (same engine as every list: search covers all fields, filters combine)
+  if(_anyFilter(f)){
+    var _terms=_searchTerms(f.q);
+    allItems=allItems.filter(function(a){return _passes(a,f,_terms);});
   }
   // Group by list (Inventory → Consignment → Framing → Sold → Wish → Private COAs), matching dashboard/sidebar order.
   // Within each group, apply the selected secondary sort (name/category/value).
@@ -1625,7 +1648,7 @@ function rList(){
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#b06800;">Private COAs: <b>'+_cn+'</b> <span style="opacity:.7;">(not owned)</span></span>';
   h+='</div>';
   if(listMode==="tbl"){
-  h+='<div style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
+  h+='<div class="scrollbox" style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
     h+='<thead><tr style="background:var(--s2);"><th style="padding:5px 7px;text-align:left;">Name</th><th style="padding:5px 7px;text-align:left;">Artist</th><th style="padding:5px 7px;text-align:left;">Cat</th><th style="padding:5px 7px;text-align:left;">List</th><th style="padding:5px 7px;text-align:right;">Value</th></tr></thead><tbody>';
     var _lastGrp=null;
     allItems.forEach(function(a){
@@ -1633,7 +1656,7 @@ function rList(){
         _lastGrp=a._src;
         h+='<tr><td colspan="5" style="padding:6px 7px 4px;background:'+_hexA(GROUP_HEX[a._src],.16)+';border-left:3px solid '+GROUP_HEX[a._src]+';font-family:var(--mo);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:'+GROUP_HEX[a._src]+';">'+GROUP_NAMES[a._src]+'</td></tr>';
       }
-      h+='<tr style="border-bottom:1px solid var(--b);'+srcColors[a._src]+'" onclick="'+( a._src!=="sold"?"viewDetail('"+esc(a.id)+"')":'""')+'">';
+      h+='<tr style="border-bottom:1px solid var(--b);'+srcColors[a._src]+'" onclick="viewDetail(\''+esc(a.id)+'\')">';
       h+='<td style="padding:5px 7px;font-weight:500;">'+esc(a.name)+'</td>';
       h+='<td style="padding:5px 7px;color:var(--ar);">'+esc(a.artist||"")+'</td>';
       h+='<td style="padding:5px 7px;">'+esc(a.category||"")+'</td>';
@@ -1705,13 +1728,14 @@ function defW(k){
 function cw(k){return colW[k]||defW(k);}
 
 function rTable(){
-  const tblA=hasFilter()?filtered:assets;
+  const tblA=viewItems("table");
   window._detailList=tblA.map(function(a){return a.id;});
   const cols=getTCols(),fds=allFDs(),renames=LS.get("acap_renames_v3",{});
   const f=getFS();
   const parts=[];
   if(f.cat)parts.push("Category: "+f.cat);if(f.cond)parts.push("Condition: "+f.cond);
   if(f.loc)parts.push("Location: "+f.loc);if(f.asgn)parts.push("Assigned: "+f.asgn);
+  if(f.med)parts.push("Medium: "+f.med);if(f.year)parts.push("Year: "+f.year);if(f.frame)parts.push("Frame: "+f.frame);if(f.marked)parts.push("Marked only");
   if(f.q)parts.push('Search: "'+f.q+'"');
   const filterTxt=parts.join(" · ");
   const totalW=cols.reduce((s,k)=>s+cw(k),78)+78;
@@ -1743,8 +1767,8 @@ function rTable(){
   });
   h+='<th class="no-print" style="width:66px;min-width:50px;"><div class="thin">Actions</div></th></tr></thead><tbody>';
   tblA.forEach(function(a){
-    h+='<tr data-id="'+a.id+'" class="'+(isArt(a.category)?"artrow":"")+'" style="'+(a.marked?"background:rgba(230,168,23,.12);":"")+'">';
-    h+='<td style="height:'+rowH+'px;"><div class="tdin" style="display:flex;align-items:center;gap:3px;"><span class="no-print" style="cursor:pointer;font-size:12px;color:'+(a.marked?"#e6a817":"#ccc")+';" onclick="event.stopPropagation();toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★":"☆")+'</span><span style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+a.id+'\')">'+a.id+'</span></div></td>';
+    h+='<tr data-id="'+a.id+'" class="'+(isArt(a.category)?"artrow":"")+'"'+markRowAttr(a)+'>';
+    h+='<td style="height:'+rowH+'px;"><div class="tdin" style="display:flex;align-items:center;gap:3px;">'+markStar(a)+'<span style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+a.id+'\')">'+a.id+'</span></div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(cw(key)-8,50),hsz=Math.min(rowH-6,40);
@@ -1779,15 +1803,8 @@ function rTable(){
 
 // Wish List
 function rWish(){
-  var f=getFS(),ql=f.q.toLowerCase();
-  var list=(hasFilter()&&filtered.length&&window._filteredView==="wish")?filtered.slice():wishAssets.slice().reverse();
-  if(hasFilter()&&!(hasFilter()&&filtered.length&&window._filteredView===view)){
-    list=list.filter(function(a){
-      var ms=!ql||[a.name,a.serialNumber,a.assignedTo,a.location,a.artist,a.model,a.category,a.id].some(function(v){return v&&v.toLowerCase().includes(ql);});
-      var ac=(a.category||'').trim(),al=(a.location||'').trim(),aa=(a.assignedTo||'').trim(),acd=(a.condition||'').trim(),am=(a.medium||'').trim(),ay=(a.yearCreated||'').trim();
-      return ms&&(!f.cat||ac===f.cat)&&(!f.cond||acd===f.cond)&&(!f.loc||al===f.loc)&&(!f.asgn||aa===f.asgn)&&(!f.med||am===f.med)&&(!f.year||ay===f.year);
-    });
-  }
+  var f=getFS();
+  var list=viewItems("wish");
   window._detailList=list.map(function(a){return a.id;});
   var cols=getListCols('wish');
   var fds=allFDs();
@@ -1821,7 +1838,7 @@ function rWish(){
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
-    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"><td><div class="tdin" style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</div></td>';
+    h+='<tr class="'+(isArt(a.category)?"artrow":"")+'"'+markRowAttr(a)+'><td><div class="tdin" style="display:flex;align-items:center;gap:3px;">'+markStar(a)+'<span style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+esc(a.id)+'\')">'+esc(a.id)+'</span></div></td>';
     cols.forEach(function(key){
       if(key==="photo"){
         var sz=Math.min(rowH-4,40),hsz=sz;
@@ -2011,8 +2028,7 @@ function doPrint(){
   closeM("mPrint");
   // Determine data source based on current view
   var arr=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:view==="coa"?coaAssets:assets;
-  // Apply current filter - filtered[] is now correctly populated by doFilter() for all views
-  if(hasFilter()&&filtered.length)arr=filtered;
+  if(hasFilter())arr=viewItems(view);
   var cols=getListCols(_viewList(view));
   var fds=allFDs(),renames=LS.get("acap_renames_v3",{});
   var legKey=view==="sold"?"acap_sold_legend":view==="consign"?"acap_consign_legend":view==="framing"?"acap_framing_legend":view==="wish"?"acap_wish_legend":view==="coa"?"acap_coa_legend":"acap_tbl_legend";
@@ -2098,7 +2114,9 @@ function applyLink(){
 
 // Form
 function editAsset(id){
-  editId=id;view="form";var t=G("pgTit");if(t)t.textContent="Edit Asset";
+  _formFrom=view==="detail"?"detail":"list";
+  if(view!=="detail"&&view!=="form"){detailOrigin=view;_backScroll=_capScroll(G("CT"));}
+  editId=id;view="form";_scrollReset=true;var t=G("pgTit");if(t)t.textContent="Edit Asset";
   // Determine which list this asset belongs to, so saveForm() routes back correctly
   editMode=assets.find(function(x){return x.id===id;})?"inventory"
     :consignAssets.find(function(x){return x.id===id;})?"consign"
@@ -2185,7 +2203,10 @@ function rForm(){
   h+='<button class="btn '+(isArt(cat)?"ba":"bp")+'" onclick="submitForm()">💾 '+(editId?"Update":"Save Asset")+'</button></div></div>';
   return h;
 }
-function cancelForm(){editId=null;goTo(assets.length?"list":"dash");}
+function cancelForm(){
+  if(editId){var id0=editId;editId=null;editMode="inventory";if(_formFrom==="list"){_formFrom=null;backFromDetail();}else{_formFrom=null;viewDetail(id0);}return;}
+  editId=null;goTo(assets.length?"list":"dash");
+}
 function submitForm(){
   var form=G("aForm");if(!form)return;
   var cat=(form.querySelector("[name=category]")||{value:"Electronics"}).value;
@@ -2223,9 +2244,10 @@ function submitForm(){
   editId=null;
   var savedMode=editMode;
   editMode="inventory";
-  if(existing&&(savedMode==="inventory"||savedMode==="coa")){
-    // Return to detail view for easy swiping to next/prev
-    viewDetail(savedId);
+  if(existing){
+    // Return to where the edit started (detail view, or the list it was opened from)
+    if(_formFrom==="list"){backFromDetail();}else{viewDetail(savedId);}
+    _formFrom=null;
     toast("Updated ✓");
   } else if(savedMode==="consign"){
     goTo("consign");
@@ -2247,11 +2269,21 @@ function submitForm(){
 
 // Detail
 function viewDetail(id){
-  detailId=id;view="detail";
+  if(view!=="detail"&&view!=="form"){detailOrigin=view;_backScroll=LIST_VIEWS.indexOf(view)>=0||view==="dash"?_capScroll(G("CT")):null;}
+  else if(!detailOrigin){detailOrigin=_viewOfItem(id);}
+  detailId=id;view="detail";_scrollReset=true;
   if(!window._detailList||!window._detailList.length)window._detailList=(hasFilter()?filtered:assets).map(function(a){return a.id;});
   var t=G("pgTit");if(t)t.textContent="Asset Detail";
-  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
+  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear","fOwner","fFrame","fList","bMarked","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan","bStickerList","bPrintAll"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
   document.querySelectorAll(".sbi").forEach(function(el){el.classList.remove("on");});
+  closeSB();render();
+}
+// Back from detail (or from an edit that began in a list): return to the list it was opened from, same filters + scroll
+function backFromDetail(){
+  var o=detailOrigin||"list";
+  if(o==="detail"||o==="form")o="list";
+  view=o;_restoreScroll=_backScroll;_backScroll=null;
+  _applyViewChrome(o);
   closeSB();render();
 }
 function navDetail(dir){
@@ -2275,13 +2307,27 @@ function rDetail(){
   if(!a)return'<div class="empty">Asset not found.</div>';
   var art=isArt(a.category);
   var dep=a.purchasePrice&&a.usefulLife?((parseFloat(a.purchasePrice)-parseFloat(a.currentValue||0))/parseFloat(a.usefulLife)).toFixed(2):null;
-  var fds=ordDefs(a.category,_detailSrc);
+  // Detail shows EVERY populated field: ignores form-hide settings and category/list restrictions
+  var _all=allFDs(),_known={};
+  var fds=fOrder.map(function(k){return _all.find(function(f){return f.k===k;});}).filter(Boolean);
+  _all.forEach(function(f){if(fds.indexOf(f)<0)fds.push(f);});
+  fds=fds.filter(function(f){return f.k!=="name"&&f.k!=="category"&&f.k!=="description";});
+  fds.forEach(function(f){_known[f.k]=1;});
+  var _REC=[["soldAt","Sold Price ($)"],["soldDate","Sold Date"],["consignDate","Consignment Date"],["framingDate","Framing Date"],["wishDate","Wish List Date"],["originalLocation","Original Location"],["buyPrice","Buy Price ($)"],["status","Status"],["source","Source"],["createdAt","Created"],["updatedAt","Last Updated"]];
+  _REC.forEach(function(r){_known[r[0]]=1;fds.push({k:r[0],lbl:r[1],sec:"Record",t:"text"});});
+  var _SKIP={photo:1,photo2:1,id:1,seq:1,marked:1,name:1,category:1,description:1};
+  Object.keys(a).forEach(function(k){
+    if(_known[k]||_SKIP[k])return;
+    var v=a[k];if(v==null||v===""||typeof v==="object")return;
+    fds.push({k:k,lbl:k.replace(/([A-Z])/g," $1").replace(/^./,function(c){return c.toUpperCase();}),sec:"Other",t:"text"});
+  });
+  if(a.marked)fds.push({k:"__marked",lbl:"Marked",sec:"Record",t:"text"});
   var sMap={},sOrd=[],seen=new Set();
   fds.forEach(function(fd){if(!sMap[fd.sec])sMap[fd.sec]=[];sMap[fd.sec].push(fd);if(!seen.has(fd.sec)){seen.add(fd.sec);sOrd.push(fd.sec);}});
   function fv(fd,raw){
     if(!raw)return null;
     if(fd.t==="url"){try{var lp=JSON.parse(raw);return'<a href="'+esc(lp.url)+'" target="_blank">🔗 '+esc(lp.text||lp.url)+'</a>';}catch{return raw.startsWith("http")?'<a href="'+esc(raw)+'" target="_blank">🔗 '+esc(raw)+'</a>':esc(raw);}}
-    if(["purchasePrice","currentValue","insuredValue","fee"].includes(fd.k))return"$"+parseFloat(raw).toLocaleString();
+    if(["purchasePrice","currentValue","insuredValue","fee","soldAt","buyPrice"].includes(fd.k)&&!isNaN(parseFloat(raw)))return"$"+parseFloat(raw).toLocaleString();
     if(fd.k==="usefulLife")return raw+" yrs";
     return esc(raw);
   }
@@ -2290,7 +2336,7 @@ function rDetail(){
   var h='<div class="dw">';
   var _dl=window._detailList||[],_di=_dl.indexOf(a.id);
   h+='<div style="display:flex;gap:6px;margin-bottom:9px;align-items:center;flex-wrap:wrap;" class="no-print">';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="goTo(\'list\')">← Back</button>';
+  h+='<button class="btn bg" style="font-size:11px;" onclick="backFromDetail()">← Back</button>';
   h+='<button class="btn bg" style="font-size:11px;'+ (_di<=0?'opacity:.35;':'')+'" onclick="navDetail(-1)">‹</button>';
   h+='<span style="font-size:10px;font-family:var(--mo);color:var(--mu);">'+(_di+1)+'/'+_dl.length+'</span>';
   h+='<button class="btn bg" style="font-size:11px;'+ (_di>=_dl.length-1?'opacity:.35;':'')+'" onclick="navDetail(1)">›</button>';
@@ -2298,7 +2344,7 @@ function rDetail(){
   h+='<button class="btn bg" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Label</button>';
   h+='<button class="btn bs" style="font-size:11px;" onclick="editAsset(\''+a.id+'\')">✏ Edit</button>';
   if(_detailSrc==='inventory'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="confirmId=\''+a.id+'\';G(\'mConfirm\').style.display=\'flex\'">💰 Sell/Move</button>';}
-  if(_detailSrc==='inventory'){h+='<button class="btn" style="font-size:11px;'+(a.marked?"background:#e6a817;color:#000;":"background:none;border:1px solid var(--b);")+'" onclick="toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★ Marked":"☆ Mark")+'</button>';}
+  h+='<button class="btn" style="font-size:11px;'+(a.marked?"background:#e6a817;color:#000;":"background:none;border:1px solid var(--b);")+'" onclick="toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★ Marked":"☆ Mark")+'</button>';
   if(_detailSrc==='wish'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="buyWishAsset(\''+a.id+'\')">💰 Buy \u2192 Inventory</button>';}
   if(_detailSrc==='framing'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreFramingToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
   if(_detailSrc==='consign'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreConsignToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
@@ -2334,8 +2380,8 @@ function rDetail(){
   h+='<div style="flex:1;padding-left:11px;"><div style="font-size:12px;color:var(--mu);margin-bottom:5px;">Scan label or search <b>'+a.id+'</b> in app.</div>';
   h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Print Label</button></div></div>';
   h+='<div class="dgrid">';
-  sOrd.filter(function(s){return s!=="Identification";}).forEach(function(sec){
-    var rows=sMap[sec].map(function(fd){var v=fv(fd,a[fd.k]);return v?'<div class="df"><span class="dl">'+fd.lbl+'</span><span class="dv">'+v+'</span></div>':"";}).join("");
+  sOrd.forEach(function(sec){
+    var rows=sMap[sec].map(function(fd){var v=fv(fd,fd.k==="__marked"?"★ Yes":a[fd.k]);return v?'<div class="df"><span class="dl">'+fd.lbl+'</span><span class="dv">'+v+'</span></div>':"";}).join("");
     var extra=sec==="Financial"&&dep?'<div class="df"><span class="dl">Annual Depreciation</span><span class="dv">$'+dep+'</span></div>':"";
     if(!rows&&!extra)return;
     h+='<div class="ds"'+(sec==="Artwork"?' style="border-top:2px solid var(--ar);"':sec==="Authentication"?' style="border-top:2px solid #b06800;"':"")+"><h3>"+sec+(sec==="Artwork"?" 🖼":sec==="Authentication"?" 📜":"")+"</h3>"+rows+extra+"</div>";
@@ -2814,7 +2860,7 @@ function confirmDel(){
   var a=assets.find(function(x){return x.id===confirmId;});if(!a)return;
   pushUndo("del",Object.assign({},a),"Deleted — undo available");
   assets=assets.filter(function(x){return x.id!==confirmId;});deletePhoto(confirmId);deletePhoto2(confirmId);saveAll();closeM("mConfirm");
-  if(view==="detail")goTo("list");else render();toast("Deleted","i");
+  if(view==="detail")backFromDetail();else render();toast("Deleted","i");
 }
 
 // Barcodes / Stickers
@@ -2866,7 +2912,7 @@ function installApp(){if(deferredInstall){deferredInstall.prompt();deferredInsta
 // Init
 function printCurrentListStickers(){
   var arr=view==="sold"?soldAssets:view==="consign"?consignAssets:view==="framing"?framingAssets:view==="wish"?wishAssets:view==="coa"?coaAssets:assets;
-  if(hasFilter()&&filtered.length)arr=filtered;
+  if(hasFilter())arr=viewItems(view);
   if(!arr.length){toast("No assets to print","e");return;}
   var from=prompt("Stickers FROM # (1-"+arr.length+"):","1");
   if(from===null)return;
@@ -3271,7 +3317,7 @@ function safeDelete(listType, btn){
   else if(listType==="sold"){
     soldAssets=soldAssets.filter(function(x){return x.id!==id;});
     deletePhoto(id);deletePhoto2(id);saveAll();
-    if(view==="detail")goTo("list");else render();
+    if(view==="detail")backFromDetail();else render();
     toast("Deleted","i");
   }
   else if(listType==="wish"){delWishAsset(id);}
