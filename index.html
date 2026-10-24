@@ -1260,7 +1260,7 @@ function buyWishAsset(id){
   filtered=filtered.filter(function(x){return x.id!==id;});
   saveAll();render();
   toast("Purchased \u2192 "+moved.id+" added to Inventory ✓","s");
-  },false,"");
+  },false,"",undefined,INV_LOCS);
 }
 function sellConsignAsset(id){
   var a=consignAssets.find(function(x){return x.id===id;});if(!a)return;
@@ -3162,7 +3162,9 @@ function _allLocs(){
   var all=assets.concat(consignAssets).concat(soldAssets).concat(framingAssets).concat(wishAssets);
   return [...new Set(all.map(function(a){return(a.location||"").trim();}).filter(Boolean))].sort();
 }
-function _openActionModal(title,showPrice,currentLoc,callback,showFrame,currentFrame,locNote){
+// Inventory only accepts these locations (edit here to add more)
+var INV_LOCS=["Jim Khalifé CR33 Home","Jim Khalifé ZM Home","JK Studio"];
+function _openActionModal(title,showPrice,currentLoc,callback,showFrame,currentFrame,locNote,fixedLocs){
   var G2=function(id){return document.getElementById(id);};
   var titleEl=G2("mActTitle");if(titleEl)titleEl.textContent=title;
   var priceDiv=G2("mActPrice");if(priceDiv)priceDiv.style.display=showPrice?"block":"none";
@@ -3176,7 +3178,10 @@ function _openActionModal(title,showPrice,currentLoc,callback,showFrame,currentF
   var locLabel=G2("mActLocLabel");
   if(locLabel)locLabel.textContent=showPrice?"Buyer / new owner / auction house":"New location";
   var sel=G2("mActLocSel");
-  if(sel){
+  window._mActFixed=!!fixedLocs;
+  if(sel&&fixedLocs){
+    sel.innerHTML='<option value="">— select location —</option>'+fixedLocs.map(function(l){return'<option value="'+l+'"'+(l===currentLoc?" selected":"")+'>'+l+(l===currentLoc?" ("+(locNote||"current")+")":"")+'</option>';}).join("");
+  } else if(sel){
     var locs=_allLocs();
     sel.innerHTML="";
     if(currentLoc){sel.innerHTML+='<option value="'+currentLoc+'">'+currentLoc+" ("+(locNote||"current")+")</option>";}
@@ -3194,6 +3199,7 @@ function mActConfirm(){
   var frameSel=document.getElementById("mActFrameSel");
   var frameDiv=document.getElementById("mActFrame");
   var loc=sel&&sel.value==="__new__"?(newEl?newEl.value.trim():""):(sel?sel.value:"");
+  if(window._mActFixed&&!loc){toast("Please select a location","e");return;}
   var price=priceEl?priceEl.value.trim():"";
   var frame=(frameDiv&&frameDiv.style.display!=="none"&&frameSel)?frameSel.value:undefined;
   closeM("mAction");closeM("mConfirm");
@@ -3252,7 +3258,7 @@ function restoreToInventory(id){
     if(fromFraming&&frame!==undefined)restored.framed=frame;
     _removeFromAllLists(id);assets.push(restored);
     saveAll();render();toast("Restored to Inventory ✓");
-  },fromFraming,a.framed||"",autoLoc?"original":"current");
+  },fromFraming,a.framed||"",autoLoc?"original":"current",INV_LOCS);
 }
 function doListAction(btn){confirmId=btn.getAttribute("data-id");showListAction(btn.getAttribute("data-list"));}
 function showListAction(listType){
