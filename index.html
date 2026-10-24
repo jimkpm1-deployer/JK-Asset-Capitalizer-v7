@@ -1234,7 +1234,9 @@ function buyWishAsset(id){
   var price=prompt("Buy price for \""+(a.name||a.id)+"\":",a.buyPrice||a.currentValue||"");
   if(price===null)return;
   if(!confirm("Move \""+(a.name||a.id)+"\" from Wish List to Inventory?\n\nIt will get a new Inventory ID."))return;
+  _openActionModal("BUY \u2192 ADD TO INVENTORY",false,a.location||"",function(loc){
   var moved=Object.assign({},a);
+  moved.location=loc||a.location||"";
   delete moved.wishDate;delete moved.status;
   moved.id=_nextId();
   moved.seq=_nextSeq();
@@ -1258,6 +1260,7 @@ function buyWishAsset(id){
   filtered=filtered.filter(function(x){return x.id!==id;});
   saveAll();render();
   toast("Purchased \u2192 "+moved.id+" added to Inventory ✓","s");
+  },false,"");
 }
 function sellConsignAsset(id){
   var a=consignAssets.find(function(x){return x.id===id;});if(!a)return;
@@ -3159,7 +3162,7 @@ function _allLocs(){
   var all=assets.concat(consignAssets).concat(soldAssets).concat(framingAssets).concat(wishAssets);
   return [...new Set(all.map(function(a){return(a.location||"").trim();}).filter(Boolean))].sort();
 }
-function _openActionModal(title,showPrice,currentLoc,callback,showFrame,currentFrame){
+function _openActionModal(title,showPrice,currentLoc,callback,showFrame,currentFrame,locNote){
   var G2=function(id){return document.getElementById(id);};
   var titleEl=G2("mActTitle");if(titleEl)titleEl.textContent=title;
   var priceDiv=G2("mActPrice");if(priceDiv)priceDiv.style.display=showPrice?"block":"none";
@@ -3176,7 +3179,7 @@ function _openActionModal(title,showPrice,currentLoc,callback,showFrame,currentF
   if(sel){
     var locs=_allLocs();
     sel.innerHTML="";
-    if(currentLoc){sel.innerHTML+='<option value="'+currentLoc+'">'+currentLoc+" (current)</option>";}
+    if(currentLoc){sel.innerHTML+='<option value="'+currentLoc+'">'+currentLoc+" ("+(locNote||"current")+")</option>";}
     locs.forEach(function(l){if(l!==currentLoc)sel.innerHTML+='<option value="'+l+'">'+l+"</option>";});
     sel.innerHTML+='<option value="__new__">✏ New location…</option>';
   }
@@ -3240,23 +3243,16 @@ function moveToSold(id){
 function restoreToInventory(id){
   var a=_findAsset(id);if(!a)return;
   var fromFraming=framingAssets.some(function(x){return x.id===id;});
-  var autoLoc=a.originalLocation;
-  if(autoLoc&&!fromFraming){
+  var autoLoc=a.originalLocation||"";
+  // Always ask: the original location is pre-selected, but the user confirms or changes it
+  _openActionModal("RESTORE TO INVENTORY",false,autoLoc||a.location||"",function(loc,price,frame){
     var restored=Object.assign({},a);
     delete restored.consignDate;delete restored.framingDate;delete restored.status;
-    restored.location=autoLoc;delete restored.originalLocation;
+    restored.location=loc||autoLoc||a.location||"";delete restored.originalLocation;
+    if(fromFraming&&frame!==undefined)restored.framed=frame;
     _removeFromAllLists(id);assets.push(restored);
     saveAll();render();toast("Restored to Inventory ✓");
-  } else {
-    _openActionModal("RESTORE TO INVENTORY",false,autoLoc||a.location||"",function(loc,price,frame){
-      var restored=Object.assign({},a);
-      delete restored.consignDate;delete restored.framingDate;delete restored.status;
-      restored.location=loc||autoLoc||a.location||"";delete restored.originalLocation;
-      if(fromFraming&&frame!==undefined)restored.framed=frame;
-      _removeFromAllLists(id);assets.push(restored);
-      saveAll();render();toast("Restored to Inventory ✓");
-    },fromFraming,a.framed||"");
-  }
+  },fromFraming,a.framed||"",autoLoc?"original":"current");
 }
 function doListAction(btn){confirmId=btn.getAttribute("data-id");showListAction(btn.getAttribute("data-list"));}
 function showListAction(listType){
