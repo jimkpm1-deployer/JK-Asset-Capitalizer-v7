@@ -872,6 +872,7 @@ function _applyViewChrome(v){
   ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear"].forEach(id=>{const el=G(id);if(el)el.style.display=isL?"":"none";});
   var flEl=G("fList");if(flEl)flEl.style.display=v==="list"?"":"none";
   var foEl=G("fOwner");if(foEl)foEl.style.display=v==="coa"?"":"none";
+  var flcEl=G("fLoc");if(flcEl&&v==="coa")flcEl.style.display="none"; // Owner replaces Location in Private COAs
   var ffEl=G("fFrame");if(ffEl)ffEl.style.display=v==="table"?"":"none";
   var bMk=G("bMarked");if(bMk){bMk.style.display=LIST_VIEWS.indexOf(v)>=0?"":"none";bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
@@ -962,7 +963,7 @@ function _fview(){return(view==="detail"||view==="form")&&detailOrigin?detailOri
 function getFS(v){
   v=v||_fview();
   function g(id){const el=G(id);return el?el.value:"";}
-  return{q:(g("srchIn")||"").trim(),cat:g("fCat"),cond:g("fCond"),loc:g("fLoc"),asgn:g("fAsgn"),med:g("fMed"),year:g("fYear"),
+  return{q:(g("srchIn")||"").trim(),cat:g("fCat"),cond:g("fCond"),loc:v==="coa"?"":g("fLoc"),asgn:g("fAsgn"),med:g("fMed"),year:g("fYear"),
     owner:v==="coa"?g("fOwner"):"",frame:v==="table"?g("fFrame"):"",
     marked:!!(markedOnly&&LIST_VIEWS.indexOf(v)>=0),list:v==="list"?g("fList"):"",sort:g("fSort")||"name"};
 }
