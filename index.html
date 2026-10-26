@@ -1390,6 +1390,8 @@ function addCOAToWish(id){
     if(photoData){copy.photo=photoData;await savePhoto(copy.id,photoData);}
     var photoData2=a.photo2||_photoCache2[a.id]||"";
     if(photoData2){copy.photo2=photoData2;await savePhoto2(copy.id,photoData2);}
+    // show the entered "COA Number" as a column in the Wish List so it is visible right away
+    if(copy.coaNumber){var wc=getListCols("wish").slice();if(wc.indexOf("coaNumber")<0){var ni=wc.indexOf("notes");if(ni<0)ni=wc.length;wc.splice(ni,0,"coaNumber");setListCols("wish",wc);}}
     wishAssets.push(copy);
     saveAll();render();
     toast("Added to Wish List as "+copy.id+" ✓","s");
@@ -2150,7 +2152,7 @@ function rForm(){
   var allF=allFDs();
   tblKeys.forEach(function(k){
     var fd=allF.find(function(f){return f.k===k;});
-    if(fd&&!fds.find(function(f){return f.k===k;})&&!(fd.artOnly&&!isArt(cat))&&!(fd.coaOnly&&editMode!=="coa"))fds.push(fd);
+    if(fd&&!fds.find(function(f){return f.k===k;})&&!(fd.artOnly&&!isArt(cat))&&!(fd.coaOnly&&editMode!=="coa"&&!a[fd.k]))fds.push(fd);
   });
   var sMap={},sOrd=[],seen=new Set();
   fds.forEach(function(fd){if(!sMap[fd.sec])sMap[fd.sec]=[];sMap[fd.sec].push(fd);if(!seen.has(fd.sec)){seen.add(fd.sec);sOrd.push(fd.sec);}});
