@@ -1980,6 +1980,7 @@ function editCellPhoto(aid){
       r.onload=function(ev){
         compressPhoto(ev.target.result).then(function(compressed){
           var a=assets.find(function(x){return x.id===cellPhotoId;});if(!a)return;
+          if((a.photo||_photoCache[a.id])&&!confirm("Replace the existing photo with the new one?"))return;
           var old=a.photo||"";pushUndo("cell",{id:cellPhotoId,k:"photo",old:old},"Photo change");
           a.photo=compressed;a.updatedAt=today();savePhoto(a.id,compressed);saveAll();
           var w=G("TW");var sx=w?w.scrollLeft:0,sy=w?w.scrollTop:0;
@@ -2761,9 +2762,8 @@ async function snapPhoto(){
   if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
   cv.width=w;cv.height=h;cv.getContext("2d").drawImage(v,0,0,w,h);
   var data=await compressPhoto(cv.toDataURL("image/jpeg",.7));
-  var pd=G(camSlot===2?"pdata2":"pdata");if(pd)pd.value=data;
-  var pp=G(camSlot===2?"pprev2":"pprev");if(pp)pp.innerHTML='<img src="'+data+'" alt=""/>';
-  closeCam();toast("Photo captured");
+  closeCam();
+  _applyNewPhoto(camSlot,data,"Photo captured");
 }
 function pickFile(inp,slot){
   slot=slot||1;
@@ -2771,8 +2771,7 @@ function pickFile(inp,slot){
   var r=new FileReader();
   r.onload=function(e){
     compressPhoto(e.target.result).then(function(c){
-      var pd=G(slot===2?"pdata2":"pdata");if(pd)pd.value=c;
-      var pp=G(slot===2?"pprev2":"pprev");if(pp)pp.innerHTML='<img src="'+c+'" alt=""/>';
+      _applyNewPhoto(slot,c,"Photo loaded");
     });
   };
   r.readAsDataURL(f);
@@ -2786,7 +2785,20 @@ function swapPhotos(){
   [["pprev",p1],["pprev2",p2]].forEach(function(x){var el=G(x[0]);if(el)el.innerHTML=x[1].value?'<img src="'+x[1].value+'" alt=""/>':"📷";});
   toast("Photos swapped — tap Update to save");
 }
-function clearPhoto(slot){slot=slot||1;var pd=G(slot===2?"pdata2":"pdata");if(pd)pd.value="";var pp=G(slot===2?"pprev2":"pprev");if(pp)pp.innerHTML="📷";}
+function _applyNewPhoto(slot,data,msg){
+  var pd=G(slot===2?"pdata2":"pdata"),pp=G(slot===2?"pprev2":"pprev");
+  if(pd&&pd.value&&!confirm("Replace the existing "+(slot===2?"second ":"")+"photo with the new one?")){toast("Kept the existing photo","i");return;}
+  if(pd)pd.value=data;
+  if(pp)pp.innerHTML='<img src="'+data+'" alt=""/>';
+  toast(msg+" — tap Update to save");
+}
+function clearPhoto(slot){
+  slot=slot||1;var pd=G(slot===2?"pdata2":"pdata");
+  if(!pd||!pd.value){toast("No photo to remove","i");return;}
+  if(!confirm("Remove this "+(slot===2?"second ":"")+"photo?"))return;
+  pd.value="";var pp=G(slot===2?"pprev2":"pprev");if(pp)pp.innerHTML="📷";
+  toast("Photo removed — tap Update to save");
+}
 
 // Scanner
 async function openScanner(){
