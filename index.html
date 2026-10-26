@@ -1372,23 +1372,27 @@ function exportCOACSV(){
   var rows=coaAssets.map(function(a){return[a.id].concat(cols.map(function(k){return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';})).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","private_collection_coa.csv");toast("Exported");
 }
-async function addCOAToWish(id){
+function addCOAToWish(id){
   var a=coaAssets.find(function(x){return x.id===id;});if(!a)return;
-  if(!confirm("Add \""+(a.name||id)+"\" to your Wish List?\n\nIt will stay in Private COAs too, and get a new Wish List ID."))return;
-  var copy=Object.assign({},a);
-  copy.id=_nextWishId();
-  copy.seq=_nextSeq();
-  copy.wishDate=today();
-  copy.status="wish";
-  delete copy.ownerName;delete copy.ownerContact;delete copy.dateSubmitted;delete copy.examDate;
-  delete copy.authResult;delete copy.coaIssued;delete copy.coaNumber;delete copy.coaDate;delete copy.fee;
-  var photoData=a.photo||_photoCache[a.id]||"";
-  if(photoData){copy.photo=photoData;await savePhoto(copy.id,photoData);}
-  var photoData2=a.photo2||_photoCache2[a.id]||"";
-  if(photoData2){copy.photo2=photoData2;await savePhoto2(copy.id,photoData2);}
-  wishAssets.push(copy);
-  saveAll();render();
-  toast("Added to Wish List as "+copy.id+" ✓","s");
+  var ownerLoc=(a.ownerName||"").trim()||a.location||"";
+  // Copy (the item stays in Private COAs): confirm or change the location; default = owner's name
+  _openActionModal("COPY TO WISH LIST (stays in Private COAs)",false,ownerLoc,async function(loc){
+    var copy=Object.assign({},a);
+    copy.id=_nextWishId();
+    copy.seq=_nextSeq();
+    copy.wishDate=today();
+    copy.status="wish";
+    copy.location=loc||ownerLoc;
+    delete copy.ownerName;delete copy.ownerContact;delete copy.dateSubmitted;delete copy.examDate;
+    delete copy.authResult;delete copy.coaIssued;delete copy.coaDate;delete copy.fee; // coaNumber is kept on the copy
+    var photoData=a.photo||_photoCache[a.id]||"";
+    if(photoData){copy.photo=photoData;await savePhoto(copy.id,photoData);}
+    var photoData2=a.photo2||_photoCache2[a.id]||"";
+    if(photoData2){copy.photo2=photoData2;await savePhoto2(copy.id,photoData2);}
+    wishAssets.push(copy);
+    saveAll();render();
+    toast("Added to Wish List as "+copy.id+" ✓","s");
+  },false,"",a.ownerName?"owner":"current");
 }
 
 // Sold Assets
@@ -2185,14 +2189,14 @@ function rForm(){
   h+='<div style="display:flex;flex-direction:column;gap:5px;">';
   h+='<button class="btn bs" style="font-size:11px;" onclick="openCam(1)">📷 Camera</button>';
   h+='<button class="btn bg" style="font-size:11px;" onclick="G(\'fpick\').click()">📁 Upload</button>';
-  if(a.photo)h+='<button class="btn bg" style="font-size:11px;" onclick="clearPhoto(1)">✕ Remove</button>';
-  h+='</div></div></div>';
+  h+='<button class="btn bg" style="font-size:11px;" onclick="clearPhoto(1)">✕ Remove</button>';
+  h+='</div><button class="btn bs" style="font-size:12px;align-self:center;margin-left:8px;" onclick="swapPhotos()" title="Swap photo 1 and photo 2">⇄ Swap</button></div></div>';
   h+='<div class="fs"><div class="fsh">Second Photo <span style="font-size:10px;color:var(--mu);font-weight:400;">(optional)</span></div><div class="pa">';
   h+='<div class="pp" id="pprev2">'+(a.photo2?'<img src="'+a.photo2+'" alt=""/>':'📷')+'</div>';
   h+='<div style="display:flex;flex-direction:column;gap:5px;">';
   h+='<button class="btn bs" style="font-size:11px;" onclick="openCam(2)">📷 Camera</button>';
   h+='<button class="btn bg" style="font-size:11px;" onclick="G(\'fpick2\').click()">📁 Upload</button>';
-  if(a.photo2)h+='<button class="btn bg" style="font-size:11px;" onclick="clearPhoto(2)">✕ Remove</button>';
+  h+='<button class="btn bg" style="font-size:11px;" onclick="clearPhoto(2)">✕ Remove</button>';
   h+='</div></div></div>';
   h+='<form id="aForm"><input type="hidden" name="photo" id="pdata" value="'+(a.photo||"")+'"/><input type="hidden" name="photo2" id="pdata2" value="'+(a.photo2||"")+'"/>';
   sOrd.forEach(function(sec){
@@ -2237,6 +2241,7 @@ function submitForm(){
   }
   var pd=G("pdata");entry.photo=pd?pd.value||"":"";entry.updatedAt=today();
   if(entry.photo){savePhoto(entry.id,entry.photo);_photoCache[entry.id]=entry.photo;}
+  else{deletePhoto(entry.id);delete _photoCache[entry.id];}
   var pd2=G("pdata2");entry.photo2=pd2?pd2.value||"":"";
   if(entry.photo2){savePhoto2(entry.id,entry.photo2);_photoCache2[entry.id]=entry.photo2;}
   else{deletePhoto2(entry.id);delete _photoCache2[entry.id];}
@@ -2770,6 +2775,13 @@ function pickFile(inp,slot){
   r.readAsDataURL(f);
   // Keep value so browser remembers folder, but allow same file again
   setTimeout(function(){},100);
+}
+function swapPhotos(){
+  var p1=G("pdata"),p2=G("pdata2");if(!p1||!p2)return;
+  if(!p1.value&&!p2.value){toast("No photos to swap","i");return;}
+  var t=p1.value;p1.value=p2.value;p2.value=t;
+  [["pprev",p1],["pprev2",p2]].forEach(function(x){var el=G(x[0]);if(el)el.innerHTML=x[1].value?'<img src="'+x[1].value+'" alt=""/>':"📷";});
+  toast("Photos swapped — tap Update to save");
 }
 function clearPhoto(slot){slot=slot||1;var pd=G(slot===2?"pdata2":"pdata");if(pd)pd.value="";var pp=G(slot===2?"pprev2":"pprev");if(pp)pp.innerHTML="📷";}
 
