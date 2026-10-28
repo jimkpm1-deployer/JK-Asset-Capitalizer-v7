@@ -1543,10 +1543,10 @@ function rDash(){
   var coaIssuedN=coaAssets.filter(function(a){return a.coaIssued==="Yes";}).length;
   var soldTotal=soldAssets.length;
   var soldVal=soldAssets.reduce((s,a)=>s+parseFloat(a.soldAt||0),0);var soldFaceVal=soldAssets.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
-  // sold amount / face amount, rounded to 2 decimals (only items that have a sold price, so unpriced sales don't skew it)
+  // sold amount / face amount, as a rounded percentage (only items that have a sold price, so unpriced sales don't skew it)
   var _soldPriced=soldAssets.filter(function(a){return parseFloat(a.soldAt)>0;});
   var _soldPricedFace=_soldPriced.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
-  var soldRatio=_soldPricedFace>0?(_soldPriced.reduce((s,a)=>s+parseFloat(a.soldAt||0),0)/_soldPricedFace).toFixed(2):"\u2014";
+  var soldRatio=_soldPricedFace>0?(_soldPriced.reduce((s,a)=>s+parseFloat(a.soldAt||0),0)/_soldPricedFace*100).toFixed(0)+"%":"\u2014";
   var inPossession=total+conTotal+framTotal;
   var inPossessionVal=val+conVal+framVal;
   var grandTotal=inPossession+soldTotal;
@@ -1557,7 +1557,7 @@ function rDash(){
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'consign\')" title="Consignment"><div class="sl" style="color:#2e6da4">Consignment ('+conTotal+')</div><div class="sv" style="color:#2e6da4">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'framing\')" title="Framing"><div class="sl" style="color:#5aaccf">Framing ('+framTotal+')</div><div class="sv" style="color:#5aaccf">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'wish\')" title="Wish List"><div class="sl" style="color:#2e7d52">Wish List ('+wishTotal+')</div><div class="sv" style="color:#2e7d52">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'sold\')" title="Sold Assets"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl" style="color:#c0392b">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#c0392b;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span><span class="sv" style="color:#c0392b;font-size:12px;" title="Sold amount \u00f7 face amount (items with a sold price)">'+(soldRatio==='\u2014'?'':'\u00d7')+soldRatio+'</span></div></div></div>';
+  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'sold\')" title="Sold Assets"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl" style="color:#c0392b">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#c0392b;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span><span class="sv" style="color:#c0392b;font-size:12px;" title="Sold amount \u00f7 face amount (items with a sold price)">'+soldRatio+'</span></div></div></div>';
   h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'coa\')" title="Private COAs"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl" style="color:#b06800">Private COAs <span style="font-size:10px;color:var(--mu);">(not owned \u2014 COA)</span></div><div class="sv" style="font-size:13px;color:#b06800;">'+coaTotal+' pieces</div></div><div class="sv" style="color:#b06800;font-size:14px;">'+coaIssuedN+' COA issued</div></div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
