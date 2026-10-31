@@ -396,8 +396,10 @@ body.app-locked .shell * { pointer-events: none !important; }
     <div class="mhd"><h3 id="mActTitle">MOVE ASSET</h3><button class="mcls" onclick="closeM('mAction')">✕</button></div>
     <div class="mbd">
       <div id="mActPrice" style="display:none;margin-bottom:10px;">
-        <label style="font-size:12px;font-family:var(--mo);color:var(--mu);">Sold at price ($)</label>
+        <label style="font-size:12px;font-family:var(--mo);color:var(--mu);" id="mActPriceLbl">Net Share ($) — what you receive</label>
         <input id="mActPriceVal" type="number" min="0" step="0.01" placeholder="Leave blank to skip" style="width:100%;padding:7px 9px;border:1px solid var(--b);border-radius:var(--r);font-size:14px;background:var(--s);color:var(--tx);margin-top:4px;"/>
+        <label style="font-size:12px;font-family:var(--mo);color:var(--mu);display:block;margin-top:8px;" id="mActGrossLbl">Gross Price ($) — incl. fees / commission</label>
+        <input id="mActGrossVal" type="number" min="0" step="0.01" placeholder="Optional · must be ≥ net" style="width:100%;padding:7px 9px;border:1px solid var(--b);border-radius:var(--r);font-size:14px;background:var(--s);color:var(--tx);margin-top:4px;"/>
       </div>
       <div id="mActFrame" style="display:none;margin-bottom:10px;">
         <label style="font-size:12px;font-family:var(--mo);color:var(--mu);">Frame Status</label>
@@ -644,11 +646,15 @@ let editMode="inventory"; // "inventory" | "consign" | "framing" | "wish" | "coa
 let fOrder=LS.get("acap_order_v3",DORDER);
 let hiddenFlds=LS.get("acap_hidden_v3",[]);
 let customCols=LS.get("acap_custom_v3",[]);
+// Sold-price columns: soldAt = my net share, soldGross = full price incl. auction/gallery fees & commissions (>= net)
+var SOLD_NET_LBL="Net Share",SOLD_GROSS_LBL="Gross Price";
+function _soldLbl(key,renames){return(renames&&renames[key])||(key==="soldAt"?SOLD_NET_LBL:key==="soldGross"?SOLD_GROSS_LBL:key==="soldDate"?"Sold Date":null);}
+function _fmtMoney(v){return v?"$"+parseFloat(v).toLocaleString():"";}
 const LIST_DEFAULT16=["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","exhibitionHistory","location","currentValue","assignedTo","notes"];
 const LIST_COLS_KEYS={inventory:"acap_tcols_v3",consign:"acap_tcols_consign_v3",framing:"acap_tcols_framing_v3",wish:"acap_tcols_wish_v3",sold:"acap_tcols_sold_v3",coa:"acap_tcols_coa_v3"};
 let _listCols={};
 function _defaultListCols(listName){
-  if(listName==="sold")return["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","currentValue","soldAt","soldDate","location","assignedTo","notes"];
+  if(listName==="sold")return["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","currentValue","soldAt","soldGross","soldDate","location","assignedTo","notes"];
   if(listName==="coa")return["photo","artist","name","yearCreated","medium","dimensions","condition","ownerName","ownerContact","dateSubmitted","authResult","coaIssued","coaNumber","coaDate","fee","notes"];
   return LIST_DEFAULT16.slice();
 }
@@ -657,6 +663,10 @@ function getListCols(listName){
   listName=listName&&LIST_COLS_KEYS[listName]?listName:"inventory";
   if(!_listCols[listName]){
     var stored=LS.get(LIST_COLS_KEYS[listName],null);
+    if(listName==="sold"&&stored&&stored.length&&!LS.get("acap_soldgross_v1",false)){
+      if(stored.indexOf("soldGross")<0){var _ix=stored.indexOf("soldAt");stored.splice(_ix>=0?_ix+1:stored.length,0,"soldGross");LS.set(LIST_COLS_KEYS[listName],stored);}
+      LS.set("acap_soldgross_v1",true);
+    }
     _listCols[listName]=(stored&&stored.length)?stored.slice():_defaultListCols(listName);
   }
   customCols.forEach(function(c){if(!_listCols[listName].includes(c.key))_listCols[listName].push(c.key);});
@@ -1417,7 +1427,7 @@ function rSold(){
   h+='<div class="twrap"><table class="tbl" id="STB" style="width:'+totalW+'px;">';
   h+='<thead><tr><th style="width:70px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">ID</span></div></th>';
   cols.forEach(function(key,i){
-    var lbl=key==="photo"?"Photo":key==="soldAt"?"Sold At $":key==="soldDate"?"Sold Date":(renames[key]||(fds.find(function(f){return f.k===key;})||{lbl:key}).lbl);
+    var lbl=key==="photo"?"Photo":(_soldLbl(key,renames)?(key==="soldAt"||key==="soldGross"?_soldLbl(key,renames)+" $":_soldLbl(key,renames)):(fds.find(function(f){return f.k===key;})||{lbl:key}).lbl);
     var w=cw(key);
     h+='<th data-ck="'+key+'" style="width:'+w+'px;min-width:34px;position:sticky;top:0;z-index:3;background:var(--s2);" draggable="true" ondragstart="cdS(event,'+i+',\'sold\')" ondragover="event.preventDefault();cdO(event,'+i+')" ondrop="cdD(event,'+i+',\'sold\')" ondragend="cdE()">';
     h+='<div class="thin">'+(key==="photo"?'<span class="thlbl">📷</span>':'<span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>');
@@ -1434,7 +1444,7 @@ function rSold(){
         h+='<td><div class="tdin">'+( ph?'<img src="'+ph+'" style="width:'+sz+'px;height:'+sz+'px;object-fit:cover;border-radius:2px;cursor:zoom-in;" onclick="showPhoto(this.src,event)"/>':'<span style="font-size:16px;">'+(isArt(a.category)?"🖼":"📦")+'</span>')+'</div></td>';
         return;
       }
-      if(key==="soldAt"){h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="soldAt" onclick="startEditInList(this,\''+esc(a.id)+'\',\'soldAt\',\'sold\')"><div class="tdin" style="font-family:var(--mo);color:var(--ac);font-weight:600;cursor:text;">'+(a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"—")+'</div></td>';return;}
+      if(key==="soldAt"||key==="soldGross"){h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'sold\')"><div class="tdin" style="font-family:var(--mo);color:var(--ac);font-weight:600;cursor:text;">'+(a[key]?"$"+parseFloat(a[key]).toLocaleString():"—")+'</div></td>';return;}
       if(key==="soldDate"){h+='<td><div class="tdin" style="font-family:var(--mo);font-size:11px;">'+esc(a.soldDate||"")+'</div></td>';return;}
       var raw=a[key]||"";
       var v=raw;if(["purchasePrice","currentValue","insuredValue"].includes(key)&&v)v="$"+parseFloat(v).toLocaleString();
@@ -1463,7 +1473,7 @@ function restoreAsset(btn){
   var a=soldAssets.find(function(x){return x.id===id;});if(!a)return;
   var dest=a.source==="consignment"?"consign":"inventory";
   var restored=Object.assign({},a);
-  delete restored.soldDate;delete restored.soldAt;delete restored.status;delete restored.source;
+  delete restored.soldDate;delete restored.soldAt;delete restored.soldGross;delete restored.status;delete restored.source;
   if(dest==="consign"){
     consignAssets.push(restored);
     soldAssets=soldAssets.filter(function(x){return x.id!==id;});
@@ -1487,9 +1497,9 @@ function restoreConsignToInventory(id){restoreToInventory(id);}
 function exportSoldCSV(){
   if(!soldAssets.length){toast("No sold assets","e");return;}
   var cols=getSTCols().filter(function(k){return k!=="photo";});
-  var hdr="ID,"+cols.join(",");
+  var hdr="ID,"+cols.map(function(k){return k==="soldAt"?SOLD_NET_LBL:k==="soldGross"?SOLD_GROSS_LBL:k;}).join(",");
   var rows=soldAssets.map(function(a){return[a.id].concat(cols.map(function(k){
-    if(k==="soldAt")return a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"";
+    if(k==="soldAt"||k==="soldGross")return a[k]?'"'+_fmtMoney(a[k])+'"':"";
     return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';
   })).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","sold_assets.csv");toast("Exported");
@@ -1543,10 +1553,15 @@ function rDash(){
   var coaIssuedN=coaAssets.filter(function(a){return a.coaIssued==="Yes";}).length;
   var soldTotal=soldAssets.length;
   var soldVal=soldAssets.reduce((s,a)=>s+parseFloat(a.soldAt||0),0);var soldFaceVal=soldAssets.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
-  // sold amount / face amount, as a rounded percentage (only items that have a sold price, so unpriced sales don't skew it)
-  var _soldPriced=soldAssets.filter(function(a){return parseFloat(a.soldAt)>0;});
-  var _soldPricedFace=_soldPriced.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
-  var soldRatio=_soldPricedFace>0?(_soldPriced.reduce((s,a)=>s+parseFloat(a.soldAt||0),0)/_soldPricedFace*100).toFixed(0)+"%":"\u2014";
+  // Net (my share) and Gross (incl. fees) sale totals + ratios to face value. Gross falls back to net when not entered.
+  // Ratios only use items that have a sale price, so unpriced sales don't skew them.
+  var _soldPriced=soldAssets.filter(function(a){return parseFloat(a.soldAt)>0||parseFloat(a.soldGross)>0;});
+  var _spFace=_soldPriced.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
+  var _spNet=_soldPriced.reduce((s,a)=>s+(parseFloat(a.soldAt)||0),0);
+  var soldGrossVal=soldAssets.reduce((s,a)=>s+(parseFloat(a.soldGross)>0?parseFloat(a.soldGross):(parseFloat(a.soldAt)||0)),0);
+  var _spGross=_soldPriced.reduce((s,a)=>s+(parseFloat(a.soldGross)>0?parseFloat(a.soldGross):(parseFloat(a.soldAt)||0)),0);
+  var soldRatio=_spFace>0?(_spNet/_spFace*100).toFixed(0)+"%":"\u2014";
+  var soldGrossRatio=_spFace>0?(_spGross/_spFace*100).toFixed(0)+"%":"\u2014";
   var inPossession=total+conTotal+framTotal;
   var inPossessionVal=val+conVal+framVal;
   var grandTotal=inPossession+soldTotal;
@@ -1557,7 +1572,7 @@ function rDash(){
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'consign\')" title="Consignment"><div class="sl" style="color:#2e6da4">Consignment ('+conTotal+')</div><div class="sv" style="color:#2e6da4">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'framing\')" title="Framing"><div class="sl" style="color:#5aaccf">Framing ('+framTotal+')</div><div class="sv" style="color:#5aaccf">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'wish\')" title="Wish List"><div class="sl" style="color:#2e7d52">Wish List ('+wishTotal+')</div><div class="sv" style="color:#2e7d52">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'sold\')" title="Sold Assets"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="sl" style="color:#c0392b">Sold ('+soldTotal+')</div><div style="display:flex;gap:12px;"><span class="sv" style="color:#c0392b;">$'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' sold</span><span class="sv" style="color:#8a5a2e;opacity:.6;font-size:11px;">/ $'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</span><span class="sv" style="color:#c0392b;font-size:12px;" title="Sold amount \u00f7 face amount (items with a sold price)">'+soldRatio+'</span></div></div></div>';
+  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'sold\')" title="Ratios = sale amount \u00f7 face value of the sold items that have a price"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><div class="sl" style="color:#c0392b">Sold ('+soldTotal+')</div><div class="sv" style="color:#8a5a2e;opacity:.65;font-size:11px;">$'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</div></div><div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;"><span class="sv" style="color:#c0392b;font-size:13px;">'+SOLD_NET_LBL+' $'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span style="font-size:11px;opacity:.85;">\u00b7 '+soldRatio+'</span></span><span class="sv" style="color:#8a5a2e;font-size:13px;">'+SOLD_GROSS_LBL+' $'+soldGrossVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span style="font-size:11px;opacity:.85;">\u00b7 '+soldGrossRatio+'</span></span></div></div></div>';
   h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'coa\')" title="Private COAs"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl" style="color:#b06800">Private COAs <span style="font-size:10px;color:var(--mu);">(not owned \u2014 COA)</span></div><div class="sv" style="font-size:13px;color:#b06800;">'+coaTotal+' pieces</div></div><div class="sv" style="color:#b06800;font-size:14px;">'+coaIssuedN+' COA issued</div></div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
@@ -1725,7 +1740,7 @@ function defW(k){
     artist:108,
     serialNumber:78,
     authenticCert:66,
-    currentValue:76, purchasePrice:76, insuredValue:76, soldAt:76,
+    currentValue:76, purchasePrice:76, insuredValue:76, soldAt:76, soldGross:76,
     location:86, assignedTo:86,
     notes:window.innerWidth<768?225:450,
     exhibitionHistory:window.innerWidth<768?360:720,
@@ -2000,7 +2015,7 @@ function editCellPhoto(aid){
 function hideCol(key,listName){listName=listName||_viewList(view);var cols=getListCols(listName).filter(function(k){return k!==key;});setListCols(listName,cols);saveAll();render();toast("Hidden — tap 👁 Unhide to restore","i",10000);}
 function showUnhide(){
   var listName=_viewList(view);
-  var allFds2=[{k:"photo",lbl:"Photo",sec:""}].concat(allFDs());
+  var allFds2=[{k:"photo",lbl:"Photo",sec:""}].concat(listName==="sold"?[{k:"soldAt",lbl:SOLD_NET_LBL,sec:""},{k:"soldGross",lbl:SOLD_GROSS_LBL,sec:""},{k:"soldDate",lbl:"Sold Date",sec:""}]:[]).concat(allFDs());
   var cols=getListCols(listName);
   var hidden=allFds2.filter(function(f){return!cols.includes(f.k);});
   var body=G("mUnhideBody");
@@ -2053,7 +2068,7 @@ function doPrint(){
   var thead='<tr><th>ID</th>';
   cols.forEach(function(key){
     var fd=fds.find(function(f){return f.k===key;})||{lbl:key};
-    var lbl=key==="soldAt"?"Sold At":key==="soldDate"?"Sold Date":(renames[key]||fd.lbl);
+    var lbl=_soldLbl(key,renames)||fd.lbl;
     thead+='<th>'+esc(lbl)+'</th>';
   });
   thead+='</tr>';
@@ -2067,7 +2082,7 @@ function doPrint(){
         tbody+='<td>'+(showP&&ph?'<img src="'+ph+'">':'')+'</td>';
         return;
       }
-      if(key==="soldAt"){tbody+='<td>'+(a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"")+'</td>';return;}
+      if(key==="soldAt"||key==="soldGross"){tbody+='<td>'+_fmtMoney(a[key])+'</td>';return;}
       if(key==="soldDate"){tbody+='<td>'+esc(a.soldDate||"")+'</td>';return;}
       var v=a[key]||"";
       if(["purchasePrice","currentValue","insuredValue","fee"].includes(key)&&v)v="$"+parseFloat(v).toLocaleString();
@@ -2329,7 +2344,7 @@ function rDetail(){
   _all.forEach(function(f){if(fds.indexOf(f)<0)fds.push(f);});
   fds=fds.filter(function(f){return f.k!=="name"&&f.k!=="category"&&f.k!=="description";});
   fds.forEach(function(f){_known[f.k]=1;});
-  var _REC=[["soldAt","Sold Price ($)"],["soldDate","Sold Date"],["consignDate","Consignment Date"],["framingDate","Framing Date"],["wishDate","Wish List Date"],["originalLocation","Original Location"],["buyPrice","Buy Price ($)"],["status","Status"],["source","Source"],["createdAt","Created"],["updatedAt","Last Updated"]];
+  var _REC=[["soldAt",SOLD_NET_LBL+" ($)"],["soldGross",SOLD_GROSS_LBL+" ($)"],["soldDate","Sold Date"],["consignDate","Consignment Date"],["framingDate","Framing Date"],["wishDate","Wish List Date"],["originalLocation","Original Location"],["buyPrice","Buy Price ($)"],["status","Status"],["source","Source"],["createdAt","Created"],["updatedAt","Last Updated"]];
   _REC.forEach(function(r){_known[r[0]]=1;fds.push({k:r[0],lbl:r[1],sec:"Record",t:"text"});});
   var _SKIP={photo:1,photo2:1,id:1,seq:1,marked:1,name:1,category:1,description:1};
   Object.keys(a).forEach(function(k){
@@ -2343,7 +2358,7 @@ function rDetail(){
   function fv(fd,raw){
     if(!raw)return null;
     if(fd.t==="url"){try{var lp=JSON.parse(raw);return'<a href="'+esc(lp.url)+'" target="_blank">🔗 '+esc(lp.text||lp.url)+'</a>';}catch{return raw.startsWith("http")?'<a href="'+esc(raw)+'" target="_blank">🔗 '+esc(raw)+'</a>':esc(raw);}}
-    if(["purchasePrice","currentValue","insuredValue","fee","soldAt","buyPrice"].includes(fd.k)&&!isNaN(parseFloat(raw)))return"$"+parseFloat(raw).toLocaleString();
+    if(["purchasePrice","currentValue","insuredValue","fee","soldAt","soldGross","buyPrice"].includes(fd.k)&&!isNaN(parseFloat(raw)))return"$"+parseFloat(raw).toLocaleString();
     if(fd.k==="usefulLife")return raw+" yrs";
     return esc(raw);
   }
@@ -2992,7 +3007,7 @@ function printAllLists(){
   var coaCols=getListCols('coa');
   var fds=allFDs();
   var renames=LS.get("acap_renames_v3",{});
-  function colLbl(k){return k==="photo"?"Photo":k==="soldAt"?"Sold At":k==="soldDate"?"Sold Date":(renames[k]||(fds.find(function(f){return f.k===k;})||{lbl:k}).lbl);}
+  function colLbl(k){return k==="photo"?"Photo":_soldLbl(k,null)?_soldLbl(k,renames):(renames[k]||(fds.find(function(f){return f.k===k;})||{lbl:k}).lbl);}
   function makeRows(arr,colList){
     var r="";
     arr.forEach(function(a){
@@ -3001,8 +3016,8 @@ function printAllLists(){
         if(k==="photo"){
           var ph=a.photo||_photoCache[a.id]||"";
           r+="<td>"+(ph?'<img src="'+ph+'" style="width:40px;height:30px;object-fit:cover;border-radius:2px;"/>':"-")+"</td>";
-        } else if(k==="soldAt"){
-          r+="<td>"+(a.soldAt?"$"+parseFloat(a.soldAt).toLocaleString():"-")+"</td>";
+        } else if(k==="soldAt"||k==="soldGross"){
+          r+="<td>"+(a[k]?"$"+parseFloat(a[k]).toLocaleString():"-")+"</td>";
         } else {
           var v=a[k]||"";
           if(["purchasePrice","currentValue","insuredValue","fee"].includes(k)&&v)v="$"+parseFloat(v).toLocaleString();
@@ -3085,6 +3100,10 @@ function _nextFramingSeq(){
 
 function commitSoldCell(aid,key,val,old){
   var a=soldAssets.find(function(x){return x.id===aid;});if(!a||val===old)return;
+  if(key==="soldAt"||key==="soldGross"){
+    var _n=parseFloat(key==="soldAt"?val:a.soldAt),_g=parseFloat(key==="soldGross"?val:a.soldGross);
+    if(_n>0&&_g>0&&_g<_n){toast(SOLD_GROSS_LBL+" can't be lower than "+SOLD_NET_LBL,"e");render();return;}
+  }
   a[key]=val;a.updatedAt=today();saveAll();render();toast("Saved");
 }
 function commitConsignCell(aid,key,val,old){
@@ -3108,7 +3127,7 @@ function startEditInList(td,aid,key,listName){
   var arr=listName==="sold"?soldAssets:listName==="framing"?framingAssets:listName==="wish"?wishAssets:listName==="coa"?coaAssets:consignAssets;
   var commitFn=listName==="sold"?commitSoldCell:listName==="framing"?commitFramingCell:listName==="wish"?commitWishCell:listName==="coa"?commitCOACell:commitConsignCell;
   var a=arr.find(function(x){return x.id===aid;});if(!a)return;
-  var fd=key==="soldAt"||key==="soldDate"?{t:key==="soldAt"?"num":"date"}:getFD(key)||{t:"text"};
+  var fd=key==="soldAt"||key==="soldGross"||key==="soldDate"?{t:key==="soldDate"?"date":"num"}:getFD(key)||{t:"text"};
   if(fd.t==="url")return;
   var val=a[key]||"";var old=val;var inp;
   if(fd.t==="sel"&&fd.opts){
@@ -3200,6 +3219,9 @@ function _openActionModal(title,showPrice,currentLoc,callback,showFrame,currentF
   var titleEl=G2("mActTitle");if(titleEl)titleEl.textContent=title;
   var priceDiv=G2("mActPrice");if(priceDiv)priceDiv.style.display=showPrice?"block":"none";
   var priceEl=G2("mActPriceVal");if(priceEl)priceEl.value="";
+  var grossEl=G2("mActGrossVal");if(grossEl)grossEl.value="";
+  var pl=G2("mActPriceLbl");if(pl)pl.textContent=SOLD_NET_LBL+" ($) \u2014 what you receive";
+  var gl=G2("mActGrossLbl");if(gl)gl.textContent=SOLD_GROSS_LBL+" ($) \u2014 incl. fees / commission";
   var frameDiv=G2("mActFrame");if(frameDiv)frameDiv.style.display=showFrame?"block":"none";
   var frameSel=G2("mActFrameSel");
   if(frameSel&&showFrame){
@@ -3232,9 +3254,12 @@ function mActConfirm(){
   var loc=sel&&sel.value==="__new__"?(newEl?newEl.value.trim():""):(sel?sel.value:"");
   if(window._mActFixed&&!loc){toast("Please select a location","e");return;}
   var price=priceEl?priceEl.value.trim():"";
+  var grossEl=document.getElementById("mActGrossVal");
+  var gross=grossEl&&document.getElementById("mActPrice").style.display!=="none"?grossEl.value.trim():"";
+  if(gross&&price&&parseFloat(gross)<parseFloat(price)){toast(SOLD_GROSS_LBL+" can't be lower than "+SOLD_NET_LBL,"e");return;}
   var frame=(frameDiv&&frameDiv.style.display!=="none"&&frameSel)?frameSel.value:undefined;
   closeM("mAction");closeM("mConfirm");
-  if(window._mActCallback)window._mActCallback(loc,price,frame);
+  if(window._mActCallback)window._mActCallback(loc,price,frame,gross);
 }
 function moveToConsign(id){
   var a=_findAsset(id);if(!a)return;
@@ -3265,12 +3290,13 @@ function moveToFraming(id){
 function moveToSold(id){
   var a=_findAsset(id);if(!a)return;
   var fromFraming=framingAssets.some(function(x){return x.id===id;});
-  _openActionModal("MARK AS SOLD",true,a.location||"",function(loc,price,frame){
+  _openActionModal("MARK AS SOLD",true,a.location||"",function(loc,price,frame,gross){
     var sold=Object.assign({},a);
     sold.soldDate=today();sold.status="sold";
     sold.originalLocation=a.location||"";
     sold.location=loc||a.location||"";
     if(price)sold.soldAt=price.replace(/[^0-9.]/g,"");
+    if(gross)sold.soldGross=gross.replace(/[^0-9.]/g,"");
     if(fromFraming&&frame!==undefined)sold.framed=frame;
     _removeFromAllLists(id);
     soldAssets.push(sold);
@@ -3285,6 +3311,7 @@ function restoreToInventory(id){
   _openActionModal("RESTORE TO INVENTORY",false,autoLoc||a.location||"",function(loc,price,frame){
     var restored=Object.assign({},a);
     delete restored.consignDate;delete restored.framingDate;delete restored.status;
+    delete restored.soldDate;delete restored.soldAt;delete restored.soldGross; // no sale data on a restored item
     restored.location=loc||autoLoc||a.location||"";delete restored.originalLocation;
     if(fromFraming&&frame!==undefined)restored.framed=frame;
     _removeFromAllLists(id);assets.push(restored);
