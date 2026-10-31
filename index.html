@@ -341,6 +341,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <button class="btn bg no-print" id="bUnhide" style="display:none" onclick="showUnhide()">👁 Unhide</button>
       <button class="btn bg no-print" id="bBC"     style="display:none" onclick="printStickers()">🖨 Stickers</button>
       <button class="btn bg no-print" id="bBCpdf"  style="display:none" onclick="stickersPDF()">📄 PDF</button>
+      <button class="btn bg no-print" id="bCalc" onclick="toggleCalc()" title="Calculator">🧮</button>
       <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾 Save</button>
       <button class="btn bg no-print" id="bDiag" style="font-size:10px;" onclick="showStorageDiag()">🔍 Storage</button>
       <button class="btn bg no-print" id="bStickerList" style="display:none;font-size:11px;" onclick="printCurrentListStickers()">🏷 Stickers</button>
@@ -349,6 +350,16 @@ body.app-locked .shell * { pointer-events: none !important; }
     </div>
     <div class="content" id="CT"><div class="empty"><div class="big">⬡</div>Loading…</div></div>
   </div>
+</div>
+<div id="CALC" class="no-print" style="display:none;position:fixed;right:16px;bottom:16px;width:232px;z-index:4500;background:var(--s);color:var(--tx);border:1px solid var(--b);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.35);user-select:none;-webkit-user-select:none;">
+  <div id="CALChd" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:move;touch-action:none;border-bottom:1px solid var(--b);font-family:var(--mo);font-size:11px;color:var(--mu);">
+    <span>🧮 Calculator</span><span><button class="mcls" style="font-size:12px;margin-right:6px;" onclick="calcCopy()" title="Copy result">⧉</button><button class="mcls" style="font-size:13px;" onclick="toggleCalc()" title="Close">✕</button></span>
+  </div>
+  <div style="padding:8px 10px 4px;text-align:right;">
+    <div id="CALCexpr" style="min-height:15px;font-family:var(--mo);font-size:11px;color:var(--mu);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;"></div>
+    <div id="CALCval" style="font-family:var(--mo);font-size:26px;font-weight:600;overflow:hidden;white-space:nowrap;">0</div>
+  </div>
+  <div id="CALCkeys" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 10px 10px;"></div>
 </div>
 <div id="photoLB" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:5000;align-items:center;justify-content:center;flex-direction:column;" onclick="G('photoLB').style.display='none'">
   <div id="photoLBwrap" style="display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:96vw;max-height:88vh;">
@@ -791,8 +802,112 @@ function unlock(){
   const p=new URLSearchParams(location.search).get("asset");
   if(p)setTimeout(()=>{const a=assets.find(x=>x.id===p);if(a)viewDetail(a.id);},500);
 }
+
+// ---- Floating calculator ----
+var calc={cur:"0",prev:null,op:null,fresh:true,expr:""};
+var CALC_KEYS=[["C","fn"],["\u232B","fn"],["%","fn"],["\u00f7","op"],["7"],["8"],["9"],["\u00d7","op"],["4"],["5"],["6"],["\u2212","op"],["1"],["2"],["3"],["+","op"],["\u00b1","fn"],["0"],["."],["=","eq"]];
+function calcFmt(str){
+  if(str==="Error")return str;
+  var neg=str.charAt(0)==="-",t=neg?str.slice(1):str,dot=t.indexOf("."),ip=dot<0?t:t.slice(0,dot),fp=dot<0?"":t.slice(dot);
+  return(neg?"-":"")+ip.replace(/\B(?=(\d{3})+(?!\d))/g,",")+fp;
+}
+function calcNum(n){return String(parseFloat(n.toPrecision(12)));}
+function calcApply(a,op,b){
+  if(op==="+")return a+b;if(op==="\u2212")return a-b;if(op==="\u00d7")return a*b;
+  if(op==="\u00f7")return b===0?NaN:a/b;return b;
+}
+function calcPress(k){
+  var c=calc;
+  if(c.cur==="Error"&&k!=="C"){return;}
+  if(/^[0-9]$/.test(k)){
+    if(c.fresh){c.cur=k;c.fresh=false;}else if(c.cur.replace(/[-.]/g,"").length<15){c.cur=c.cur==="0"?k:(c.cur==="-0"?"-"+k:c.cur+k);}
+    if(c.eq){c.expr="";c.eq=false;}
+  }else if(k==="."){
+    if(c.fresh){c.cur="0.";c.fresh=false;}else if(c.cur.indexOf(".")<0)c.cur+=".";
+    if(c.eq){c.expr="";c.eq=false;}
+  }else if(k==="C"){calc={cur:"0",prev:null,op:null,fresh:true,expr:""};c=calc;
+  }else if(k==="\u232B"){
+    if(!c.fresh){c.cur=c.cur.length>1&&!(c.cur.length===2&&c.cur.charAt(0)==="-")?c.cur.slice(0,-1):"0";if(c.cur==="0")c.fresh=true;}
+  }else if(k==="\u00b1"){
+    if(c.cur!=="0")c.cur=c.cur.charAt(0)==="-"?c.cur.slice(1):"-"+c.cur;
+  }else if(k==="%"){
+    var v=parseFloat(c.cur);c.cur=calcNum(c.op&&c.prev!=null?c.prev*v/100:v/100);c.fresh=true;
+  }else if(k==="="){
+    if(c.op&&c.prev!=null){
+      var r=calcApply(c.prev,c.op,parseFloat(c.cur));
+      c.expr=calcFmt(calcNum(c.prev))+" "+c.op+" "+calcFmt(c.cur)+" =";
+      c.cur=isFinite(r)?calcNum(r):"Error";c.prev=null;c.op=null;c.fresh=true;c.eq=true;
+    }
+  }else{ // + - x /
+    if(c.op&&!c.fresh&&c.prev!=null){
+      var r2=calcApply(c.prev,c.op,parseFloat(c.cur));
+      c.cur=isFinite(r2)?calcNum(r2):"Error";
+    }
+    if(c.cur!=="Error"){c.prev=parseFloat(c.cur);c.op=k;c.fresh=true;c.eq=false;c.expr=calcFmt(calcNum(c.prev))+" "+k;}
+    else{c.prev=null;c.op=null;}
+  }
+  calcRender();
+}
+function calcRender(){
+  var v=G("CALCval"),e=G("CALCexpr");if(!v)return;
+  var t=calcFmt(calc.cur);v.textContent=t;v.style.fontSize=t.length>13?"16px":t.length>10?"20px":"26px";
+  e.textContent=calc.expr;
+}
+function calcCopy(){
+  var t=calc.cur;if(t==="Error")return;
+  try{navigator.clipboard.writeText(t).then(function(){toast("Copied "+calcFmt(t));},function(){toast("Copy not available","e");});}catch(x){toast("Copy not available","e");}
+}
+function toggleCalc(force){
+  var el=G("CALC");if(!el)return;
+  var open=force!==undefined?force:el.style.display==="none";
+  el.style.display=open?"block":"none";
+  var b=G("bCalc");if(b)b.classList.toggle("bp",open);
+  if(open){calcPlace();calcRender();}
+}
+function calcPlace(){
+  var el=G("CALC"),pos=LS.get("acap_calc_pos",null);
+  if(pos&&typeof pos.x==="number"){
+    el.style.left=Math.max(0,Math.min(pos.x,window.innerWidth-60))+"px";el.style.top=Math.max(0,Math.min(pos.y,window.innerHeight-60))+"px";
+    el.style.right="auto";el.style.bottom="auto";
+  }
+}
+(function(){
+  var keys=G("CALCkeys");
+  if(keys){
+    keys.innerHTML=CALC_KEYS.map(function(k){
+      var bg=k[1]==="eq"?"var(--ac)":k[1]==="op"?"#e6a817":k[1]==="fn"?"var(--s2)":"var(--s2)";
+      var col=k[1]==="eq"?"#fff":k[1]==="op"?"#000":"var(--tx)";
+      return'<button type="button" onclick="calcPress(this.getAttribute(\'data-k\'))" data-k="'+k[0]+'" style="padding:11px 0;font-size:16px;font-family:var(--mo);border:1px solid var(--b);border-radius:8px;cursor:pointer;background:'+bg+';color:'+col+';">'+k[0]+'</button>';
+    }).join("");
+  }
+  var hd=G("CALChd"),box=G("CALC"),drag=null;
+  if(hd&&box){
+    hd.addEventListener("pointerdown",function(e){
+      if(e.target.tagName==="BUTTON")return;
+      var r=box.getBoundingClientRect();drag={dx:e.clientX-r.left,dy:e.clientY-r.top};
+      try{hd.setPointerCapture(e.pointerId);}catch(x){}
+    });
+    hd.addEventListener("pointermove",function(e){
+      if(!drag)return;
+      var x=Math.max(0,Math.min(e.clientX-drag.dx,window.innerWidth-box.offsetWidth)),y=Math.max(0,Math.min(e.clientY-drag.dy,window.innerHeight-box.offsetHeight));
+      box.style.left=x+"px";box.style.top=y+"px";box.style.right="auto";box.style.bottom="auto";
+    });
+    var end=function(){if(drag){drag=null;var r=box.getBoundingClientRect();LS.set("acap_calc_pos",{x:r.left,y:r.top});}};
+    hd.addEventListener("pointerup",end);hd.addEventListener("pointercancel",end);
+  }
+  document.addEventListener("keydown",function(e){
+    var box2=G("CALC");if(!box2||box2.style.display==="none")return;
+    var t=e.target,tag=t&&t.tagName;
+    if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||(t&&t.isContentEditable))return;
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    var k=e.key,m=null;
+    if(/^[0-9.]$/.test(k))m=k;else if(k==="+")m="+";else if(k==="-")m="\u2212";else if(k==="*"||k==="x")m="\u00d7";else if(k==="/")m="\u00f7";
+    else if(k==="Enter"||k==="=")m="=";else if(k==="Backspace")m="\u232B";else if(k==="Escape")m="C";else if(k==="%")m="%";
+    if(m){e.preventDefault();calcPress(m);}
+  });
+})();
 function doLogout(){
-  isAuth=false;LS.set("acap_auth_time",0);clearTimeout(sessTmr);
+  toggleCalc(false);isAuth=false;LS.set("acap_auth_time",0);clearTimeout(sessTmr);
   G("LS").style.display="flex";G("lpw").value="";G("lerr").textContent="";pinEntry="";updPinDots();
   
 }
