@@ -204,7 +204,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .camtop video{width:100%;height:100%;max-height:calc(100vh - 85px);object-fit:contain;background:#000;}
 .cambtns{flex-shrink:0;width:100%;display:flex;gap:10px;justify-content:center;align-items:center;padding:13px;background:rgba(0,0,0,.8);min-height:78px;}
 .scanm{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:200;display:flex;flex-direction:column;}
-.scanm video{width:100%;height:calc(100% - 85px);object-fit:cover;background:#000;}
+.scanm video{width:100%;object-fit:cover;background:#000;}
 .scanbtns{height:85px;background:rgba(0,0,0,.8);display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:8px;}
 .toast{position:fixed;bottom:15px;right:11px;padding:9px 13px;border-radius:var(--r);font-size:12px;font-family:var(--mo);z-index:900;animation:sup .2s ease;max-width:300px;}
 .toast.s{background:#18180f;color:#e6e1d6;}
@@ -378,11 +378,16 @@ body.app-locked .shell * { pointer-events: none !important; }
   </div>
 </div>
 <div class="scanm" id="SCAN" style="display:none">
-  <video id="scanVid" autoplay playsinline muted></video>
+  <div style="position:relative;flex:1;min-height:0;">
+    <video id="scanVid" autoplay playsinline muted style="height:100%;"></video>
+    <div style="position:absolute;left:8%;right:8%;top:50%;height:0;border-top:2px solid #ff4b3a;box-shadow:0 0 8px #ff4b3a;pointer-events:none;"></div>
+    <div style="position:absolute;left:6%;right:6%;top:30%;bottom:30%;border:2px solid rgba(255,255,255,.55);border-radius:8px;pointer-events:none;"></div>
+  </div>
   <div class="scanbtns">
     <span style="font-size:11px;color:#aaa;" id="scanStat">Scanning…</span>
     <input id="scanIn" type="text" placeholder="Type asset ID" style="padding:6px 8px;border:1px solid #555;border-radius:4px;background:#222;color:#fff;font-size:13px;font-family:var(--mo);width:120px;outline:none;"/>
     <button class="btn bp" onclick="manualScan()">Go</button>
+    <button class="btn bg" id="scanTorch" onclick="toggleTorch()" style="display:none;color:#fff;border-color:#666;opacity:.6;">🔦</button>
     <button class="btn bg" onclick="closeScanner()" style="color:#fff;border-color:#666;">✕</button>
   </div>
 </div>
@@ -1005,7 +1010,8 @@ function _applyViewChrome(v){
   ["bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
   var _bp=G("bPrint");if(_bp)_bp.style.display=(v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
   var _uh=G("bUnhide");if(_uh)_uh.style.display=(v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
-  ["bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="list"?"":"none";});
+  ["bBC","bBCpdf"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="list"?"":"none";});
+  var _bs=G("bScan");if(_bs)_bs.style.display=(v==="form")?"none":"";
   var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
   var ct=G("CT");if(ct){ct.classList.toggle("tbl-view",v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa");}
@@ -2439,14 +2445,160 @@ function navDetail(dir){
   var n=idx+dir;if(n<0||n>=list.length)return;
   viewDetail(list[n]);
 }
-function drawBC(canvasId,assetId,W,H){
-  var cv=document.getElementById(canvasId);if(!cv)return;
-  var ctx=cv.getContext("2d"),val=assetId;
-  ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);
-  var h=0;for(var i=0;i<val.length;i++)h=(h*31+val.charCodeAt(i))>>>0;
-  var bC=42,bW=W/bC;
-  for(var i=0;i<bC;i++){var s=(h^(i*2654435761))>>>0;ctx.fillStyle=s%3!==0?"#111":"#fff";ctx.fillRect(Math.floor(i*bW),0,Math.ceil(bW),H-12);}
-  ctx.fillStyle="#111";ctx.font="9px monospace";ctx.textAlign="center";ctx.fillText(val,W/2,H-2);
+function c128Src(){return [C128_T_SRC(),c128Bits,c128Draw].map(function(f){return typeof f==="string"?f:f.toString();}).join("\n")+"\n";}
+function C128_T_SRC(){return "var C128_T="+JSON.stringify(C128_T)+",C128_STOP="+JSON.stringify(C128_STOP)+";";}
+function drawBC(canvasId,assetId,W,H){c128Draw(document.getElementById(canvasId),assetId,W,H);}
+
+// ===== Code 128 (real, scannable) =====
+var C128_T="11011001100,11001101100,11001100110,10010011000,10010001100,10001001100,10011001000,10011000100,10001100100,11001001000,11001000100,11000100100,10110011100,10011011100,10011001110,10111001100,10011101100,10011100110,11001110010,11001011100,11001001110,11011100100,11001110100,11101101110,11101001100,11100101100,11100100110,11101100100,11100110100,11100110010,11011011000,11011000110,11000110110,10100011000,10001011000,10001000110,10110001000,10001101000,10001100010,11010001000,11000101000,11000100010,10110111000,10110001110,10001101110,10111011000,10111000110,10001110110,11101110110,11010001110,11000101110,11011101000,11011100010,11011101110,11101011000,11101000110,11100010110,11101101000,11101100010,11100011010,11101111010,11001000010,11110001010,10100110000,10100001100,10010110000,10010000110,10000101100,10000100110,10110010000,10110000100,10011010000,10011000010,10000110100,10000110010,11000010010,11001010000,11110111010,11000010100,10001111010,10100111100,10010111100,10010011110,10111100100,10011110100,10011110010,11110100100,11110010100,11110010010,11011011110,11011110110,11110110110,10101111000,10100011110,10001011110,10111101000,10111100010,11110101000,11110100010,10111011110,10111101110,11101011110,11110101110,11010000100,11010010000,11010011100".split(",");
+var C128_STOP="1100011101011";
+function c128Bits(val){
+  val=String(val==null?"":val);
+  var codes=[104],sum=104;
+  for(var i=0;i<val.length;i++){
+    var cc=val.charCodeAt(i);if(cc<32||cc>126)cc=63;
+    var v=cc-32;codes.push(v);sum+=v*(i+1);
+  }
+  codes.push(sum%103);
+  var bits="";
+  for(var j=0;j<codes.length;j++)bits+=C128_T[codes[j]];
+  return bits+C128_STOP;
+}
+function c128Draw(cv,val,dispW,dispH){
+  if(!cv)return;
+  var bits=c128Bits(val),Q=10,tot=bits.length+Q*2;
+  var sc=Math.max(2,Math.ceil(480/tot));
+  cv.width=tot*sc;cv.height=Math.max(20,Math.round(cv.width*dispH/dispW));
+  var ctx=cv.getContext("2d");
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle="#000";
+  var i=0;
+  while(i<bits.length){
+    if(bits.charAt(i)==="1"){var k=i;while(k<bits.length&&bits.charAt(k)==="1")k++;ctx.fillRect((Q+i)*sc,0,(k-i)*sc,cv.height);i=k;}
+    else i++;
+  }
+}
+// Decode Code 128 from one row of grayscale values (0-255). Returns string or null.
+function c128DecodeRow(g){
+  var n=g.length;if(n<40)return null;
+  var r0=_c128Row(g);if(r0)return r0;
+  var maxR=Math.max(1,Math.min(4,Math.round(n/220))),rr;
+  for(rr=1;rr<=maxR;rr++){
+    var sm=new Float64Array(n),k,j,acc,cnt;
+    for(k=0;k<n;k++){acc=0;cnt=0;for(j=Math.max(0,k-rr);j<=Math.min(n-1,k+rr);j++){acc+=g[j];cnt++;}sm[k]=acc/cnt;}
+    var r1=_c128Row(sm);if(r1)return r1;
+  }
+  return null;
+}
+function _c128Row(g){
+  var n=g.length,mn=255,mx=0,i;
+  for(i=0;i<n;i++){if(g[i]<mn)mn=g[i];if(g[i]>mx)mx=g[i];}
+  if(mx-mn<35)return null;
+  // moving local threshold, then sub-pixel edge positions (robust to blur)
+  var win=Math.max(24,Math.round(n/6))|0,half=win>>1,pre=new Float64Array(n+1);
+  for(i=0;i<n;i++)pre[i+1]=pre[i]+g[i];
+  var edges=[],prevDark=null,firstDark=null;
+  for(i=0;i<n;i++){
+    var a=Math.max(0,i-half),b=Math.min(n,i+half),th=(pre[b]-pre[a])/(b-a);
+    var dark=g[i]<th?1:0;
+    if(prevDark===null){firstDark=dark;}
+    else if(dark!==prevDark){
+      var d=g[i]-g[i-1],t=d!==0?(th-g[i-1])/d:0.5;
+      if(t<0)t=0;if(t>1)t=1;
+      edges.push(i-1+t);
+    }
+    prevDark=dark;
+  }
+  if(edges.length<20)return null;
+  var runs=[];for(i=1;i<edges.length;i++)runs.push(edges[i]-edges[i-1]);
+  // runs[0] starts at edges[0]; colour of runs[0] is the colour AFTER the first edge
+  var c0=1-firstDark;
+  var r=_c128Runs(runs,c0);if(r)return r;
+  var rev=runs.slice().reverse(),lastColor=(c0+runs.length-1)%2;
+  return _c128Runs(rev,lastColor);
+}
+var _C128_P=null,_C128_PS=null;
+function _c128Pats(){
+  if(_C128_P)return _C128_P;
+  _C128_P=C128_T.map(function(b){var w=[],c=b.charAt(0),l=0;for(var i=0;i<b.length;i++){if(b.charAt(i)===c)l++;else{w.push(l);c=b.charAt(i);l=1;}}w.push(l);return w;});
+  _C128_PS=_C128_P.map(function(p){return [p[0]+p[1],p[1]+p[2],p[2]+p[3],p[3]+p[4],p[4]+p[5]];});
+  return _C128_P;
+}
+function _c128Match(runs,at){
+  if(at+6>runs.length)return null;
+  _c128Pats();
+  var t=0,k;for(k=0;k<6;k++)t+=runs[at+k];
+  var m=t/11,d=[],best=-1,be=1e9;
+  for(k=0;k<5;k++)d.push((runs[at+k]+runs[at+k+1])/m);
+  for(var c=0;c<_C128_PS.length;c++){
+    var e=0,p=_C128_PS[c];
+    for(k=0;k<5;k++){e+=Math.abs(d[k]-p[k]);if(e>=be)break;}
+    if(e<be){be=e;best=c;}
+  }
+  return {code:best,err:be};
+}
+function _c128Runs(runs,firstColor){
+  for(var s=(firstColor===1?0:1);s+6<=runs.length;s+=2){
+    var st=_c128Match(runs,s);
+    if(!st||st.code<103||st.code>105||st.err>2.8)continue;
+    var res=_c128Read(runs,s,st.code);
+    if(res)return res;
+  }
+  return null;
+}
+function _c128Read(runs,s,startCode){
+  var codes=[startCode],pos=s+6,m;
+  while(pos+6<=runs.length&&codes.length<80){
+    if(pos+7<=runs.length&&codes.length>=3){
+      var t=0,k;for(k=0;k<7;k++)t+=runs[pos+k];
+      var u=t/13,P=[2,3,3,1,1,1,2],e=0;
+      for(k=0;k<6;k++)e+=Math.abs((runs[pos+k]+runs[pos+k+1])/u-(P[k]+P[k+1]));
+      if(e<3.0){var fr=_c128Finish(codes);if(fr)return fr;}
+    }
+    m=_c128Match(runs,pos);
+    if(!m||m.err>3.2)return null;
+    codes.push(m.code);pos+=6;
+  }
+  return null;
+}
+function _c128Finish(codes){
+  if(codes.length<3)return null;
+  var chk=codes[codes.length-1],sum=codes[0],i;
+  for(i=1;i<codes.length-1;i++)sum+=codes[i]*i;
+  if(sum%103!==chk)return null;
+  var set=codes[0]===103?"A":codes[0]===104?"B":"C",out="";
+  for(i=1;i<codes.length-1;i++){
+    var c=codes[i];
+    if(c===99){set="C";continue;}
+    if(c===100){set="B";continue;}
+    if(c===101){set="A";continue;}
+    if(c>=103)continue;
+    if(set==="C"){out+=(c<10?"0":"")+c;}
+    else if(set==="B"){if(c<=95)out+=String.fromCharCode(32+c);}
+    else{if(c<64)out+=String.fromCharCode(32+c);else if(c<96)out+=String.fromCharCode(c-64);}
+  }
+  return out||null;
+}
+// Decode from canvas ImageData: scan many horizontal lines (and a few diagonals via rotation not needed — phone is turned to align)
+function c128DecodeImage(imgd,accept){
+  accept=accept||function(){return true;};
+  var w=imgd.width,h=imgd.height,d=imgd.data,row=new Float32Array(w),R=2,x,k,f;
+  for(f=0.25;f<=0.75;f+=0.012){
+    var y=Math.round(h*f);
+    for(x=0;x<w;x++)row[x]=0;
+    var cnt=0;
+    for(k=-R;k<=R;k++){var yy=Math.max(0,Math.min(h-1,y+k));cnt++;for(x=0;x<w;x++){var p=(yy*w+x)*4;row[x]+=(d[p]*77+d[p+1]*151+d[p+2]*28)>>8;}}
+    for(x=0;x<w;x++)row[x]/=cnt;
+    var r=c128DecodeRow(row);if(r&&r.length>=3&&accept(r))return r;
+  }
+  // sticker held sideways: try vertical lines
+  var col=new Float32Array(h),y2;
+  for(f=0.2;f<=0.8;f+=0.05){
+    var xc=Math.round(w*f);
+    for(y2=0;y2<h;y2++){var s2=0;for(k=-R;k<=R;k++){var xx=Math.max(0,Math.min(w-1,xc+k)),p2=(y2*w+xx)*4;s2+=(d[p2]*77+d[p2+1]*151+d[p2+2]*28)>>8;}col[y2]=s2/(2*R+1);}
+    var r2=c128DecodeRow(col);if(r2&&r2.length>=3&&accept(r2))return r2;
+  }
+  return null;
 }
 function rDetail(){
   var a=assets.find(function(x){return x.id===detailId;})||consignAssets.find(function(x){return x.id===detailId;})||soldAssets.find(function(x){return x.id===detailId;})||framingAssets.find(function(x){return x.id===detailId;})||coaAssets.find(function(x){return x.id===detailId;})||wishAssets.find(function(x){return x.id===detailId;});
@@ -2936,61 +3088,80 @@ function clearPhoto(slot){
 }
 
 // Scanner
+var _scanTorch=false;
+function _scanSetStat(t){var st=G("scanStat");if(st)st.textContent=t;}
 async function openScanner(){
   var sc=G("SCAN");if(sc)sc.style.display="flex";
   var si=G("scanIn");if(si)si.value="";
-  var stat=G("scanStat");if(stat)stat.textContent="Starting camera...";
-  navigator.mediaDevices.getUserMedia({
-    video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}
-  }).then(function(stream){
+  var tb=G("scanTorch");if(tb)tb.style.display="none";
+  _scanTorch=false;
+  _scanSetStat("Starting camera…");
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){_scanSetStat("Camera unavailable (needs https) — type asset ID");return;}
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false}).then(function(stream){
     scanStream=stream;
-    var v=G("scanVid");
-    if(!v)return;
+    var v=G("scanVid");if(!v)return;
     v.srcObject=stream;
-    v.play().then(function(){
-      if(stat)stat.textContent="Camera ready...";
-      if(!("BarcodeDetector"in window)){
-        if(stat)stat.textContent="Auto-scan not supported — type asset ID below";
-        return;
-      }
-      var bd=new BarcodeDetector({formats:["code_128","code_39","qr_code","ean_13","ean_8","upc_a","upc_e","data_matrix","aztec","pdf417"]});
-      if(stat)stat.textContent="Scanning — point camera at barcode";
-      var active=true;
+    try{
+      var trk=stream.getVideoTracks()[0],caps=trk.getCapabilities?trk.getCapabilities():{};
+      if(caps.focusMode&&caps.focusMode.indexOf("continuous")>=0)trk.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(function(){});
+      if(caps.torch&&tb)tb.style.display="";
+    }catch(e){}
+    return v.play().then(function(){
+      var active=true,bd=null,cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});
+      if("BarcodeDetector"in window){try{bd=new BarcodeDetector({formats:["code_128","qr_code","code_39","ean_13","ean_8","upc_a","upc_e","data_matrix"]});}catch(e){bd=null;}}
       window._stopScan=function(){active=false;};
-      function scan(){
+      _scanSetStat("Point the camera at the sticker barcode");
+      var busy=false,lastT=0;
+      function tick(ts){
         if(!active||!scanStream)return;
-        bd.detect(v).then(function(codes){
-          if(codes&&codes.length>0){
-            active=false;
-            handleScan(codes[0].rawValue);
-          }else{
-            requestAnimationFrame(scan);
-          }
-        }).catch(function(){
-          requestAnimationFrame(scan);
-        });
+        if(busy||ts-lastT<90||v.readyState<2||!v.videoWidth){requestAnimationFrame(tick);return;}
+        lastT=ts;busy=true;
+        var done=function(code){busy=false;if(code&&active&&_scanLookup(code)){active=false;if(navigator.vibrate)try{navigator.vibrate(60);}catch(e){}handleScan(code);}else{if(code&&active&&code!==window._scanLast){window._scanLast=code;_scanSetStat('Read \u201c'+code.slice(0,24)+'\u201d — not in your lists, keep scanning');}requestAnimationFrame(tick);}};
+        var js=function(){
+          try{
+            var sw=v.videoWidth,sh=v.videoHeight,k=Math.min(1,1600/sw);
+            cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
+            cx.drawImage(v,0,0,cv.width,cv.height);
+            done(c128DecodeImage(cx.getImageData(0,0,cv.width,cv.height),_scanLookup));
+          }catch(e){done(null);}
+        };
+        if(bd){bd.detect(v).then(function(c){if(c&&c.length)done(c[0].rawValue);else js();}).catch(js);}
+        else js();
       }
-      requestAnimationFrame(scan);
+      requestAnimationFrame(tick);
     });
-  }).catch(function(err){
-    if(stat)stat.textContent="Camera unavailable — type asset ID below";
-  });
+  }).catch(function(err){_scanSetStat("Camera blocked/unavailable — type asset ID below");});
 }
-
+function toggleTorch(){
+  try{
+    var trk=scanStream&&scanStream.getVideoTracks()[0];if(!trk)return;
+    _scanTorch=!_scanTorch;
+    trk.applyConstraints({advanced:[{torch:_scanTorch}]}).catch(function(){_scanTorch=false;});
+    var tb=G("scanTorch");if(tb)tb.style.opacity=_scanTorch?"1":".6";
+  }catch(e){}
+}
 function closeScanner(){
   if(window._stopScan){window._stopScan();window._stopScan=null;}
   clearInterval(scanIv);scanIv=null;
   if(scanStream){scanStream.getTracks().forEach(function(t){t.stop();});scanStream=null;}
   var sc=G("SCAN");if(sc)sc.style.display="none";
 }
+function _scanLookup(raw){
+  var t=String(raw||"").trim();if(!t)return null;
+  var up=t.toUpperCase(),f=_findAsset(t)||_findAsset(up);
+  if(f)return f;
+  try{var u=new URL(t);var p=u.searchParams.get("asset");if(p){f=_findAsset(p)||_findAsset(p.toUpperCase());if(f)return f;}}catch(e){}
+  var all=[].concat(assets,consignAssets,framingAssets,soldAssets,coaAssets,wishAssets);
+  return all.find(function(a){return a.id&&a.id.toUpperCase()===up;})
+    ||all.find(function(a){return a.serialNumber&&String(a.serialNumber).toUpperCase()===up;})
+    ||(up.length>=4?all.find(function(a){return a.id&&(a.id.toUpperCase().indexOf(up)>=0||up.indexOf(a.id.toUpperCase())>=0);}):null)
+    ||null;
+}
 function handleScan(raw){
   closeScanner();
-  var id=raw.trim().toUpperCase();
-  var found=assets.find(function(a){return a.id===id;});
-  if(!found){try{var u=new URL(raw);var p=u.searchParams.get("asset");if(p)found=assets.find(function(a){return a.id===p;});}catch{}}
-  if(!found)found=assets.find(function(a){return a.id.includes(id)||id.includes(a.id);});
-  if(found){viewDetail(found.id);toast("Found: "+found.name);}
-  else{var si=G("srchIn");if(si)si.value=raw;doFilter();goTo("list");toast("No match — showing search results","i");}
+  var found=_scanLookup(raw);
+  if(found){viewDetail(found.id);toast("Found: "+(found.name||found.id));}
+  else{toast("No item matches “"+String(raw).slice(0,40)+"” — barcode not in any list","e",4500);}
 }
 function manualScan(){var v=(G("scanIn")||{value:""}).value.trim();if(v)handleScan(v);}
 
@@ -3034,7 +3205,7 @@ function printBC(id){
   var sn=a.serialNumber||"";
   var ph=a.photo||_photoCache[a.id]||"";
   var phHtml=ph?'<img src="'+ph+'" style="width:38mm;height:20mm;object-fit:cover;border-radius:0.5mm;display:block;margin:0 auto 0.5mm;"/>':(a.category==="Artworks"?'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;margin:0 auto 0.5mm;">&#128444;</div>':'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;margin:0 auto 0.5mm;">&#128230;</div>');
-  var bcDrw="function draw(){var cv=document.getElementById('bc1');if(!cv)return;var ctx=cv.getContext('2d'),val=cv.getAttribute('data-id'),W=148,H=26;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);var h=0;for(var i=0;i<val.length;i++)h=(h*31+val.charCodeAt(i))>>>0;var bC=42,bW=W/bC;for(var i=0;i<bC;i++){var s=(h^(i*2654435761))>>>0;ctx.fillStyle=s%3!==0?'#111':'#fff';ctx.fillRect(Math.floor(i*bW),0,Math.ceil(bW),H-8);}ctx.fillStyle='#111';ctx.font='5px monospace';ctx.textAlign='center';ctx.fillText(val,W/2,H-1);}";
+  var bcDrw=c128Src()+"function draw(){var cv=document.getElementById('bc1');if(!cv)return;c128Draw(cv,cv.getAttribute('data-id'),39,7);}";
   var w=window.open("","_blank");
   w.document.write('<!DOCTYPE html><html><head><title>'+esc(a.id)+'</title>'
     +'<style>*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}'
@@ -3048,7 +3219,7 @@ function printBC(id){
     +'<div class="card">'+phHtml
     +'<div class="nm">'+esc(a.name)+'</div>'
     +'<div class="id2">'+esc(a.id)+(sn?' | '+esc(sn):'')+'</div>'
-    +'<canvas id="bc1" data-id="'+esc(a.id)+'" width="148" height="26" class="bc"></canvas>'
+    +'<canvas id="bc1" data-id="'+esc(a.id)+'" width="480" height="86" class="bc"></canvas>'
     +'</div>'
     +'<scr'+'ipt>'+bcDrw+'<\/sc'+'ript>'
     +'</body></html>');
@@ -3058,11 +3229,11 @@ function printBC(id){
 function stickersPDF(){toast("In print dialog → choose Save as PDF","i",6000);setTimeout(printStickers,400);}
 function printStickers(){
   var w=window.open("","_blank");
-  var bcDraw="function draw(id,seq){var cv=document.getElementById('bc_'+seq);if(!cv)return;var ctx=cv.getContext('2d'),val=id,W=cv.width,H=cv.height;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);var h=0;for(var i=0;i<val.length;i++)h=(h*31+val.charCodeAt(i))>>>0;var bC=42,bW=W/bC;for(var i=0;i<bC;i++){var s=(h^(i*2654435761))>>>0;ctx.fillStyle=s%3!==0?'#111':'#fff';ctx.fillRect(Math.floor(i*bW),0,Math.ceil(bW),H-8);}ctx.fillStyle='#111';ctx.font='5px monospace';ctx.textAlign='center';ctx.fillText(val,W/2,H-1);}";
+  var bcDraw=c128Src()+"function draw(id,seq){var cv=document.getElementById('bc_'+seq);if(!cv)return;c128Draw(cv,id,39,7);}";
   var cards=assets.map(function(a){
     var serial=a.serialNumber||"";
     var ph=a.photo?'<img src="'+a.photo+'" style="width:38mm;height:20mm;object-fit:cover;border-radius:0.5mm;display:block;margin:0 auto 0.5mm;"/>':(isArt(a.category)?'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;margin:0 auto 0.5mm;border-radius:0.5mm;">&#128444;</div>':'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;margin:0 auto 0.5mm;border-radius:0.5mm;">&#128230;</div>');
-    return'<div class="card">'+ph+'<div class="name">'+esc(a.name)+'</div><div class="id">'+a.id+(serial?' | '+serial:'')+'</div><canvas id="bc_'+a.seq+'" width="148" height="26" class="bc"></canvas></div>';
+    return'<div class="card">'+ph+'<div class="name">'+esc(a.name)+'</div><div class="id">'+a.id+(serial?' | '+serial:'')+'</div><canvas id="bc_'+a.seq+'" width="480" height="86" class="bc"></canvas></div>';
   }).join('');
   var bcData=JSON.stringify(assets.map(function(a){return{id:a.id,seq:a.seq};}));
   w.document.write('<!DOCTYPE html><html><head><title>Stickers</title><style>*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}body{width:210mm;background:#fff;font-family:Arial,sans-serif;}.grid{display:grid;grid-template-columns:repeat(4,52.5mm);width:210mm;}.card{width:52.5mm;height:49.25mm;border:0.3mm solid #ddd;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:1.5mm 1mm 1mm;overflow:hidden;page-break-inside:avoid;}.name{font-size:6.5pt;font-weight:bold;text-align:center;width:50mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-bottom:0.4mm;}.id{font-size:4.8pt;color:#333;font-family:monospace;text-align:center;margin-bottom:0.4mm;overflow:hidden;white-space:nowrap;width:50mm;text-overflow:ellipsis;}.bc{display:block;width:39mm;height:7mm;margin:0 auto;}</style></head><body onload="go();window.print();"><div class="grid">'+cards+'</div><scr'+'ipt>var aa='+bcData+';'+bcDraw+'function go(){aa.forEach(function(a){draw(a.id,a.seq);});}<\/sc'+'ript></body></html>');
@@ -3086,12 +3257,12 @@ function printCurrentListStickers(){
   var f=Math.max(1,parseInt(from)||1),t=Math.min(arr.length,parseInt(to)||arr.length);
   if(f>t){toast("Invalid range","e");return;}
   var sl=arr.slice(f-1,t);
-  var bcDrw="function draw(id,seq){var cv=document.getElementById('bc_'+seq);if(!cv)return;var ctx=cv.getContext('2d'),val=id,W=cv.width,H=cv.height;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);var h=0;for(var i=0;i<val.length;i++)h=(h*31+val.charCodeAt(i))>>>0;var bC=42,bW=W/bC;for(var i=0;i<bC;i++){var s=(h^(i*2654435761))>>>0;ctx.fillStyle=s%3!==0?'#111':'#fff';ctx.fillRect(Math.floor(i*bW),0,Math.ceil(bW),H-8);}ctx.fillStyle='#111';ctx.font='5px monospace';ctx.textAlign='center';ctx.fillText(val,W/2,H-1);}";
+  var bcDrw=c128Src()+"function draw(id,seq){var cv=document.getElementById('bc_'+seq);if(!cv)return;c128Draw(cv,id,39,7);}";
   var cards=sl.map(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
     var phH=ph?'<img src="'+ph+'" style="width:38mm;height:20mm;object-fit:cover;border-radius:.5mm;display:block;margin:0 auto .5mm;"/>':(isArt(a.category)?'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;">&#128444;</div>':'<div style="width:38mm;height:20mm;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:14pt;">&#128230;</div>');
     var sn=a.serialNumber||"";
-    return '<div class="card">'+phH+'<div class="nm">'+esc(a.name)+'</div><div class="id2">'+a.id+(sn?' | '+sn:'')+'</div><canvas id="bc_'+a.seq+'" width="148" height="26" class="bc"></canvas></div>';
+    return '<div class="card">'+phH+'<div class="nm">'+esc(a.name)+'</div><div class="id2">'+a.id+(sn?' | '+sn:'')+'</div><canvas id="bc_'+a.seq+'" width="480" height="86" class="bc"></canvas></div>';
   }).join("");
   var bcd=JSON.stringify(sl.map(function(a){return{id:a.id,seq:a.seq};}));
   var w=window.open("","_blank");
