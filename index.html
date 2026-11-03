@@ -2447,6 +2447,31 @@ function navDetail(dir){
 }
 function c128Src(){return [C128_T_SRC(),c128Bits,c128Draw].map(function(f){return typeof f==="string"?f:f.toString();}).join("\n")+"\n";}
 function C128_T_SRC(){return "var C128_T="+JSON.stringify(C128_T)+",C128_STOP="+JSON.stringify(C128_STOP)+";";}
+function saveBarcodeImg(id,fmt){
+  try{
+    var bits=c128Bits(id),Q=12,sc=6,W=(bits.length+Q*2)*sc,barH=170,txtH=54,H=barH+txtH+30;
+    var cv=document.createElement("canvas");cv.width=W;cv.height=H;
+    var cx=cv.getContext("2d");
+    cx.fillStyle="#fff";cx.fillRect(0,0,W,H);
+    cx.fillStyle="#000";
+    var i=0;
+    while(i<bits.length){
+      if(bits.charAt(i)==="1"){var k=i;while(k<bits.length&&bits.charAt(k)==="1")k++;cx.fillRect((Q+i)*sc,15,(k-i)*sc,barH);i=k;}
+      else i++;
+    }
+    cx.font="bold 40px monospace";cx.textAlign="center";cx.textBaseline="alphabetic";
+    cx.fillText(id,W/2,15+barH+txtH-8);
+    var mime=fmt==="png"?"image/png":"image/jpeg",ext=fmt==="png"?"png":"jpg";
+    cv.toBlob(function(b){
+      if(!b){toast("Could not create image","e");return;}
+      var u=URL.createObjectURL(b),an=document.createElement("a");
+      an.href=u;an.download="barcode_"+String(id).replace(/[^A-Za-z0-9_-]/g,"_")+"."+ext;
+      document.body.appendChild(an);an.click();document.body.removeChild(an);
+      setTimeout(function(){URL.revokeObjectURL(u);},4000);
+      toast("Barcode saved as "+ext.toUpperCase());
+    },mime,0.95);
+  }catch(e){toast("Save failed: "+e.message,"e");}
+}
 function drawBC(canvasId,assetId,W,H){c128Draw(document.getElementById(canvasId),assetId,W,H);}
 
 // ===== Code 128 (real, scannable) =====
@@ -2675,9 +2700,9 @@ function rDetail(){
   h+='</div></div>';
   h+='<div class="bcs"><div>';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:5px;font-weight:600;">Barcode</div>';
-  h+='<canvas id="'+bcId+'" width="180" height="48"></canvas></div>';
+  h+='<canvas id="'+bcId+'" width="180" height="48" style="width:180px;height:auto;max-width:100%;"></canvas></div>';
   h+='<div style="flex:1;padding-left:11px;"><div style="font-size:12px;color:var(--mu);margin-bottom:5px;">Scan label or search <b>'+a.id+'</b> in app.</div>';
-  h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Print Label</button></div></div>';
+  h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Print Label</button> <button class="btn bs" style="font-size:11px;" onclick="saveBarcodeImg(\''+a.id+'\',\'jpeg\')">⬇ Barcode JPEG</button> <button class="btn bs" style="font-size:11px;" onclick="saveBarcodeImg(\''+a.id+'\',\'png\')">⬇ PNG</button></div></div>';
   h+='<div class="dgrid">';
   sOrd.forEach(function(sec){
     var rows=sMap[sec].map(function(fd){var v=fv(fd,fd.k==="__marked"?"★ Yes":a[fd.k]);return v?'<div class="df"><span class="dl">'+fd.lbl+'</span><span class="dv">'+v+'</span></div>':"";}).join("");
