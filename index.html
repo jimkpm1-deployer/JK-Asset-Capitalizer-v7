@@ -345,6 +345,8 @@ body.app-locked .shell * { pointer-events: none !important; }
       <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾 Save</button>
       <button class="btn bg no-print" id="bDiag" style="font-size:10px;" onclick="showStorageDiag()">🔍 Storage</button>
       <button class="btn bg no-print" id="bStickerList" style="display:none;font-size:11px;" onclick="printCurrentListStickers()">🏷 Stickers</button>
+      <button class="btn bg no-print" id="bBCList" style="display:none;font-size:11px;" onclick="printListBarcodes()">▮▮ List Barcodes</button>
+      <button class="btn bg no-print" id="bBCAll" style="display:none;font-size:11px;" onclick="printAllBarcodes()">▮▮ All Barcodes</button>
       <button class="btn bg no-print" id="bPrintAll" style="display:none;font-size:11px;" onclick="printAllLists()">🖨 All Lists</button>
       <button class="btn bp no-print" id="bNew" onclick="newAsset()">＋ New</button>
     </div>
@@ -1013,6 +1015,8 @@ function _applyViewChrome(v){
   ["bBC","bBCpdf"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="list"?"":"none";});
   var _bs=G("bScan");if(_bs)_bs.style.display=(v==="form")?"none":"";
   var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
+  var bBL=G("bBCList");if(bBL)bBL.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
+  var bBA=G("bBCAll");if(bBA)bBA.style.display=(v==="list"||v==="table")?"":"none";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
   var ct=G("CT");if(ct){ct.classList.toggle("tbl-view",v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa");}
 }
@@ -1370,6 +1374,7 @@ function buyWishAsset(id){
   var moved=Object.assign({},a);
   moved.location=loc||a.location||"";
   delete moved.wishDate;delete moved.status;
+  moved.prevIds=(a.prevIds||[]).concat([a.id]);
   moved.id=_nextId();
   moved.seq=_nextSeq();
   moved.purchasePrice=price||moved.purchasePrice||"";
@@ -1510,6 +1515,7 @@ function addCOAToWish(id){
   // Copy (the item stays in Private COAs): confirm or change the location; default = owner's name
   _openActionModal("COPY TO WISH LIST (stays in Private COAs)",false,ownerLoc,async function(loc){
     var copy=Object.assign({},a);
+    copy.copiedFromId=a.id;
     copy.id=_nextWishId();
     copy.seq=_nextSeq();
     copy.wishDate=today();
@@ -1523,6 +1529,7 @@ function addCOAToWish(id){
     if(photoData2){copy.photo2=photoData2;await savePhoto2(copy.id,photoData2);}
     // show the entered "COA Number" as a column in the Wish List so it is visible right away
     if(copy.coaNumber){var wc=getListCols("wish").slice();if(wc.indexOf("coaNumber")<0){var ni=wc.indexOf("notes");if(ni<0)ni=wc.length;wc.splice(ni,0,"coaNumber");setListCols("wish",wc);}}
+    a.copiedToIds=(a.copiedToIds||[]).concat([copy.id]);
     wishAssets.push(copy);
     saveAll();render();
     toast("Added to Wish List as "+copy.id+" ✓","s");
@@ -2427,7 +2434,7 @@ function viewDetail(id){
   detailId=id;view="detail";_scrollReset=true;
   if(!window._detailList||!window._detailList.length)window._detailList=(hasFilter()?filtered:assets).map(function(a){return a.id;});
   var t=G("pgTit");if(t)t.textContent="Asset Detail";
-  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear","fOwner","fFrame","fList","bMarked","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan","bStickerList","bPrintAll"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
+  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear","fOwner","fFrame","fList","bMarked","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan","bStickerList","bBCList","bBCAll","bPrintAll"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
   document.querySelectorAll(".sbi").forEach(function(el){el.classList.remove("on");});
   closeSB();render();
 }
@@ -2489,10 +2496,10 @@ function c128Bits(val){
   for(var j=0;j<codes.length;j++)bits+=C128_T[codes[j]];
   return bits+C128_STOP;
 }
-function c128Draw(cv,val,dispW,dispH){
+function c128Draw(cv,val,dispW,dispH,minPx){
   if(!cv)return;
   var bits=c128Bits(val),Q=10,tot=bits.length+Q*2;
-  var sc=Math.max(2,Math.ceil(480/tot));
+  var sc=Math.max(2,Math.ceil((minPx||480)/tot));
   cv.width=tot*sc;cv.height=Math.max(20,Math.round(cv.width*dispH/dispW));
   var ctx=cv.getContext("2d");
   ctx.fillStyle="#fff";ctx.fillRect(0,0,cv.width,cv.height);
@@ -3141,13 +3148,13 @@ async function openScanner(){
         if(!active||!scanStream)return;
         if(busy||ts-lastT<90||v.readyState<2||!v.videoWidth){requestAnimationFrame(tick);return;}
         lastT=ts;busy=true;
-        var done=function(code){busy=false;if(code&&active&&_scanLookup(code)){active=false;if(navigator.vibrate)try{navigator.vibrate(60);}catch(e){}handleScan(code);}else{if(code&&active&&code!==window._scanLast){window._scanLast=code;_scanSetStat('Read \u201c'+code.slice(0,24)+'\u201d — not in your lists, keep scanning');}requestAnimationFrame(tick);}};
+        var done=function(code){busy=false;if(code&&active&&_scanAccept(code)){active=false;if(navigator.vibrate)try{navigator.vibrate(60);}catch(e){}handleScan(code);}else{if(code&&active&&code!==window._scanLast){window._scanLast=code;_scanSetStat('Read \u201c'+code.slice(0,24)+'\u201d — not in your lists, keep scanning');}requestAnimationFrame(tick);}};
         var js=function(){
           try{
             var sw=v.videoWidth,sh=v.videoHeight,k=Math.min(1,1600/sw);
             cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
             cx.drawImage(v,0,0,cv.width,cv.height);
-            done(c128DecodeImage(cx.getImageData(0,0,cv.width,cv.height),_scanLookup));
+            done(c128DecodeImage(cx.getImageData(0,0,cv.width,cv.height),_scanAccept));
           }catch(e){done(null);}
         };
         if(bd){bd.detect(v).then(function(c){if(c&&c.length)done(c[0].rawValue);else js();}).catch(js);}
@@ -3171,6 +3178,7 @@ function closeScanner(){
   if(scanStream){scanStream.getTracks().forEach(function(t){t.stop();});scanStream=null;}
   var sc=G("SCAN");if(sc)sc.style.display="none";
 }
+function _scanAccept(c){return !!(_scanLookup(c)||_scanFindByOldId(c));}
 function _scanLookup(raw){
   var t=String(raw||"").trim();if(!t)return null;
   var up=t.toUpperCase(),f=_findAsset(t)||_findAsset(up);
@@ -3184,11 +3192,109 @@ function _scanLookup(raw){
 }
 function handleScan(raw){
   closeScanner();
+  var _on=G("scanNote");if(_on)_on.remove();
   var found=_scanLookup(raw);
-  if(found){viewDetail(found.id);toast("Found: "+(found.name||found.id));}
-  else{toast("No item matches “"+String(raw).slice(0,40)+"” — barcode not in any list","e",4500);}
+  var code=String(raw||"").trim();
+  if(!found){
+    var moved=_scanFindByOldId(raw);
+    if(moved){
+      viewDetail(moved.id);
+      showScanNotice("Sticker "+code.toUpperCase()+" is no longer an active ID",
+        ["This item is now <b>"+esc(moved.id)+"</b> in <b>"+esc(_lblOf(moved.id))+"</b> (opened). The old sticker should be replaced."],[],code);
+      return;
+    }
+    toast("No item matches “"+code.slice(0,40)+"” — barcode not in any list","e",4500);return;
+  }
+  viewDetail(found.id);
+  var rels=_relatedItems(found);
+  if(rels.length){
+    showScanNotice(found.id+" also exists in another list",
+      ["Scanned: <b>"+esc(found.id)+"</b> in <b>"+esc(_lblOf(found.id))+"</b>"].concat(rels.map(function(r){
+        return "• <b>"+esc(r.item.id)+"</b> in <b>"+esc(_lblOf(r.item.id))+"</b> — "+esc(r.why);
+      })),rels,found.id);
+  }else toast("Found: "+(found.name||found.id));
 }
 function manualScan(){var v=(G("scanIn")||{value:""}).value.trim();if(v)handleScan(v);}
+
+
+// ===== Barcode sheets (barcode + bold ID only, 4 columns x 17 rows of 52.5mm wide labels on A4) =====
+var LIST_LABELS={table:"Inventory",consign:"Consignment",framing:"Framing",sold:"Sold",wish:"Wish List",coa:"Private COAs",list:"Inventory"};
+function printBarcodeSheet(ids,title){
+  if(!ids||!ids.length){toast("No barcodes to print","e");return;}
+  var COLS=4,ROWS=17,PER=COLS*ROWS,pages=[];
+  for(var i=0;i<ids.length;i+=PER)pages.push(ids.slice(i,i+PER));
+  var body=pages.map(function(pg){
+    return '<div class="pg">'+pg.map(function(id){return '<div class="lb"><canvas class="bc" data-id="'+esc(id)+'"></canvas><div class="idt">'+esc(id)+'</div></div>';}).join("")+'</div>';
+  }).join("");
+  var w=window.open("","_blank");
+  if(!w){toast("Pop-up blocked — allow pop-ups for this site","e",5000);return;}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(title||"Barcodes")+'</title><style>'
+   +'*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}'
+   +'body{background:#fff;font-family:Arial,Helvetica,sans-serif;width:210mm;}'
+   +'.pg{width:210mm;height:297mm;display:grid;grid-template-columns:repeat(4,52.5mm);grid-template-rows:repeat(17,17.4mm);page-break-after:always;overflow:hidden;align-content:start;}'
+   +'.pg:last-child{page-break-after:auto;}'
+   +'.lb{width:52.5mm;height:17.4mm;display:flex;flex-direction:column;align-items:center;outline:.1mm solid #ccc;outline-offset:-.1mm;overflow:hidden;}'
+   +'.bc{display:block;width:52.5mm;height:11.4mm;}'
+   +'.idt{font-size:11pt;font-weight:900;line-height:6mm;height:6mm;color:#000;white-space:nowrap;letter-spacing:.2mm;}'
+   +'.hint{position:fixed;top:0;left:0;right:0;background:#1a1a18;color:#e6e1d6;padding:10px;font-family:monospace;font-size:12px;text-align:center;z-index:9;}'
+   +'.hint button{background:#bf3a2b;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:13px;}'
+   +'@media screen{body{margin-top:44px;}.pg{border-bottom:1px dashed #999;}}'
+   +'@media print{.hint{display:none!important;}}'
+   +'</style></head><body>'
+   +'<div class="hint">'+ids.length+' barcodes · '+pages.length+' A4 page(s) · print at <b>100% / Actual size</b>: <button onclick="window.print()">&#x1F4C4; Print / Save PDF</button></div>'
+   +body
+   +'<scr'+'ipt>'+c128Src()+'function go(){var l=document.querySelectorAll("canvas.bc");for(var i=0;i<l.length;i++)c128Draw(l[i],l[i].getAttribute("data-id"),52.5,11.4,1000);}window.onload=function(){go();setTimeout(function(){window.print();},700);};<\/sc'+'ript>'
+   +'</body></html>');
+  w.document.close();
+}
+function printListBarcodes(){
+  var v=(view==="detail"||view==="form")&&detailOrigin?detailOrigin:view;
+  var arr=_listArr(v);
+  if(hasFilter())arr=viewItems(v);
+  var ids=arr.map(function(a){return a.id;});
+  toast((LIST_LABELS[v]||"List")+": "+ids.length+" barcode(s)"+(hasFilter()?" (filtered)":""),"i",2500);
+  printBarcodeSheet(ids,(LIST_LABELS[v]||"List")+" barcodes");
+}
+function printAllBarcodes(){
+  var seen={},ids=[];
+  [assets,consignAssets,framingAssets,soldAssets,wishAssets,coaAssets].forEach(function(arr){(arr||[]).forEach(function(a){if(a&&a.id&&!seen[a.id]){seen[a.id]=1;ids.push(a.id);}});});
+  printBarcodeSheet(ids,"All lists barcodes");
+}
+
+// ===== Scan: related items in other lists =====
+function _normName(t){return String(t||"").trim().toLowerCase().replace(/\s+/g," ");}
+function _relatedItems(it){
+  var all=[].concat(assets,consignAssets,framingAssets,soldAssets,coaAssets,wishAssets),out=[],seen={};
+  function add(o,why){if(o&&o.id!==it.id&&!seen[o.id]){seen[o.id]=1;out.push({item:o,why:why});}}
+  var pv=it.prevIds||[],ct=it.copiedToIds||[];
+  all.forEach(function(o){
+    if(o===it||o.id===it.id)return;
+    if(pv.indexOf(o.id)>=0)add(o,"previous ID of this item");
+    else if((o.prevIds||[]).indexOf(it.id)>=0)add(o,"this item was later bought as it");
+    else if(it.copiedFromId===o.id)add(o,"this item is a copy of it");
+    else if(ct.indexOf(o.id)>=0||o.copiedFromId===it.id)add(o,"a copy of this item");
+    else if(_normName(o.name)&&_normName(o.name)===_normName(it.name)&&((o.coaNumber&&o.coaNumber===it.coaNumber)||(o.serialNumber&&o.serialNumber===it.serialNumber)))add(o,"same name and "+((o.coaNumber&&o.coaNumber===it.coaNumber)?"COA number":"serial number")+" (probably the same item)");
+  });
+  return out;
+}
+function _scanFindByOldId(raw){
+  var up=String(raw||"").trim().toUpperCase();if(!up)return null;
+  var all=[].concat(assets,consignAssets,framingAssets,soldAssets,coaAssets,wishAssets);
+  return all.find(function(a){return (a.prevIds||[]).some(function(p){return String(p).toUpperCase()===up;});})||null;
+}
+function _lblOf(id){return LIST_LABELS[_viewOfItem(id)]||"?";}
+function showScanNotice(title,lines,rels,scannedId){
+  var old=G("scanNote");if(old)old.remove();
+  var o=document.createElement("div");o.id="scanNote";
+  o.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px;";
+  var b='<div style="background:var(--s,#fff);color:var(--t,#222);border-radius:10px;max-width:420px;width:100%;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.4);">'
+    +'<div style="font-weight:700;font-size:14px;margin-bottom:8px;">⚠ '+esc(title)+'</div>'
+    +lines.map(function(l){return '<div style="font-size:13px;line-height:1.5;margin-bottom:5px;">'+l+'</div>';}).join("")
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">'
+    +rels.map(function(r){return '<button class="btn bp" style="font-size:12px;" onclick="document.getElementById(\'scanNote\').remove();viewDetail(\''+r.item.id+'\')">Open '+esc(r.item.id)+' ('+esc(_lblOf(r.item.id))+')</button>';}).join("")
+    +'<button class="btn bg" style="font-size:12px;" onclick="document.getElementById(\'scanNote\').remove()">OK</button></div></div>';
+  o.innerHTML=b;document.body.appendChild(o);
+}
 
 // Delete
 function _listClick(el){
