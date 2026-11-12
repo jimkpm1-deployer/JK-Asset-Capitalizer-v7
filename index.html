@@ -2539,28 +2539,50 @@ function _shrinkPhoto(dataUri){
     im.src=dataUri;
   });
 }
-// Export the public pages data: items/<code>.json + photos/<code>.jpg (public items only) as one ZIP
-async function exportPublicPages(){
+// Export the public pages data: items/<code>.json + photos/<code>.jpg (public items only) as ZIP file(s).
+// GitHub's web upload accepts at most 100 files per drag, so big exports are split into parts of <= 90 files.
+// mode "new" exports only items that are new or changed since the last export.
+function _pubSig(str){return _crc32(new TextEncoder().encode(str)).toString(36);}
+async function exportPublicPages(mode){
   if(ensureTokens())saveAll();
   var pub=_allItems().filter(isPublicItem);
-  if(!pub.length){toast("No public items yet \u2014 switch a list to Public first","e",5000);return;}
-  toast("Preparing public pages\u2026","i",20000);
+  if(!pub.length){toast("No public items yet — switch a list to Public first","e",5000);return;}
+  toast("Preparing public pages…","i",30000);
   var pm={},pm2={};try{pm=await loadAllPhotos();}catch(e){}try{pm2=await loadAllPhotos2();}catch(e){}
-  var enc=new TextEncoder(),files=[],csv=["code,id,title"],noPhoto=0;
-  for(var i=0;i<pub.length;i++){
-    var a=pub[i],tok=a.qrToken,ph=a.photo||_photoCache[a.id]||pm[a.id]||"",pj="";
+  var enc=new TextEncoder(),done=LS.get("acap_pub_exp_v1",{}),entries=[];
+  pub.forEach(function(a){
+    var ph=a.photo||_photoCache[a.id]||pm[a.id]||"";
     if(a.pubPhoto==="2"){var p2=a.photo2||_photoCache2[a.id]||pm2[a.id]||"";if(p2)ph=p2;}
-    if(ph){var u8=await _shrinkPhoto(ph);if(u8){files.push({name:"photos/"+tok+".jpg",data:u8});pj="photos/"+tok+".jpg";}}
-    if(!pj)noPhoto++;
-    var info={title:a.name||"",year:a.yearCreated||"",medium:a.medium||"",size:a.dimensions||"",photo:pj};
-    files.push({name:"items/"+tok+".json",data:enc.encode(JSON.stringify(info))});
-    csv.push([tok,a.id,'"'+String(a.name||"").replace(/"/g,'""')+'"'].join(","));
+    var info={title:a.name||"",year:a.yearCreated||"",medium:a.medium||"",size:a.dimensions||"",photo:""};
+    var step=Math.max(1,Math.floor(ph.length/300)),smp="";for(var i=0;i<ph.length;i+=step)smp+=ph.charAt(i);
+    entries.push({a:a,tok:a.qrToken,ph:ph,info:info,sig:_pubSig(JSON.stringify([info.title,info.year,info.medium,info.size])+"|"+ph.length+"|"+smp)});
+  });
+  var total=entries.length;
+  if(mode==="new")entries=entries.filter(function(e){return done[e.tok]!==e.sig;});
+  if(!entries.length){toast("Nothing new or changed since the last export ("+total+" public items)","i",6000);return;}
+  var noPhoto=0;
+  for(var k=0;k<entries.length;k++){
+    var e=entries[k];e.files=[];
+    if(e.ph){var u8=await _shrinkPhoto(e.ph);if(u8){e.files.push({name:"photos/"+e.tok+".jpg",data:u8});e.info.photo="photos/"+e.tok+".jpg";}}
+    if(!e.info.photo)noPhoto++;
+    e.files.push({name:"items/"+e.tok+".json",data:enc.encode(JSON.stringify(e.info))});
   }
-  files.push({name:"_private_index_DO_NOT_UPLOAD.csv",data:enc.encode(csv.join("\n"))});
-  var blob=makeZip(files),u=URL.createObjectURL(blob),an=document.createElement("a");
-  an.href=u;an.download="jk-verify-data.zip";document.body.appendChild(an);an.click();document.body.removeChild(an);
-  setTimeout(function(){URL.revokeObjectURL(u);},5000);
-  toast("Exported "+pub.length+" public item(s)"+(noPhoto?" ("+noPhoto+" without photo)":""),"s",6000);
+  // split into parts of at most 90 files
+  var parts=[],cur=[],cnt=0;
+  entries.forEach(function(e){if(cnt+e.files.length>90&&cur.length){parts.push(cur);cur=[];cnt=0;}cur.push(e);cnt+=e.files.length;});
+  if(cur.length)parts.push(cur);
+  for(var pi=0;pi<parts.length;pi++){
+    var files=[],csv=["code,id,title"];
+    parts[pi].forEach(function(e){e.files.forEach(function(f){files.push(f);});csv.push([e.tok,e.a.id,'"'+String(e.a.name||"").replace(/"/g,'""')+'"'].join(","));});
+    files.push({name:"_private_index_DO_NOT_UPLOAD.csv",data:enc.encode(csv.join("\n"))});
+    var blob=makeZip(files),u=URL.createObjectURL(blob),an=document.createElement("a");
+    an.href=u;an.download=parts.length===1?(mode==="new"?"jk-verify-new.zip":"jk-verify-data.zip"):"jk-verify-"+(mode==="new"?"new-":"data-")+"part"+(pi+1)+"of"+parts.length+".zip";
+    document.body.appendChild(an);an.click();document.body.removeChild(an);
+    setTimeout((function(x){return function(){URL.revokeObjectURL(x);};})(u),8000);
+    await new Promise(function(r){setTimeout(r,900);});
+  }
+  entries.forEach(function(e){done[e.tok]=e.sig;});LS.set("acap_pub_exp_v1",done);
+  toast("Exported "+entries.length+(mode==="new"?" new/changed":"")+" item(s) in "+parts.length+" ZIP file(s)"+(noPhoto?" ("+noPhoto+" without photo)":""),"s",8000);
 }
 // ===== QR codes (encoder: qrcode-generator, scanner fallback: jsQR) =====
 function qrMatrix(text){
@@ -2877,7 +2899,8 @@ function rIO(){
   h+='<div style="font-size:12px;color:var(--mu);margin-bottom:9px;line-height:1.6;">A visitor who scans a sticker sees the photo and details only if the item is public; otherwise a "currently Private" message. Choose which lists are public (a single item can override this in its detail view).</div>';
   PUB_LISTS.forEach(function(p){h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--b);font-size:12px;"><span style="flex:1;">'+p[1]+'</span><label class="tog"><input type="checkbox" '+(_pc[p[0]]?"checked":"")+' onchange="togPub(\''+p[0]+'\',this.checked)"/><span class="tsl"></span></label></div>';});
   h+='<div style="font-size:12px;margin:9px 0;">Public items now: <b>'+_pn+'</b></div>';
-  h+='<button class="btn bp" onclick="exportPublicPages()">\u2B07 Export public pages (ZIP)</button>';
+  h+='<div style="display:flex;gap:7px;flex-wrap:wrap;"><button class="btn bp" onclick="exportPublicPages(\'new\')">\u2B07 Export only new / changed</button><button class="btn bg" onclick="exportPublicPages(\'all\')">\u2B07 Export everything</button></div>';
+  h+='<div style="font-size:11px;color:var(--mu);margin-top:6px;line-height:1.5;">Large exports are split into several ZIPs of at most 90 files (GitHub accepts 100 per upload). "New / changed" skips items already exported before.</div>';
   h+='<div style="font-size:10px;color:var(--mu);margin-top:8px;font-family:var(--mo);word-break:break-all;">QR address: '+esc(PUBLIC_BASE)+'?c=\u2026</div></div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:7px;">INSTALL AS APP</h3>';
