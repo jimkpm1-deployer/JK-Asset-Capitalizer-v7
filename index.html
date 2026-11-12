@@ -2494,6 +2494,7 @@ function setPubOverride(id,val){
   if(val)a.pubOverride=val;else delete a.pubOverride;
   saveAll();render();
 }
+function setPubPhoto(id,val){var a=_findAsset(id);if(!a)return;if(val==='2')a.pubPhoto='2';else delete a.pubPhoto;saveAll();render();}
 function _tokFromText(t){
   t=String(t||"").trim();
   try{var u=new URL(t);var c=u.searchParams.get("c");if(c&&/^[a-z0-9]{6,16}$/.test(c))return c;}catch(e){}
@@ -2544,10 +2545,11 @@ async function exportPublicPages(){
   var pub=_allItems().filter(isPublicItem);
   if(!pub.length){toast("No public items yet \u2014 switch a list to Public first","e",5000);return;}
   toast("Preparing public pages\u2026","i",20000);
-  var pm={};try{pm=await loadAllPhotos();}catch(e){}
+  var pm={},pm2={};try{pm=await loadAllPhotos();}catch(e){}try{pm2=await loadAllPhotos2();}catch(e){}
   var enc=new TextEncoder(),files=[],csv=["code,id,title"],noPhoto=0;
   for(var i=0;i<pub.length;i++){
     var a=pub[i],tok=a.qrToken,ph=a.photo||_photoCache[a.id]||pm[a.id]||"",pj="";
+    if(a.pubPhoto==="2"){var p2=a.photo2||_photoCache2[a.id]||pm2[a.id]||"";if(p2)ph=p2;}
     if(ph){var u8=await _shrinkPhoto(ph);if(u8){files.push({name:"photos/"+tok+".jpg",data:u8});pj="photos/"+tok+".jpg";}}
     if(!pj)noPhoto++;
     var info={title:a.name||"",year:a.yearCreated||"",medium:a.medium||"",size:a.dimensions||"",photo:pj};
@@ -2612,7 +2614,7 @@ function rDetail(){
   fds.forEach(function(f){_known[f.k]=1;});
   var _REC=[["soldAt",SOLD_NET_LBL+" ($)"],["soldGross",SOLD_GROSS_LBL+" ($)"],["soldDate","Sold Date"],["consignDate","Consignment Date"],["framingDate","Framing Date"],["wishDate","Wish List Date"],["originalLocation","Original Location"],["buyPrice","Buy Price ($)"],["status","Status"],["source","Source"],["createdAt","Created"],["updatedAt","Last Updated"]];
   _REC.forEach(function(r){_known[r[0]]=1;fds.push({k:r[0],lbl:r[1],sec:"Record",t:"text"});});
-  var _SKIP={photo:1,photo2:1,id:1,seq:1,marked:1,name:1,category:1,description:1};
+  var _SKIP={photo:1,photo2:1,id:1,seq:1,marked:1,name:1,category:1,description:1,qrToken:1,pubOverride:1,pubPhoto:1,copiedFromId:1,copiedToIds:1,prevIds:1};
   Object.keys(a).forEach(function(k){
     if(_known[k]||_SKIP[k])return;
     var v=a[k];if(v==null||v===""||typeof v==="object")return;
@@ -2675,7 +2677,8 @@ function rDetail(){
   h+=qrImgTag(qrPayload(a),"width:110px;height:110px;display:block;border:1px solid var(--b);border-radius:4px;")+'</div>';
   h+='<div style="flex:1;padding-left:11px;"><div style="font-size:12px;color:var(--mu);margin-bottom:5px;">Scan the sticker with the app\'s 🔍 Scan button.</div>';
   h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Print Label</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'jpeg\')">⬇ QR JPEG</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'png\')">⬇ PNG</button>'
-    +'<div style="margin-top:8px;font-size:11px;color:var(--mu);">\uD83C\uDF10 Public page: <b>'+(isPublicItem(a)?'PUBLIC':'Private')+'</b> <select class="sel" style="font-size:11px;" onchange="setPubOverride(\''+a.id+'\',this.value)"><option value=""'+(!a.pubOverride?' selected':'')+'>Follow list setting</option><option value="on"'+(a.pubOverride==="on"?' selected':'')+'>Force public</option><option value="off"'+(a.pubOverride==="off"?' selected':'')+'>Force private</option></select></div></div></div>';
+    +'<div style="margin-top:8px;font-size:11px;color:var(--mu);">\uD83C\uDF10 Public page: <b>'+(isPublicItem(a)?'PUBLIC':'Private')+'</b> <select class="sel" style="font-size:11px;" onchange="setPubOverride(\''+a.id+'\',this.value)"><option value=""'+(!a.pubOverride?' selected':'')+'>Follow list setting</option><option value="on"'+(a.pubOverride==="on"?' selected':'')+'>Force public</option><option value="off"'+(a.pubOverride==="off"?' selected':'')+'>Force private</option></select></div>'
+    +((a.photo2||_photoCache2[a.id])?'<div style="margin-top:6px;font-size:11px;color:var(--mu);">\uD83D\uDDBC Photo shown on the public page: <select class="sel" style="font-size:11px;" onchange="setPubPhoto(\''+a.id+'\',this.value)"><option value="1"'+(a.pubPhoto!=="2"?' selected':'')+'>Photo 1</option><option value="2"'+(a.pubPhoto==="2"?' selected':'')+'>Photo 2</option></select></div>':'')+'</div></div>';
   h+='<div class="dgrid">';
   sOrd.forEach(function(sec){
     var rows=sMap[sec].map(function(fd){var v=fv(fd,fd.k==="__marked"?"★ Yes":a[fd.k]);return v?'<div class="df"><span class="dl">'+fd.lbl+'</span><span class="dv">'+v+'</span></div>':"";}).join("");
