@@ -80,6 +80,8 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .bp{background:var(--ac);color:#fff;}
 .bs{background:#18180f;color:#e6e1d6;}
 .bg{background:transparent;border:1px solid var(--b);color:var(--tx);}
+.bback{background:#1f5fbf;color:#fff;border:1px solid #163f85;font-size:13px;font-weight:700;padding:7px 16px;box-shadow:0 2px 6px rgba(0,0,0,.4);letter-spacing:.02em;}
+.bback:hover{background:#174a9a;box-shadow:0 3px 9px rgba(0,0,0,.5);}
 .bd{background:#c0392b;color:#fff;}
 .ba{background:var(--ar);color:#fff;}
 .bok{background:var(--ok);color:#fff;}
@@ -345,8 +347,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾 Save</button>
       <button class="btn bg no-print" id="bDiag" style="font-size:10px;" onclick="showStorageDiag()">🔍 Storage</button>
       <button class="btn bg no-print" id="bStickerList" style="display:none;font-size:11px;" onclick="printCurrentListStickers()">🏷 Stickers</button>
-      <button class="btn bg no-print" id="bBCList" style="display:none;font-size:11px;" onclick="printListQRs()">▣ List QRs</button>
-      <button class="btn bg no-print" id="bBCAll" style="display:none;font-size:11px;" onclick="printAllQRs()">▣ All QRs</button>
+      <button class="btn bg no-print" id="bBCList" style="display:none;font-size:11px;" onclick="qrSheetsClick()">▣ List QRs</button>
       <button class="btn bg no-print" id="bPrintAll" style="display:none;font-size:11px;" onclick="printAllLists()">🖨 All Lists</button>
       <button class="btn bp no-print" id="bNew" onclick="newAsset()">＋ New</button>
     </div>
@@ -1022,7 +1023,7 @@ function _applyViewChrome(v){
   var _bs=G("bScan");if(_bs)_bs.style.display=(v==="form")?"none":"";
   var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
   var bBL=G("bBCList");if(bBL)bBL.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
-  var bBA=G("bBCAll");if(bBA)bBA.style.display=(v==="list"||v==="table")?"":"none";
+  if(bBL)bBL.textContent=(v==="list"||v==="table")?"\u25A3 QR Sheets":"\u25A3 List QRs";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
   var ct=G("CT");if(ct){ct.classList.toggle("tbl-view",v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa");}
 }
@@ -2357,6 +2358,7 @@ function rForm(){
   h+='<button class="btn bg" style="font-size:11px;" onclick="G(\'fpick2\').click()">📁 Upload</button>';
   h+='<button class="btn bg" style="font-size:11px;" onclick="clearPhoto(2)">✕ Remove</button>';
   h+='</div></div></div>';
+  h+='<div class="fs"><div class="fsh">Default Photo <span style="font-size:10px;color:var(--mu);font-weight:400;">(used on stickers &amp; the public page)</span></div><div style="display:flex;gap:18px;padding:3px 2px 2px;font-size:12px;"><label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="defph" value="1" '+(a.pubPhoto!=="2"?"checked":"")+'/> Photo 1</label><label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="defph" value="2" '+(a.pubPhoto==="2"?"checked":"")+'/> Photo 2</label></div></div>';
   h+='<form id="aForm"><input type="hidden" name="photo" id="pdata" value="'+(a.photo||"")+'"/><input type="hidden" name="photo2" id="pdata2" value="'+(a.photo2||"")+'"/>';
   sOrd.forEach(function(sec){
     h+='<div class="fs"><div class="fsh">'+sec+(sec==="Artwork"?'<span class="ab">Artwork Only</span>':"")+(sec==="Authentication"?'<span class="ab" style="background:#b06800;">Private COAs Only</span>':"")+'</div><div class="fg">';
@@ -2379,7 +2381,7 @@ function submitForm(){
   var name=((form.querySelector("[name=name]")||{value:""}).value||"").trim().toUpperCase();
   if(!name){toast("Name is required","e");return;}
   // Determine which list this save targets
-  var targetArr=editMode==="consign"?consignAssets:editMode==="framing"?framingAssets:editMode==="wish"?wishAssets:editMode==="coa"?coaAssets:assets;
+  var targetArr=editMode==="consign"?consignAssets:editMode==="framing"?framingAssets:editMode==="wish"?wishAssets:editMode==="coa"?coaAssets:editMode==="sold"?soldAssets:assets;
   var existing=editId?targetArr.find(function(x){return x.id===editId;}):null;
   if(existing)pushUndo("edit",Object.assign({},existing),"Edit — undo available");
   var newIdFn=editMode==="wish"?_nextWishId:editMode==="coa"?_nextCOAId:_nextId;
@@ -2404,6 +2406,8 @@ function submitForm(){
   var pd2=G("pdata2");entry.photo2=pd2?pd2.value||"":"";
   if(entry.photo2){savePhoto2(entry.id,entry.photo2);_photoCache2[entry.id]=entry.photo2;}
   else{deletePhoto2(entry.id);delete _photoCache2[entry.id];}
+  var _dp=document.querySelector("input[name=defph]:checked");
+  if(_dp&&_dp.value==="2"&&entry.photo2)entry.pubPhoto="2";else delete entry.pubPhoto;
   if(existing){var i=targetArr.findIndex(function(x){return x.id===editId;});if(i>-1)targetArr[i]=entry;}
   else targetArr.push(entry);
   saveAll();
@@ -2441,7 +2445,7 @@ function viewDetail(id){
   detailId=id;view="detail";_scrollReset=true;
   if(!window._detailList||!window._detailList.length)window._detailList=(hasFilter()?filtered:assets).map(function(a){return a.id;});
   var t=G("pgTit");if(t)t.textContent="Asset Detail";
-  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear","fOwner","fFrame","fList","bMarked","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan","bStickerList","bBCList","bBCAll","bPrintAll"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
+  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","fMed","fYear","fOwner","fFrame","fList","bMarked","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan","bStickerList","bBCList","bPrintAll"].forEach(function(id2){var el=G(id2);if(el)el.style.display="none";});
   document.querySelectorAll(".sbi").forEach(function(el){el.classList.remove("on");});
   closeSB();render();
 }
@@ -2493,6 +2497,11 @@ function setPubOverride(id,val){
   var a=_findAsset(id);if(!a)return;
   if(val)a.pubOverride=val;else delete a.pubOverride;
   saveAll();render();
+}
+// Default photo of an item: Photo 1 unless the item's default is set to Photo 2 (used for stickers and the public page)
+function defPhotoFrom(a,pm,pm2){
+  var p1=a.photo||_photoCache[a.id]||(pm&&pm[a.id])||"",p2=a.photo2||_photoCache2[a.id]||(pm2&&pm2[a.id])||"";
+  return (a.pubPhoto==="2"&&p2)?p2:(p1||p2);
 }
 function setPubPhoto(id,val){var a=_findAsset(id);if(!a)return;if(val==='2')a.pubPhoto='2';else delete a.pubPhoto;saveAll();render();}
 function _tokFromText(t){
@@ -2551,8 +2560,7 @@ async function exportPublicPages(mode){
   var pm={},pm2={};try{pm=await loadAllPhotos();}catch(e){}try{pm2=await loadAllPhotos2();}catch(e){}
   var enc=new TextEncoder(),done=LS.get("acap_pub_exp_v1",{}),entries=[];
   pub.forEach(function(a){
-    var ph=a.photo||_photoCache[a.id]||pm[a.id]||"";
-    if(a.pubPhoto==="2"){var p2=a.photo2||_photoCache2[a.id]||pm2[a.id]||"";if(p2)ph=p2;}
+    var ph=defPhotoFrom(a,pm,pm2);
     var info={title:a.name||"",year:a.yearCreated||"",medium:a.medium||"",size:a.dimensions||"",photo:""};
     var step=Math.max(1,Math.floor(ph.length/300)),smp="";for(var i=0;i<ph.length;i+=step)smp+=ph.charAt(i);
     entries.push({a:a,tok:a.qrToken,ph:ph,info:info,sig:_pubSig(JSON.stringify([info.title,info.year,info.medium,info.size])+"|"+ph.length+"|"+smp)});
@@ -2656,7 +2664,7 @@ function rDetail(){
   var h='<div class="dw">';
   var _dl=window._detailList||[],_di=_dl.indexOf(a.id);
   h+='<div style="display:flex;gap:6px;margin-bottom:9px;align-items:center;flex-wrap:wrap;" class="no-print">';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="backFromDetail()">← Back</button>';
+  h+='<button class="btn bback" onclick="backFromDetail()">← Back</button>';
   h+='<button class="btn bg" style="font-size:11px;'+ (_di<=0?'opacity:.35;':'')+'" onclick="navDetail(-1)">‹</button>';
   h+='<span style="font-size:10px;font-family:var(--mo);color:var(--mu);">'+(_di+1)+'/'+_dl.length+'</span>';
   h+='<button class="btn bg" style="font-size:11px;'+ (_di>=_dl.length-1?'opacity:.35;':'')+'" onclick="navDetail(1)">›</button>';
@@ -2700,7 +2708,7 @@ function rDetail(){
   h+='<div style="flex:1;padding-left:11px;"><div style="font-size:12px;color:var(--mu);margin-bottom:5px;">Scan the sticker with the app\'s 🔍 Scan button.</div>';
   h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Print Label</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'jpeg\')">⬇ QR JPEG</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'png\')">⬇ PNG</button>'
     +'<div style="margin-top:8px;font-size:11px;color:var(--mu);">\uD83C\uDF10 Public page: <b>'+(isPublicItem(a)?'PUBLIC':'Private')+'</b> <select class="sel" style="font-size:11px;" onchange="setPubOverride(\''+a.id+'\',this.value)"><option value=""'+(!a.pubOverride?' selected':'')+'>Follow list setting</option><option value="on"'+(a.pubOverride==="on"?' selected':'')+'>Force public</option><option value="off"'+(a.pubOverride==="off"?' selected':'')+'>Force private</option></select></div>'
-    +((a.photo2||_photoCache2[a.id])?'<div style="margin-top:6px;font-size:11px;color:var(--mu);">\uD83D\uDDBC Photo shown on the public page: <select class="sel" style="font-size:11px;" onchange="setPubPhoto(\''+a.id+'\',this.value)"><option value="1"'+(a.pubPhoto!=="2"?' selected':'')+'>Photo 1</option><option value="2"'+(a.pubPhoto==="2"?' selected':'')+'>Photo 2</option></select></div>':'')+'</div></div>';
+    +((a.photo2||_photoCache2[a.id])?'<div style="margin-top:6px;font-size:11px;color:var(--mu);">\uD83D\uDDBC Default photo (stickers &amp; public page): <select class="sel" style="font-size:11px;" onchange="setPubPhoto(\''+a.id+'\',this.value)"><option value="1"'+(a.pubPhoto!=="2"?' selected':'')+'>Photo 1</option><option value="2"'+(a.pubPhoto==="2"?' selected':'')+'>Photo 2</option></select></div>':'')+'</div></div>';
   h+='<div class="dgrid">';
   sOrd.forEach(function(sec){
     var rows=sMap[sec].map(function(fd){var v=fv(fd,fd.k==="__marked"?"★ Yes":a[fd.k]);return v?'<div class="df"><span class="dl">'+fd.lbl+'</span><span class="dv">'+v+'</span></div>':"";}).join("");
@@ -3259,6 +3267,22 @@ function printQRSheet(items,title){
    +'</body></html>');
   w.document.close();
 }
+function qrSheetsClick(){
+  if(view!=="list"&&view!=="table"){printListQRs();return;}
+  var n1=(hasFilter()?viewItems(view):_listArr(view)).length,seen={},n2=0;
+  _allItems().forEach(function(a){if(a&&a.id&&!seen[a.id]){seen[a.id]=1;n2++;}});
+  var old=G("qrChoice");if(old)old.remove();
+  var o=document.createElement("div");o.id="qrChoice";
+  o.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px;";
+  o.onclick=function(e){if(e.target===o)o.remove();};
+  o.innerHTML='<div style="background:var(--s,#fff);color:var(--t,#222);border-radius:10px;max-width:340px;width:100%;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.4);">'
+    +'<div style="font-weight:700;font-size:14px;margin-bottom:12px;">Print QR sheet for\u2026</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;">'
+    +'<button class="btn bp" style="justify-content:center;padding:9px;" onclick="document.getElementById(\'qrChoice\').remove();printListQRs()">This list only ('+n1+(hasFilter()?', filtered':'')+')</button>'
+    +'<button class="btn bs" style="justify-content:center;padding:9px;" onclick="document.getElementById(\'qrChoice\').remove();printAllQRs()">All lists ('+n2+')</button>'
+    +'<button class="btn bg" style="justify-content:center;padding:9px;" onclick="document.getElementById(\'qrChoice\').remove()">Cancel</button></div></div>';
+  document.body.appendChild(o);
+}
 function printListQRs(){
   var v=(view==="detail"||view==="form")&&detailOrigin?detailOrigin:view;
   var arr=_listArr(v);
@@ -3344,7 +3368,7 @@ function confirmDel(){
 
 // QR stickers: photo, title, size, medium (no ID). Card 52.5 x 49.25 mm, QR at left, text to its right.
 function _stickerCard(a){
-  var ph=a.photo||_photoCache[a.id]||"";
+  var ph=defPhotoFrom(a);
   var photo=ph?'<img class="ph" src="'+ph+'"/>':'<div class="ph ph0">'+(isArt(a.category)?'&#128444;':'&#128230;')+'</div>';
   var dim=a.dimensions||"",med=a.medium||"";
   return '<div class="card">'+photo+'<div class="row"><div class="qr">'+qrSvg(qrPayload(a),2)+'</div><div class="tx"><div class="nm">'+esc(a.name||"")+'</div>'
