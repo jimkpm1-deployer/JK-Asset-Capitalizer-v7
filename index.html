@@ -2614,11 +2614,11 @@ function qrDraw(cv,text,minPx,Q){
   var cx=cv.getContext("2d");cx.fillStyle="#fff";cx.fillRect(0,0,cv.width,cv.height);cx.fillStyle="#000";
   for(var r=0;r<d.n;r++)for(var c=0;c<d.n;c++)if(d.m[r][c])cx.fillRect((c+Q)*sc,(r+Q)*sc,sc,sc);
 }
-// Save the QR alone as an image (JPEG/PNG) to insert in a COA document. No ID text.
+// Save the QR alone as an image (JPEG/PNG) to insert in a COA document. No ID text. Minimal white border (1 module).
 function saveQRImg(id,fmt){
   try{
     var a0=_findAsset(id);if(!a0)return;
-    var cv=document.createElement("canvas");qrDraw(cv,qrPayload(a0),1000,4);
+    var cv=document.createElement("canvas");qrDraw(cv,qrPayload(a0),1000,1);
     var mime=fmt==="png"?"image/png":"image/jpeg",ext=fmt==="png"?"png":"jpg";
     cv.toBlob(function(b){
       if(!b){toast("Could not create image","e");return;}
