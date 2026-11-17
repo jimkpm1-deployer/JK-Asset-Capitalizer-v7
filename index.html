@@ -1378,7 +1378,7 @@ function buyWishAsset(id){
   if(price===null)return;
   if(!confirm("Move \""+(a.name||a.id)+"\" from Wish List to Inventory?\n\nIt will get a new Inventory ID."))return;
   _openActionModal("BUY \u2192 ADD TO INVENTORY",false,a.location||"",function(loc){
-  var moved=Object.assign({},a);
+  var moved=Object.assign({},a);var _mp=_applyMovePrivacy(moved,"inventory",isPublicItem(a));
   moved.location=loc||a.location||"";
   delete moved.wishDate;delete moved.status;
   moved.prevIds=(a.prevIds||[]).concat([a.id]);
@@ -1403,7 +1403,7 @@ function buyWishAsset(id){
   wishAssets=wishAssets.filter(function(x){return x.id!==id;});
   filtered=filtered.filter(function(x){return x.id!==id;});
   saveAll();render();
-  toast("Purchased \u2192 "+moved.id+" added to Inventory ✓","s");
+  _privMoveToast("Purchased \u2192 "+moved.id+" added to Inventory \u2713",_mp);
   },false,"",undefined,INV_LOCS);
 }
 function sellConsignAsset(id){
@@ -1593,12 +1593,18 @@ function rSold(){
     h+='</div></div></td></tr>';
   });
   h+='</tbody></table></div></div>';
-  var leg=LS.get("acap_consign_legend",""),ps=LS.get("acap_consign_ps","");
+  // Sold has its own Legend/PS (one-time copy of the old shared Consignment text so nothing is lost)
+  if(!LS.get("acap_soldleg_mig_v1",false)){
+    if(localStorage.getItem("acap_sold_legend")===null)LS.set("acap_sold_legend",LS.get("acap_consign_legend",""));
+    if(localStorage.getItem("acap_sold_ps")===null)LS.set("acap_sold_ps",LS.get("acap_consign_ps",""));
+    LS.set("acap_soldleg_mig_v1",true);
+  }
+  var leg=LS.get("acap_sold_legend",""),ps=LS.get("acap_sold_ps","");
   h+='<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px;">';
   h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">Legend:</span>';
-  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legend notes…" onchange="LS.set(\'acap_consign_legend\',this.value)">'+esc(leg)+'</textarea></div>';
+  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legend notes…" onchange="LS.set(\'acap_sold_legend\',this.value)">'+esc(leg)+'</textarea></div>';
   h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">PS:</span>';
-  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Post-script notes…" onchange="LS.set(\'acap_consign_ps\',this.value)">'+esc(ps)+'</textarea></div>';
+  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Post-script notes…" onchange="LS.set(\'acap_sold_ps\',this.value)">'+esc(ps)+'</textarea></div>';
   h+='</div><div style="height:200px;" class="no-print"></div>';
   return h;
 }
@@ -2616,6 +2622,20 @@ async function exportPublicPages(mode){
   entries.forEach(function(e){if(e.retire)delete done[e.tok];else done[e.tok]=e.sig;});LS.set("acap_pub_exp_v1",done);
   toast("Exported "+(entries.length-retire.length)+(mode==="new"?" new/changed":"")+" item(s)"+(retire.length?" + "+retire.length+" page(s) to hide":"")+" in "+parts.length+" ZIP file(s)"+(noPhoto?" ("+noPhoto+" without photo)":""),"s",8000);
 }
+// All items' QR codes as one CSV (private file) - to match the "QR code" dimension in Google Analytics
+function exportAllQRCodesCSV(){
+  if(ensureTokens())saveAll();
+  var all=_allItems();
+  if(!all.length){toast("No items yet","e");return;}
+  function q(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"';}
+  var rows=[["QR code","ID","Title","List","Public page","Year","Medium","Size","QR address"].map(q).join(",")];
+  all.forEach(function(a){
+    rows.push([a.qrToken,a.id,a.name||"",LIST_LABELS[_viewOfItem(a.id)]||"",isPublicItem(a)?"Public":"Private",a.yearCreated||"",a.medium||"",a.dimensions||"",PUBLIC_BASE+"?c="+a.qrToken].map(q).join(","));
+  });
+  var d=new Date(),ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  dl("﻿"+rows.join("\r\n"),"text/csv;charset=utf-8","jk-qr-codes-all-"+ds+".csv");
+  toast("Exported "+all.length+" QR codes to CSV","s",5000);
+}
 // ===== QR codes (encoder: qrcode-generator, scanner fallback: jsQR) =====
 function qrMatrix(text){
   var q=qrcode(0,"M");q.addData(String(text==null?"":text),"Byte");q.make();
@@ -2933,6 +2953,8 @@ function rIO(){
   h+='<div style="font-size:12px;margin:9px 0;">Public items now: <b>'+_pn+'</b></div>';
   h+='<div style="display:flex;gap:7px;flex-wrap:wrap;"><button class="btn bp" onclick="exportPublicPages(\'new\')">\u2B07 Export only new / changed</button><button class="btn bg" onclick="exportPublicPages(\'all\')">\u2B07 Export everything</button></div>';
   h+='<div style="font-size:11px;color:var(--mu);margin-top:6px;line-height:1.5;">Large exports are split into several ZIPs of at most 90 files (GitHub accepts 100 per upload). "New / changed" skips items already exported before.</div>';
+  h+='<div style="margin-top:10px;"><button class="btn bs" onclick="exportAllQRCodesCSV()">⬇ All QR codes list (CSV)</button></div>';
+  h+='<div style="font-size:11px;color:var(--mu);margin-top:6px;line-height:1.5;">One row per item in all six lists (QR code, ID, title, list, Public/Private) to put names on the scans in Google Analytics. Keep this file private and don\'t upload it to GitHub.</div>';
   h+='<div style="font-size:10px;color:var(--mu);margin-top:8px;font-family:var(--mo);word-break:break-all;">QR address: '+esc(PUBLIC_BASE)+'?c=\u2026</div></div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:7px;">INSTALL AS APP</h3>';
