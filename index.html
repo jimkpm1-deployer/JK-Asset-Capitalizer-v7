@@ -1522,7 +1522,7 @@ function addCOAToWish(id){
   // Copy (the item stays in Private COAs): confirm or change the location; default = owner's name
   _openActionModal("COPY TO WISH LIST (stays in Private COAs)",false,ownerLoc,async function(loc){
     var copy=Object.assign({},a);
-    delete copy.qrToken;delete copy.pubOverride;
+    delete copy.qrToken;delete copy.pubOverride;delete copy.pubAuto;
     copy.copiedFromId=a.id;
     copy.id=_nextWishId();
     copy.seq=_nextSeq();
@@ -1608,7 +1608,8 @@ function restoreAsset(btn){
   var id=btn.getAttribute('data-id');
   var a=soldAssets.find(function(x){return x.id===id;});if(!a)return;
   var dest=a.source==="consignment"?"consign":"inventory";
-  var restored=Object.assign({},a);
+  var wasPub=isPublicItem(a);
+  var restored=Object.assign({},a);var _mp=_applyMovePrivacy(restored,dest==="consign"?"consign":"inventory",wasPub);
   delete restored.soldDate;delete restored.soldAt;delete restored.soldGross;delete restored.status;delete restored.source;
   if(dest==="consign"){
     consignAssets.push(restored);
@@ -1620,7 +1621,7 @@ function restoreAsset(btn){
     if(insertIdx===-1)assets.push(restored);else assets.splice(insertIdx,0,restored);
     soldAssets=soldAssets.filter(function(x){return x.id!==id;});
     filtered=filtered.filter(function(x){return x.id!==id;});
-    saveAll();render();toast("Restored to Inventory ✓");
+    saveAll();render();_privMoveToast("Restored to Inventory \u2713",_mp);
   }
 }
 function deleteSold(btn){
@@ -2495,8 +2496,24 @@ function isPublicItem(a){
 }
 function setPubOverride(id,val){
   var a=_findAsset(id);if(!a)return;
+  delete a.pubAuto;
   if(val)a.pubOverride=val;else delete a.pubOverride;
   saveAll();render();
+}
+// Privacy rule on moves: an item that comes back to Inventory or Framing becomes PRIVATE; going to Consignment or Sold
+// removes that automatic privacy so the list setting applies again (Consignment -> Sold stays public if Sold is public).
+// Returns true when the item was made private by this move.
+function _applyMovePrivacy(c,dest,wasPublic){
+  if(dest==="inventory"||dest==="framing"){
+    if(wasPublic){c.pubOverride="off";c.pubAuto=1;return true;}
+    return false;
+  }
+  if(c.pubAuto){delete c.pubOverride;delete c.pubAuto;}
+  return false;
+}
+function _privMoveToast(msg,madePrivate){
+  if(madePrivate)toast(msg+" \u2014 it is now PRIVATE. To hide its old public page, run the public export and upload it.","i",9000);
+  else toast(msg,"s");
 }
 // Default photo of an item: Photo 1 unless the item's default is set to Photo 2 (used for stickers and the public page)
 function defPhotoFrom(a,pm,pm2){
@@ -2555,7 +2572,7 @@ function _pubSig(str){return _crc32(new TextEncoder().encode(str)).toString(36);
 async function exportPublicPages(mode){
   if(ensureTokens())saveAll();
   var pub=_allItems().filter(isPublicItem);
-  if(!pub.length){toast("No public items yet — switch a list to Public first","e",5000);return;}
+  if(!pub.length&&!Object.keys(LS.get("acap_pub_exp_v1",{})).length){toast("No public items yet — switch a list to Public first","e",5000);return;}
   toast("Preparing public pages…","i",30000);
   var pm={},pm2={};try{pm=await loadAllPhotos();}catch(e){}try{pm2=await loadAllPhotos2();}catch(e){}
   var enc=new TextEncoder(),done=LS.get("acap_pub_exp_v1",{}),entries=[];
@@ -2567,7 +2584,13 @@ async function exportPublicPages(mode){
   });
   var total=entries.length;
   if(mode==="new")entries=entries.filter(function(e){return done[e.tok]!==e.sig;});
-  if(!entries.length){toast("Nothing new or changed since the last export ("+total+" public items)","i",6000);return;}
+  // items exported before that are no longer public (moved to a private list, list switched off, deleted): blank their page
+  var pubTok={};pub.forEach(function(a){pubTok[a.qrToken]=1;});
+  var retire=Object.keys(done).filter(function(t){return !pubTok[t];}).map(function(t){
+    var it=_allItems().filter(function(x){return x.qrToken===t;})[0];
+    return {a:it?{id:it.id,name:(it.name||"")+" [now private - page blanked]"}:{id:"(deleted item)",name:"[page blanked]"},tok:t,retire:true,files:[{name:"items/"+t+".json",data:enc.encode("{}")}]};
+  });
+  if(!entries.length&&!retire.length){toast("Nothing new or changed since the last export ("+total+" public items)","i",6000);return;}
   var noPhoto=0;
   for(var k=0;k<entries.length;k++){
     var e=entries[k];e.files=[];
@@ -2575,6 +2598,7 @@ async function exportPublicPages(mode){
     if(!e.info.photo)noPhoto++;
     e.files.push({name:"items/"+e.tok+".json",data:enc.encode(JSON.stringify(e.info))});
   }
+  retire.forEach(function(r){entries.push(r);});
   // split into parts of at most 90 files
   var parts=[],cur=[],cnt=0;
   entries.forEach(function(e){if(cnt+e.files.length>90&&cur.length){parts.push(cur);cur=[];cnt=0;}cur.push(e);cnt+=e.files.length;});
@@ -2589,8 +2613,8 @@ async function exportPublicPages(mode){
     setTimeout((function(x){return function(){URL.revokeObjectURL(x);};})(u),8000);
     await new Promise(function(r){setTimeout(r,900);});
   }
-  entries.forEach(function(e){done[e.tok]=e.sig;});LS.set("acap_pub_exp_v1",done);
-  toast("Exported "+entries.length+(mode==="new"?" new/changed":"")+" item(s) in "+parts.length+" ZIP file(s)"+(noPhoto?" ("+noPhoto+" without photo)":""),"s",8000);
+  entries.forEach(function(e){if(e.retire)delete done[e.tok];else done[e.tok]=e.sig;});LS.set("acap_pub_exp_v1",done);
+  toast("Exported "+(entries.length-retire.length)+(mode==="new"?" new/changed":"")+" item(s)"+(retire.length?" + "+retire.length+" page(s) to hide":"")+" in "+parts.length+" ZIP file(s)"+(noPhoto?" ("+noPhoto+" without photo)":""),"s",8000);
 }
 // ===== QR codes (encoder: qrcode-generator, scanner fallback: jsQR) =====
 function qrMatrix(text){
@@ -2644,7 +2668,7 @@ function rDetail(){
   fds.forEach(function(f){_known[f.k]=1;});
   var _REC=[["soldAt",SOLD_NET_LBL+" ($)"],["soldGross",SOLD_GROSS_LBL+" ($)"],["soldDate","Sold Date"],["consignDate","Consignment Date"],["framingDate","Framing Date"],["wishDate","Wish List Date"],["originalLocation","Original Location"],["buyPrice","Buy Price ($)"],["status","Status"],["source","Source"],["createdAt","Created"],["updatedAt","Last Updated"]];
   _REC.forEach(function(r){_known[r[0]]=1;fds.push({k:r[0],lbl:r[1],sec:"Record",t:"text"});});
-  var _SKIP={photo:1,photo2:1,id:1,seq:1,marked:1,name:1,category:1,description:1,qrToken:1,pubOverride:1,pubPhoto:1,copiedFromId:1,copiedToIds:1,prevIds:1};
+  var _SKIP={photo:1,photo2:1,id:1,seq:1,marked:1,name:1,category:1,description:1,qrToken:1,pubOverride:1,pubAuto:1,pubPhoto:1,copiedFromId:1,copiedToIds:1,prevIds:1};
   Object.keys(a).forEach(function(k){
     if(_known[k]||_SKIP[k])return;
     var v=a[k];if(v==null||v===""||typeof v==="object")return;
@@ -3689,7 +3713,8 @@ function moveToConsign(id){
   var a=_findAsset(id);if(!a)return;
   var fromFraming=framingAssets.some(function(x){return x.id===id;});
   _openActionModal("SEND TO CONSIGNMENT",false,a.location||"",function(loc,price,frame){
-    var c=Object.assign({},a);
+    var wasPub=isPublicItem(a);
+    var c=Object.assign({},a);_applyMovePrivacy(c,"consign",wasPub);
     c.consignDate=today();c.status="consignment";
     c.originalLocation=a.location||"";
     c.location=loc||a.location||"";
@@ -3702,20 +3727,22 @@ function moveToConsign(id){
 function moveToFraming(id){
   var a=_findAsset(id);if(!a)return;
   _openActionModal("SEND TO FRAMING",false,a.location||"",function(loc){
-    var c=Object.assign({},a);
+    var wasPub=isPublicItem(a);
+    var c=Object.assign({},a);var _mp=_applyMovePrivacy(c,"framing",wasPub);
     c.framingDate=today();c.status="framing";
     c.originalLocation=a.location||"";
     c.location=loc||a.location||"";
     _removeFromAllLists(id);
     framingAssets.push(c);
-    saveAll();render();toast("Sent to Framing ✓","s");
+    saveAll();render();_privMoveToast("Sent to Framing \u2713",_mp);
   });
 }
 function moveToSold(id){
   var a=_findAsset(id);if(!a)return;
   var fromFraming=framingAssets.some(function(x){return x.id===id;});
   _openActionModal("MARK AS SOLD",true,a.location||"",function(loc,price,frame,gross){
-    var sold=Object.assign({},a);
+    var wasPub=isPublicItem(a);
+    var sold=Object.assign({},a);_applyMovePrivacy(sold,"sold",wasPub);
     sold.soldDate=today();sold.status="sold";
     sold.originalLocation=a.location||"";
     sold.location=loc||a.location||"";
@@ -3733,13 +3760,14 @@ function restoreToInventory(id){
   var autoLoc=a.originalLocation||"";
   // Always ask: the original location is pre-selected, but the user confirms or changes it
   _openActionModal("RESTORE TO INVENTORY",false,autoLoc||a.location||"",function(loc,price,frame){
-    var restored=Object.assign({},a);
+    var wasPub=isPublicItem(a);
+    var restored=Object.assign({},a);var _mp=_applyMovePrivacy(restored,"inventory",wasPub);
     delete restored.consignDate;delete restored.framingDate;delete restored.status;
     delete restored.soldDate;delete restored.soldAt;delete restored.soldGross; // no sale data on a restored item
     restored.location=loc||autoLoc||a.location||"";delete restored.originalLocation;
     if(fromFraming&&frame!==undefined)restored.framed=frame;
     _removeFromAllLists(id);assets.push(restored);
-    saveAll();render();toast("Restored to Inventory ✓");
+    saveAll();render();_privMoveToast("Restored to Inventory \u2713",_mp);
   },fromFraming,a.framed||"",autoLoc?"original":"current",INV_LOCS);
 }
 function doListAction(btn){confirmId=btn.getAttribute("data-id");showListAction(btn.getAttribute("data-list"));}
