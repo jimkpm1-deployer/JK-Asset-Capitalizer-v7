@@ -377,6 +377,12 @@ html[data-theme="dark"] .sc3d,html[data-theme="dark"] .dpanel{background:linear-
 .cfill,.crow .cfill{height:12px;border-radius:999px;min-width:12px;background:linear-gradient(180deg,rgba(255,255,255,.15) 0%,rgba(255,255,255,.75) 22%,rgba(255,255,255,.2) 45%,rgba(0,0,0,.05) 65%,rgba(0,0,0,.35) 100%),var(--c,#2f4a6d);box-shadow:1px 2px 3px var(--shd);}
 html[data-theme="dark"] .ctrack{background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,.2) 60%,rgba(255,255,255,.06) 100%),#1a1813;}
 html[data-theme="dark"] .cfill,html[data-theme="dark"] .crow .cfill{background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.5) 22%,rgba(255,255,255,.12) 45%,rgba(0,0,0,.05) 65%,rgba(0,0,0,.45) 100%),var(--c,#2f4a6d);}
+/* cylinder end caps in the list's own color */
+.content[data-list="inv"]{--lc:var(--l-inv);}.content[data-list="con"]{--lc:var(--l-con);}.content[data-list="fram"]{--lc:var(--l-fram);}
+.content[data-list="sold"]{--lc:var(--l-sold);}.content[data-list="wish"]{--lc:var(--l-wish);}.content[data-list="coa"]{--lc:var(--l-coa);}
+.tbl tbody td:first-child,.tbl tr.artrow td:first-child{border-left:5px solid var(--lc,var(--b))!important;}
+.tbl tbody td:last-child{border-right:5px solid var(--lc,var(--b))!important;}
+@media print{.tbl tbody td:first-child,.tbl tbody td:last-child{border-left:none!important;border-right:none!important;}}
 @keyframes sup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 html[data-theme="dark"]{color-scheme:dark;--bg:#16150f;--s:#201e17;--s2:#29261e;--s3:#332f25;--b:#3a3629;--tx:#ece7d9;--mu:#a49e8e;--ac:#c25a45;--ar:#d9806e;--ok:#c25a45;
 --paper:#3b362c;--zebra:#24221a;--hover:#2f2b22;--rowline:#332f25;--hair:#2c2920;--edit:#2a2720;
