@@ -383,6 +383,12 @@ html[data-theme="dark"] .cfill,html[data-theme="dark"] .crow .cfill{background:l
 .tbl tbody td:first-child,.tbl tr.artrow td:first-child{border-left:5px solid var(--lc,var(--b))!important;}
 .tbl tbody td:last-child{border-right:5px solid var(--lc,var(--b))!important;}
 @media print{.tbl tbody td:first-child,.tbl tbody td:last-child{border-left:none!important;border-right:none!important;}}
+/* Asset Detail: top edge of the info cards in the item's list color */
+.content[data-list] .dh{border-top:4px solid var(--lc)!important;}
+.content[data-list] .ds,.content[data-list] .bcs{border-top:3px solid var(--lc)!important;}
+.content[data-list] .ds h3{color:var(--lc);}
+html[data-theme="dark"] .content[data-list="inv"] .ds h3{color:var(--t-inv);}html[data-theme="dark"] .content[data-list="con"] .ds h3{color:var(--t-con);}html[data-theme="dark"] .content[data-list="fram"] .ds h3{color:var(--t-fram);}
+html[data-theme="dark"] .content[data-list="sold"] .ds h3{color:var(--t-sold);}html[data-theme="dark"] .content[data-list="wish"] .ds h3{color:var(--t-wish);}html[data-theme="dark"] .content[data-list="coa"] .ds h3{color:var(--t-coa);}
 @keyframes sup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 html[data-theme="dark"]{color-scheme:dark;--bg:#16150f;--s:#201e17;--s2:#29261e;--s3:#332f25;--b:#3a3629;--tx:#ece7d9;--mu:#a49e8e;--ac:#c25a45;--ar:#d9806e;--ok:#c25a45;
 --paper:#3b362c;--zebra:#24221a;--hover:#2f2b22;--rowline:#332f25;--hair:#2c2920;--edit:#2a2720;
