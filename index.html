@@ -364,6 +364,19 @@ html[data-theme="dark"] .tbl td.ed:hover .tdin{background:rgba(255,255,255,.06);
 .tbl th{background:linear-gradient(180deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,.1) 50%,rgba(0,0,0,.05) 100%),var(--s2)!important;}
 html[data-theme="dark"] .tbl th{background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(0,0,0,.15) 100%),var(--s2)!important;}
 @media print{.tbl{border-collapse:collapse!important;border-spacing:0;}.tbl td,.tbl tbody td{background:none!important;box-shadow:none!important;border-radius:0!important;}.topbar,.sb{box-shadow:none!important;}}
+/* dashboard: metal boxes + cylinder category bars */
+.sc3d,.dpanel{background:linear-gradient(180deg,#fffefa 0%,#f3eee3 46%,#e9e2d2 54%,#f7f3eb 100%);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(0,0,0,.08),3px 4px 8px var(--shd-soft);}
+.dpanel{position:relative;background:repeating-linear-gradient(90deg,rgba(255,255,255,0) 0,rgba(255,255,255,.35) 1px,rgba(0,0,0,0) 2px,rgba(0,0,0,.015) 3px),linear-gradient(180deg,#fffefa 0%,#f4efe5 30%,#ece5d6 100%);}
+html[data-theme="dark"] .dpanel{background:repeating-linear-gradient(90deg,rgba(255,255,255,0) 0,rgba(255,255,255,.025) 1px,rgba(0,0,0,0) 2px,rgba(0,0,0,.05) 3px),linear-gradient(180deg,#36322a 0%,#2a2620 30%,#221f19 100%)!important;}
+html[data-theme="dark"] .sc3d,html[data-theme="dark"] .dpanel{background:linear-gradient(180deg,#3a352c 0%,#2a2620 46%,#221f19 54%,#2e2a23 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(0,0,0,.4),3px 4px 8px var(--shd-soft);}
+.crow.k-inv{--c:var(--l-inv);--ct:var(--t-inv);}.crow.k-con{--c:var(--l-con);--ct:var(--t-con);}.crow.k-fram{--c:var(--l-fram);--ct:var(--t-fram);}
+.crow.k-sold{--c:var(--l-sold);--ct:var(--t-sold);}.crow.k-wish{--c:var(--l-wish);--ct:var(--t-wish);}.crow.k-coa{--c:var(--l-coa);--ct:var(--t-coa);}
+.crow{padding-top:3px;padding-bottom:3px;}
+.crow .cname,.crow .ccount{color:var(--ct,var(--tx));font-weight:600;}
+.ctrack{height:12px;border-radius:999px;background:linear-gradient(180deg,rgba(0,0,0,.14) 0%,rgba(0,0,0,.04) 60%,rgba(255,255,255,.5) 100%),var(--s3);box-shadow:inset 1px 2px 3px rgba(0,0,0,.25);}
+.cfill,.crow .cfill{height:12px;border-radius:999px;min-width:12px;background:linear-gradient(180deg,rgba(255,255,255,.15) 0%,rgba(255,255,255,.75) 22%,rgba(255,255,255,.2) 45%,rgba(0,0,0,.05) 65%,rgba(0,0,0,.35) 100%),var(--c,#2f4a6d);box-shadow:1px 2px 3px var(--shd);}
+html[data-theme="dark"] .ctrack{background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,.2) 60%,rgba(255,255,255,.06) 100%),#1a1813;}
+html[data-theme="dark"] .cfill,html[data-theme="dark"] .crow .cfill{background:linear-gradient(180deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.5) 22%,rgba(255,255,255,.12) 45%,rgba(0,0,0,.05) 65%,rgba(0,0,0,.45) 100%),var(--c,#2f4a6d);}
 @keyframes sup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 html[data-theme="dark"]{color-scheme:dark;--bg:#16150f;--s:#201e17;--s2:#29261e;--s3:#332f25;--b:#3a3629;--tx:#ece7d9;--mu:#a49e8e;--ac:#c25a45;--ar:#d9806e;--ok:#c25a45;
 --paper:#3b362c;--zebra:#24221a;--hover:#2f2b22;--rowline:#332f25;--hair:#2c2920;--edit:#2a2720;
@@ -1869,7 +1882,7 @@ function rDash(){
   h+='<div class="sc sc3d" style="cursor:pointer;border-left:5px solid var(--l-wish);" onclick="goTo(\'wish\')" title="Wish List"><div class="sl" style="color:var(--t-wish)">Wish List ('+wishTotal+')</div><div class="sv" style="color:var(--t-wish)">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
   h+='<div class="sc sc3d" style="grid-column:span 2;cursor:pointer;border-left:5px solid var(--l-sold);" onclick="goTo(\'sold\')" title="Ratios = sale amount \u00f7 face value of the sold items that have a price"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><div class="sl" style="color:var(--t-sold)">Sold ('+soldTotal+')</div><div class="sv" style="color:var(--t-sold);opacity:.65;font-size:11px;">$'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</div></div><div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;"><span class="sv" style="color:var(--t-sold);font-size:13px;">'+SOLD_NET_LBL+' $'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span style="font-size:11px;opacity:.85;">\u00b7 '+soldRatio+'</span></span><span class="sv" style="color:var(--t-sold);font-size:13px;">'+SOLD_GROSS_LBL+' $'+soldGrossVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span style="font-size:11px;opacity:.85;">\u00b7 '+soldGrossRatio+'</span></span></div></div></div>';
   h+='<div class="sc sc3d" style="grid-column:span 2;cursor:pointer;border-left:5px solid var(--l-coa);" onclick="goTo(\'coa\')" title="Private COAs"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl" style="color:var(--t-coa)">Private COAs <span style="font-size:10px;color:var(--mu);">(not owned \u2014 COA)</span></div><div class="sv" style="font-size:13px;color:var(--t-coa);">'+coaTotal+' pieces</div></div><div class="sv" style="color:var(--t-coa);font-size:14px;">'+coaIssuedN+' COA issued</div></div></div>';
-  h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
+  h+='</div><div class="dpanel" style="border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
   // All lists - inventory, consignment, sold, etc.
   var allListCats=getUserCats();
@@ -1879,7 +1892,7 @@ function rDash(){
     allListCats.forEach(function(c){
       var n=arr.filter(function(a){return a.category===c;}).length;
       if(n===0)return;
-      out+='<div class="crow"><span class="cname">'+(c==="Artworks"?"🖼 "+c:c)+'</span><div class="ctrack"><div class="cfill '+accentClass+'" style="width:'+(n/max2*100)+'%;"></div></div><span class="ccount">'+n+'</span></div>';
+      out+='<div class="crow k-'+accentClass.replace('-bar','')+'"><span class="cname">'+(c==="Artworks"?"🖼 "+c:c)+'</span><div class="ctrack"><div class="cfill '+accentClass+'" style="width:'+(n/max2*100)+'%;"></div></div><span class="ccount">'+n+'</span></div>';
     });
     return out;
   }
@@ -1889,13 +1902,13 @@ function rDash(){
   var soldRows=makeCatBars(soldAssets,'sold-bar');
   var wishRows=makeCatBars(wishAssets,'wish-bar');
   var coaRows=makeCatBars(coaAssets,'coa-bar');
-  if(invRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:4px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Inventory</div>'+invRows;
-  if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
-  if(framRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Framing</div>'+framRows;
-  if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-sold);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
-  if(wishRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-wish);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Wish List</div>'+wishRows;
-  if(coaRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-coa);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Private COAs</div>'+coaRows;
-  h+='</div></div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
+  if(invRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-inv);font-weight:700;margin:4px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Inventory</div>'+invRows;
+  if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-con);font-weight:700;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
+  if(framRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-fram);font-weight:700;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Framing</div>'+framRows;
+  if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-sold);font-weight:700;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
+  if(wishRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-wish);font-weight:700;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Wish List</div>'+wishRows;
+  if(coaRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--t-coa);font-weight:700;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Private COAs</div>'+coaRows;
+  h+='</div></div><div class="dpanel" style="border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Recent Assets</div>';
   window._detailList=assets.map(function(a){return a.id;});
   assets.slice(-6).reverse().forEach(a=>{
