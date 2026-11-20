@@ -2648,8 +2648,12 @@ function navDetail(dir){
   viewDetail(list[n]);
 }
 // ===== Public QR pages (jk-verify) =====
-// Printed on every sticker: BASE + "?c=" + the item's random code. NEVER change PUBLIC_BASE after stickers are printed.
-var PUBLIC_BASE="https://jimkpm1-deployer.github.io/jk-verify/";
+// Printed on every sticker: BASE + "?c=" + the item's random code.
+// Since 2026-11-20 new QRs use the Foundation's own domain (custom domain on the jk-verify GitHub Pages site).
+// Stickers printed earlier carry OLD_PUBLIC_BASE; GitHub redirects them to the new domain, and the scanner accepts both
+// (it only reads the ?c= code). Codes never change.
+var OLD_PUBLIC_BASE="https://jimkpm1-deployer.github.io/jk-verify/";
+var PUBLIC_BASE="https://verify.jeankhalife.com/";
 var PUB_LISTS=[["table","Inventory"],["consign","Consignment"],["framing","Framing"],["sold","Sold"],["wish","Wish List"],["coa","Private COAs"]];
 var _TOK_ALPHA="abcdefghjkmnpqrstuvwxyz23456789";
 function pubCfg(){var c=LS.get("acap_pub_v3",null);return (c&&typeof c==="object")?c:{coa:true};}
