@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="AssetCap"/>
-<meta name="theme-color" content="#1a1a18"/>
+<meta name="theme-color" content="#1d1b16"/>
 <title>Asset Capitalizer v34</title>
 <link rel="manifest" href="/manifest.json"/>
 <script>
@@ -22,18 +22,18 @@ if(window.caches)caches.keys().then(function(k){k.forEach(function(n){caches.del
 <link rel="icon" type="image/png" href="/icon-192.png"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-:root{--bg:#f2efe9;--s:#fff;--s2:#f8f6f2;--s3:#eeeae3;--b:#ddd8cf;--ac:#bf3a2b;--ar:#6b4f9e;--ok:#2e7d52;--wn:#b06800;--tx:#18180f;--mu:#8a8478;--mo:'Courier New',monospace;--sa:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;--r:6px;}
+:root{--bg:#f6f3ec;--s:#fffdf8;--s2:#f3eee3;--s3:#e9e2d3;--b:#dcd5c4;--ac:#9a3b2c;--ar:#9a3b2c;--ok:#9a3b2c;--wn:#a8741f;--tx:#1d1b16;--mu:#6f6a5e;--l-inv:#2f4a6d;--l-con:#2f7a74;--l-fram:#a8741f;--l-sold:#7d2e3a;--l-wish:#4f7a3a;--l-coa:#6e4a86;--danger:#b42318;--gold:#c8961e;--mo:'Courier New',monospace;--sa:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;--r:6px;}
 body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;overflow:hidden;}
-#LS{position:fixed;inset:0;background:linear-gradient(135deg,#18180f,#2a2a1f,#1a1208);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+#LS{position:fixed;inset:0;background:linear-gradient(135deg,#1d1b16,#2e2b23,#1d1b16);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
 .lb{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:34px 30px;max-width:330px;width:100%;text-align:center;}
-.lb h1{font-family:var(--mo);font-size:15px;color:#e6e1d6;letter-spacing:.1em;margin-bottom:4px;}
+.lb h1{font-family:var(--mo);font-size:15px;color:#ece7d9;letter-spacing:.1em;margin-bottom:4px;}
 .lb p{font-size:11px;color:#6b6655;margin-bottom:20px;}
 .atabs{display:flex;border:1px solid rgba(255,255,255,.12);border-radius:8px;overflow:hidden;margin-bottom:16px;}
 .atab{flex:1;padding:8px;background:transparent;border:none;color:#6b6655;font-size:11px;cursor:pointer;font-family:var(--mo);}
-.atab.on{background:rgba(255,255,255,.1);color:#e6e1d6;}
+.atab.on{background:rgba(255,255,255,.1);color:#ece7d9;}
 .lf{display:flex;flex-direction:column;gap:4px;text-align:left;margin-bottom:10px;}
 .lf label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#888;font-weight:600;}
-.lf input{padding:10px 12px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(255,255,255,.07);color:#e6e1d6;font-size:14px;font-family:var(--sa);outline:none;}
+.lf input{padding:10px 12px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(255,255,255,.07);color:#ece7d9;font-size:14px;font-family:var(--sa);outline:none;}
 .lf input:focus{border-color:var(--ac);}
 .lbtn{width:100%;padding:11px;background:var(--ac);color:#fff;border:none;border-radius:8px;font-size:13px;font-family:var(--mo);font-weight:600;cursor:pointer;margin-top:8px;}
 .lerr{color:#ff7c70;font-size:12px;margin-top:8px;min-height:16px;}
@@ -42,29 +42,29 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .pdot{width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,.22);}
 .pdot.on{background:var(--ac);border-color:var(--ac);}
 .ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:210px;margin:0 auto;}
-.pk{padding:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);border-radius:10px;color:#e6e1d6;font-size:18px;font-family:var(--mo);cursor:pointer;}
+.pk{padding:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);border-radius:10px;color:#ece7d9;font-size:18px;font-family:var(--mo);cursor:pointer;}
 .pk:active{background:rgba(255,255,255,.2);}
 .shell{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1;}
-.sb{width:216px;min-width:216px;background:#18180f;color:#e6e1d6;display:flex;flex-direction:column;}
+.sb{width:216px;min-width:216px;background:#1d1b16;color:#ece7d9;display:flex;flex-direction:column;}
 @media(max-width:680px){.sb{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);transition:transform .25s;}.sb.open{transform:translateX(0);}.sbovl{display:block!important;}}
 .sbovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:49;pointer-events:none;}
-.sblogo{padding:13px;border-bottom:1px solid #2a2a1f;display:flex;align-items:center;gap:8px;}
+.sblogo{padding:13px;border-bottom:1px solid #2e2b23;display:flex;align-items:center;gap:8px;}
 .sblogo h1{font-family:var(--mo);font-size:11px;letter-spacing:.1em;line-height:1.5;flex:1;}
 .sblogo h1 span{color:var(--ac);}
 .sblk{background:none;border:1px solid #333;border-radius:4px;color:#666;font-size:10px;padding:3px 7px;cursor:pointer;font-family:var(--mo);}
-.sblk:hover{color:#e6e1d6;}
-.sbst{padding:8px 13px;border-bottom:1px solid #2a2a1f;font-size:11px;color:#666;}
-.sbst b{color:#e6e1d6;font-family:var(--mo);}
-.sbbar{height:3px;background:#2a2a1f;border-radius:2px;margin-top:4px;}
+.sblk:hover{color:#ece7d9;}
+.sbst{padding:8px 13px;border-bottom:1px solid #2e2b23;font-size:11px;color:#666;}
+.sbst b{color:#ece7d9;font-family:var(--mo);}
+.sbbar{height:3px;background:#2e2b23;border-radius:2px;margin-top:4px;}
 .sbfill{height:3px;background:var(--ac);border-radius:2px;}
 .sbnav{flex:1;overflow-y:auto;padding:5px 0;}
-.sbsc{padding:6px 13px 2px;font-size:9px;letter-spacing:.14em;color:#444;text-transform:uppercase;}
-.sbi{display:flex;align-items:center;gap:7px;padding:8px 13px;cursor:pointer;font-size:12px;color:#888;border-left:3px solid transparent;}
-.sbi:hover{background:#22221a;color:#e6e1d6;}
-.sbi.on{background:#22221a;color:#e6e1d6;border-left-color:var(--ac);}
-.sbcat{display:flex;justify-content:space-between;padding:4px 13px 4px 24px;font-size:11px;color:#444;cursor:pointer;}
-.sbcat:hover{color:#888;}
-.sbcat.art{color:#6b4f9e44;}
+.sbsc{padding:6px 13px 2px;font-size:9px;letter-spacing:.14em;color:#7a7465;text-transform:uppercase;}
+.sbi{display:flex;align-items:center;gap:7px;padding:8px 13px;cursor:pointer;font-size:12px;color:#a49e8e;border-left:3px solid transparent;}
+.sbi:hover{background:#29261f;color:#ece7d9;}
+.sbi.on{background:#29261f;color:#ece7d9;border-left-color:var(--ac);}
+.sbcat{display:flex;justify-content:space-between;padding:4px 13px 4px 24px;font-size:11px;color:#7a7465;cursor:pointer;}
+.sbcat:hover{color:#a49e8e;}
+.sbcat.art{color:#9a3b2c88;}
 .sbcat.art:hover{color:var(--ar);}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
 .topbar{background:var(--s);border-bottom:1px solid var(--b);padding:7px 13px;display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;}
@@ -78,11 +78,11 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .sp{flex:1;}
 .btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border:none;border-radius:var(--r);font-size:11px;font-family:var(--mo);cursor:pointer;font-weight:500;white-space:nowrap;}
 .bp{background:var(--ac);color:#fff;}
-.bs{background:#18180f;color:#e6e1d6;}
+.bs{background:#1d1b16;color:#ece7d9;}
 .bg{background:transparent;border:1px solid var(--b);color:var(--tx);}
-.bback{background:#1f5fbf;color:#fff;border:1px solid #163f85;font-size:13px;font-weight:700;padding:7px 16px;box-shadow:0 2px 6px rgba(0,0,0,.4);letter-spacing:.02em;}
-.bback:hover{background:#174a9a;box-shadow:0 3px 9px rgba(0,0,0,.5);}
-.bd{background:#c0392b;color:#fff;}
+.bback{background:var(--l-inv);color:#fff;font-size:13px;font-weight:700;padding:7px 16px;letter-spacing:.02em;}
+
+.bd{background:#fffdf8;color:var(--danger);border:1px solid var(--danger);}
 .ba{background:var(--ar);color:#fff;}
 .bok{background:var(--ok);color:#fff;}
 .bwn{background:var(--wn);color:#fff;}
@@ -111,7 +111,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .atags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:3px;}
 .tag{padding:2px 7px;border-radius:12px;font-size:10px;font-family:var(--mo);font-weight:500;}
 .tcat{background:#fff3e0;color:#c25b00;}
-.tcat.art{background:#ede7f6;color:var(--ar);}
+.tcat.art{background:#f3e3df;color:var(--ar);}
 .tcond{background:#e8f5e9;color:#2e6b3a;}
 .tcond.Poor,.tcond.Disposed,.tcond.Damaged{background:#fce4ec;color:#b71c1c;}
 .aval{font-family:var(--mo);font-size:12px;font-weight:600;color:var(--ac);margin-top:3px;}
@@ -129,7 +129,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .tbl th{position:relative;}
 .tbl th.cdrag{opacity:.35;}
 .tbl th.cdrop{box-shadow:inset -3px 0 0 var(--ac);}
-.tbl td{padding:0;border-bottom:1px solid #ddd8cc;vertical-align:top;overflow:hidden;}
+.tbl td{padding:0;border-bottom:1px solid #e5ddcc;vertical-align:top;overflow:hidden;}
 .col-wrap .tdin{align-items:flex-start;padding-top:6px;}
 .col-short .tdin{white-space:nowrap;text-overflow:ellipsis;}
 .tcenter .tdin{justify-content:center;text-align:center;}
@@ -137,9 +137,9 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .tbl td.ed .tdin{cursor:text;}
 .tbl td.ed:hover .tdin{background:#fffbf5;}
 .tbl tr:last-child td{border-bottom:none;}
-.tbl tr:hover td{background:#eeeae0;}
-.tbl tbody tr:nth-child(even) td{background:#f5f2ec;}
-.tbl tbody tr:nth-child(even):hover td{background:#eeeae0;}
+.tbl tr:hover td{background:#efe7d6;}
+.tbl tbody tr:nth-child(even) td{background:#f7f2e8;}
+.tbl tbody tr:nth-child(even):hover td{background:#efe7d6;}
 .tbl tr.artrow td:first-child{border-left:3px solid var(--ar);}
 .tbl td a{color:var(--ac);text-decoration:underline;}
 .phcell{padding:3px 5px!important;text-align:center;vertical-align:middle;cursor:pointer;}
@@ -186,7 +186,7 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .filbl{flex:1;font-size:12px;font-weight:500;}
 .fisec{font-size:10px;color:var(--mu);font-family:var(--mo);width:82px;}
 .fibdg{font-size:9px;padding:1px 5px;border-radius:8px;font-family:var(--mo);}
-.fibdg.aw{background:#ede7f6;color:var(--ar);}
+.fibdg.aw{background:#f3e3df;color:var(--ar);}
 .fibdg.rq{background:#fce4ec;color:#b71c1c;}
 .tog{position:relative;width:32px;height:18px;flex-shrink:0;}
 .tog input{opacity:0;width:0;height:0;}
@@ -209,10 +209,10 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .scanm video{width:100%;object-fit:cover;background:#000;}
 .scanbtns{height:85px;background:rgba(0,0,0,.8);display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:8px;}
 .toast{position:fixed;bottom:15px;right:11px;padding:9px 13px;border-radius:var(--r);font-size:12px;font-family:var(--mo);z-index:900;animation:sup .2s ease;max-width:300px;}
-.toast.s{background:#18180f;color:#e6e1d6;}
+.toast.s{background:#1d1b16;color:#ece7d9;}
 .toast.e{background:var(--ac);color:#fff;}
 .toast.i{background:#1a3a2a;color:#a8e6c3;}
-.ubar{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:#18180f;color:#e6e1d6;padding:8px 13px;border-radius:26px;font-size:12px;font-family:var(--mo);z-index:500;display:flex;align-items:center;gap:9px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);}
+.ubar{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:#1d1b16;color:#ece7d9;padding:8px 13px;border-radius:26px;font-size:12px;font-family:var(--mo);z-index:500;display:flex;align-items:center;gap:9px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);}
 .ubar button{background:var(--ac);border:none;color:#fff;padding:4px 10px;border-radius:15px;cursor:pointer;font-size:11px;font-family:var(--mo);}
 @media print{
   #LS,.sb,.topbar,.no-print,.camm,.scanm,.toast,.mbg,.ubar,#IB{display:none!important;}
@@ -236,10 +236,10 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .empty .big{font-size:36px;margin-bottom:8px;}
 .vt{display:flex;border:1px solid var(--b);border-radius:var(--r);overflow:hidden;}
 .vt button{padding:5px 8px;border:none;background:transparent;cursor:pointer;font-size:12px;}
-.vt button.on{background:#18180f;color:#fff;}
+.vt button.on{background:#1d1b16;color:#fff;}
 .iz{border:2px dashed var(--b);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;color:var(--mu);}
 .iz:hover{border-color:var(--ac);color:var(--ac);}
-#IB{display:none;background:#18180f;color:#e6e1d6;padding:7px 13px;font-size:12px;font-family:var(--mo);align-items:center;justify-content:space-between;gap:8px;}
+#IB{display:none;background:#1d1b16;color:#ece7d9;padding:7px 13px;font-size:12px;font-family:var(--mo);align-items:center;justify-content:space-between;gap:8px;}
 #IB button{padding:4px 10px;background:var(--ac);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;}
 .dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:13px;}
 .sc{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:11px 13px;transition:box-shadow .15s,transform .1s;}
@@ -252,15 +252,24 @@ body{background:var(--bg);font-family:var(--sa);color:var(--tx);height:100vh;ove
 .crow{display:flex;align-items:center;gap:7px;font-size:11px;padding-left:18px;}
 .cname{width:116px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .ctrack{flex:1;background:var(--s3);border-radius:2px;height:4px;}
-.cfill{height:4px;border-radius:2px;background:#1a3a6b;}
-.cfill.inv-bar{background:#1a3a6b;}
-.cfill.con-bar{background:#2e6da4;}
-.cfill.fram-bar{background:#5aaccf;}
-.cfill.sold-bar{background:#c0392b;}
-.cfill.wish-bar{background:#2e7d52;}
-.cfill.coa-bar{background:#b06800;}
-.cfill.aw{background:#1a3a6b;}
+.cfill{height:4px;border-radius:2px;background:#2f4a6d;}
+.cfill.inv-bar{background:#2f4a6d;}
+.cfill.con-bar{background:#2f7a74;}
+.cfill.fram-bar{background:#a8741f;}
+.cfill.sold-bar{background:#7d2e3a;}
+.cfill.wish-bar{background:#4f7a3a;}
+.cfill.coa-bar{background:#6e4a86;}
+.cfill.aw{background:#2f4a6d;}
 .ccount{font-family:var(--mo);font-size:10px;width:18px;text-align:right;}
+/* Brushed-metal buttons: satin sheen over each button's own color + 45deg shadow */
+.btn,.mtl,.lbtn,.pk,.ubar button,#IB button,.vt button{position:relative;z-index:0;isolation:isolate;overflow:hidden;border:1px solid rgba(0,0,0,.28);text-shadow:0 -1px 0 rgba(0,0,0,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),2px 3px 4px rgba(29,27,22,.32);transition:transform .08s,box-shadow .08s,filter .12s;}
+.btn::before,.mtl::before,.lbtn::before,.pk::before,.ubar button::before,#IB button::before,.vt button::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.42) 0%,rgba(255,255,255,.12) 47%,rgba(0,0,0,.10) 53%,rgba(255,255,255,.08) 100%);}
+.btn:hover,.mtl:hover,.lbtn:hover,.pk:hover,.ubar button:hover,#IB button:hover,.vt button:hover{filter:brightness(1.07);}
+.btn:active,.mtl:active,.lbtn:active,.pk:active,.ubar button:active,#IB button:active,.vt button:active{transform:translate(1px,2px);box-shadow:inset 0 2px 4px rgba(0,0,0,.35);}
+.bg,.bd{text-shadow:0 1px 0 rgba(255,255,255,.6);}
+.bg{background:#efe7d6;border-color:#cfc5ae;}
+.vt{overflow:visible;gap:3px;border:none;}
+@media print{.btn,.mtl{box-shadow:none!important;}.btn::before,.mtl::before{display:none!important;}}
 @keyframes sup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 </style>
 </head>
@@ -398,9 +407,9 @@ body.app-locked .shell * { pointer-events: none !important; }
     <div class="mhd"><h3>ASSET ACTION</h3><button class="mcls" onclick="closeM('mConfirm')">✕</button></div>
     <div class="mbd">
       <div style="display:flex;flex-direction:column;gap:8px;">
-        <button class="btn" style="background:#c0392b;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmSell()">&#x1F4B0; Mark as Sold</button>
-        <button class="btn" style="background:#2e6da4;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmConsign()">&#x1F4E6; Move to Consignment</button>
-        <button class="btn" style="background:#5aaccf;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmFraming()">&#x1F58C; Send to Framing/Restoration</button>
+        <button class="btn" style="background:#7d2e3a;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmSell()">&#x1F4B0; Mark as Sold</button>
+        <button class="btn" style="background:#2f7a74;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmConsign()">&#x1F4E6; Move to Consignment</button>
+        <button class="btn" style="background:#a8741f;color:#fff;padding:10px;font-size:13px;border-radius:6px;" onclick="confirmFraming()">&#x1F58C; Send to Framing/Restoration</button>
       </div>
       <p style="font-size:11px;color:var(--mu);margin-top:10px;">Sold assets move to Sold Assets list. Deleted can be undone for 10 seconds.</p>
     </div>
@@ -889,9 +898,9 @@ function calcPlace(){
   var keys=G("CALCkeys");
   if(keys){
     keys.innerHTML=CALC_KEYS.map(function(k){
-      var bg=k[1]==="eq"?"var(--ac)":k[1]==="op"?"#e6a817":k[1]==="fn"?"var(--s2)":"var(--s2)";
-      var col=k[1]==="eq"?"#fff":k[1]==="op"?"#000":"var(--tx)";
-      return'<button type="button" onclick="calcPress(this.getAttribute(\'data-k\'))" data-k="'+k[0]+'" style="padding:11px 0;font-size:16px;font-family:var(--mo);border:1px solid var(--b);border-radius:8px;cursor:pointer;background:'+bg+';color:'+col+';">'+k[0]+'</button>';
+      var bg=k[1]==="eq"?"var(--ac)":k[1]==="op"?"#a8741f":k[1]==="fn"?"var(--s2)":"var(--s2)";
+      var col=k[1]==="eq"?"#fff":k[1]==="op"?"#fff":"var(--tx)";
+      return'<button type="button" class="mtl" onclick="calcPress(this.getAttribute(\'data-k\'))" data-k="'+k[0]+'" style="padding:11px 0;font-size:16px;font-family:var(--mo);border:1px solid var(--b);border-radius:8px;cursor:pointer;background:'+bg+';color:'+col+';">'+k[0]+'</button>';
     }).join("");
   }
   var hd=G("CALChd"),box=G("CALC"),drag=null;
@@ -1150,8 +1159,8 @@ function doFilter(keepScroll){
 function toggleMarkedFilter(){markedOnly=!markedOnly;_syncMarkBtn();doFilter();}
 function _syncMarkBtn(){var bMk=G("bMarked");if(bMk){bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}}
 // Mark (star) - works for items in ANY of the six lists; the flag lives on the item so it moves with it
-function markStar(a){var m=!!a.marked;return '<span class="no-print mstar" style="cursor:pointer;font-size:13px;line-height:1;color:'+(m?"#e6a817":"#bbb")+';flex-shrink:0;" onclick="event.stopPropagation();toggleMark(\''+esc(a.id)+'\')" title="'+(m?"Unmark":"Mark")+'">'+(m?"★":"☆")+'</span>';}
-function markRowAttr(a){return a.marked?' style="background:rgba(230,168,23,.12);"':'';}
+function markStar(a){var m=!!a.marked;return '<span class="no-print mstar" style="cursor:pointer;font-size:13px;line-height:1;color:'+(m?"#c8961e":"#bbb")+';flex-shrink:0;" onclick="event.stopPropagation();toggleMark(\''+esc(a.id)+'\')" title="'+(m?"Unmark":"Mark")+'">'+(m?"★":"☆")+'</span>';}
+function markRowAttr(a){return a.marked?' style="background:rgba(200,150,30,.14);"':'';}
 function toggleMark(id){
   const a=_findAsset(id);
   if(!a)return;
@@ -1248,7 +1257,7 @@ function rConsign(){
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'consign\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
     h+='<td class="no-print"><div class="tdin"><div class="racts">';
-    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="consign" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6dcc6;color:#1d1b16;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="consign" title="Actions">&#x2699; Actions</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="consign" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
@@ -1315,7 +1324,7 @@ function rFraming(){
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'framing\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
     h+='<td class="no-print"><div class="tdin"><div class="racts">';
-    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="framing" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6dcc6;color:#1d1b16;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="framing" title="Actions">&#x2699; Actions</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="framing" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
@@ -1487,8 +1496,8 @@ function rCOA(){
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'coa\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
     h+='<td class="no-print"><div class="tdin"><div class="racts">';
-    h+='<button class="btn" style="font-size:10px;background:#2e7d52;color:#fff;font-weight:600;" onclick="addCOAToWish(this.getAttribute(\'data-id\'))" data-id="'+esc(a.id)+'" title="Add to Wish List">&#x2B50;</button>';
-    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="coa" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn" style="font-size:10px;background:#4f7a3a;color:#fff;font-weight:600;" onclick="addCOAToWish(this.getAttribute(\'data-id\'))" data-id="'+esc(a.id)+'" title="Add to Wish List">&#x2B50;</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6dcc6;color:#1d1b16;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="coa" title="Actions">&#x2699; Actions</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="coa" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
@@ -1588,7 +1597,7 @@ function rSold(){
       h+='<td class="ed '+(isML?"col-wrap":"col-short")+'" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'sold\')"><div class="tdin"><span style="display:block;overflow:hidden;text-overflow:'+(isML?"clip":"ellipsis")+';white-space:'+(isML?"normal;word-break:break-word":"nowrap")+';">'+esc(v)+'</span></div></td>';
     });
     h+='<td><div class="tdin"><div class="racts">';
-    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="sold" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6dcc6;color:#1d1b16;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="sold" title="Actions">&#x2699; Actions</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="sold" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
@@ -1712,12 +1721,12 @@ function rDash(){
   var grandVal=inPossessionVal+soldFaceVal;
   h+='<div style="font-size:10px;color:var(--mu);font-family:var(--mo);padding:0 2px 8px;white-space:nowrap;overflow-x:auto;">Total tracked: <b>'+grandTotal+'</b> assets &nbsp;\u00b7&nbsp; face value: <b>$'+grandVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></div>';
   h+='<div class="sc" style="grid-column:span 2;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl">In Possession <span style="font-size:10px;color:var(--mu);">(inv+con+framing)</span></div><div class="sv" style="font-size:13px;">'+inPossession+' items</div></div><div class="sv ac" style="font-size:16px;">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div></div>';
-  h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'table\')" title="Inventory"><div class="sl" style="color:#1a3a6b">Inventory ('+total+')</div><div class="sv" style="color:#1a3a6b">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(val)+'</div></div>';
-  h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'consign\')" title="Consignment"><div class="sl" style="color:#2e6da4">Consignment ('+conTotal+')</div><div class="sv" style="color:#2e6da4">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(conVal)+'</div></div>';
-  h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'framing\')" title="Framing"><div class="sl" style="color:#5aaccf">Framing ('+framTotal+')</div><div class="sv" style="color:#5aaccf">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(framVal)+'</div></div>';
-  h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'wish\')" title="Wish List"><div class="sl" style="color:#2e7d52">Wish List ('+wishTotal+')</div><div class="sv" style="color:#2e7d52">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'sold\')" title="Ratios = sale amount \u00f7 face value of the sold items that have a price"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><div class="sl" style="color:#c0392b">Sold ('+soldTotal+')</div><div class="sv" style="color:#8a5a2e;opacity:.65;font-size:11px;">$'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</div></div><div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;"><span class="sv" style="color:#c0392b;font-size:13px;">'+SOLD_NET_LBL+' $'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span style="font-size:11px;opacity:.85;">\u00b7 '+soldRatio+'</span></span><span class="sv" style="color:#8a5a2e;font-size:13px;">'+SOLD_GROSS_LBL+' $'+soldGrossVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span style="font-size:11px;opacity:.85;">\u00b7 '+soldGrossRatio+'</span></span></div></div></div>';
-  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'coa\')" title="Private COAs"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl" style="color:#b06800">Private COAs <span style="font-size:10px;color:var(--mu);">(not owned \u2014 COA)</span></div><div class="sv" style="font-size:13px;color:#b06800;">'+coaTotal+' pieces</div></div><div class="sv" style="color:#b06800;font-size:14px;">'+coaIssuedN+' COA issued</div></div></div>';
+  h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'table\')" title="Inventory"><div class="sl" style="color:#2f4a6d">Inventory ('+total+')</div><div class="sv" style="color:#2f4a6d">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(val)+'</div></div>';
+  h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'consign\')" title="Consignment"><div class="sl" style="color:#2f7a74">Consignment ('+conTotal+')</div><div class="sv" style="color:#2f7a74">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(conVal)+'</div></div>';
+  h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'framing\')" title="Framing"><div class="sl" style="color:#a8741f">Framing ('+framTotal+')</div><div class="sv" style="color:#a8741f">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(framVal)+'</div></div>';
+  h+='<div class="sc" style="cursor:pointer;" onclick="goTo(\'wish\')" title="Wish List"><div class="sl" style="color:#4f7a3a">Wish List ('+wishTotal+')</div><div class="sv" style="color:#4f7a3a">$'+wishValD.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'sold\')" title="Ratios = sale amount \u00f7 face value of the sold items that have a price"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><div><div class="sl" style="color:#7d2e3a">Sold ('+soldTotal+')</div><div class="sv" style="color:#7d2e3a;opacity:.65;font-size:11px;">$'+soldFaceVal.toLocaleString(undefined,{maximumFractionDigits:0})+' face</div></div><div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;"><span class="sv" style="color:#7d2e3a;font-size:13px;">'+SOLD_NET_LBL+' $'+soldVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span style="font-size:11px;opacity:.85;">\u00b7 '+soldRatio+'</span></span><span class="sv" style="color:#7d2e3a;font-size:13px;">'+SOLD_GROSS_LBL+' $'+soldGrossVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span style="font-size:11px;opacity:.85;">\u00b7 '+soldGrossRatio+'</span></span></div></div></div>';
+  h+='<div class="sc" style="grid-column:span 2;cursor:pointer;" onclick="goTo(\'coa\')" title="Private COAs"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl" style="color:#6e4a86">Private COAs <span style="font-size:10px;color:var(--mu);">(not owned \u2014 COA)</span></div><div class="sv" style="font-size:13px;color:#6e4a86;">'+coaTotal+' pieces</div></div><div class="sv" style="color:#6e4a86;font-size:14px;">'+coaIssuedN+' COA issued</div></div></div>';
   h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;margin-bottom:11px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Assets by Category</div><div class="cbar">';
   // All lists - inventory, consignment, sold, etc.
@@ -1741,9 +1750,9 @@ function rDash(){
   if(invRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:4px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Inventory</div>'+invRows;
   if(conRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Consignment</div>'+conRows;
   if(framRows)h+='<div style="font-size:9px;font-family:var(--mo);color:var(--mu);margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Framing</div>'+framRows;
-  if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#7a5c2e;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
-  if(wishRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#2e7d52;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Wish List</div>'+wishRows;
-  if(coaRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#b06800;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Private COAs</div>'+coaRows;
+  if(soldRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#7d2e3a;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Sold</div>'+soldRows;
+  if(wishRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#4f7a3a;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Wish List</div>'+wishRows;
+  if(coaRows)h+='<div style="font-size:9px;font-family:var(--mo);color:#6e4a86;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.08em;">Private COAs</div>'+coaRows;
   h+='</div></div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:13px;">';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px;font-weight:600;">Recent Assets</div>';
   window._detailList=assets.map(function(a){return a.id;});
@@ -1783,7 +1792,7 @@ function rList(){
   // Group by list (Inventory → Consignment → Framing → Sold → Wish → Private COAs), matching dashboard/sidebar order.
   // Within each group, apply the selected secondary sort (name/category/value).
   var GROUP_ORDER={inventory:0,consign:1,framing:2,sold:3,wish:4,coa:5};
-  var GROUP_HEX={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52",coa:"#b06800"};
+  var GROUP_HEX={inventory:"#2f4a6d",consign:"#2f7a74",framing:"#a8741f",sold:"#7d2e3a",wish:"#4f7a3a",coa:"#6e4a86"};
   var GROUP_NAMES={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private COAs"};
   function _hexA(hex,a){var h=hex.replace('#','');var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return 'rgba('+r+','+g+','+b+','+a+')';}
   allItems.sort(function(a,b){
@@ -1813,12 +1822,12 @@ function rList(){
   h+='<div style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 0 8px;font-size:11px;font-family:var(--mo);">';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Total: <b>'+_totN+'</b></span>';
   h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Possession: <b>'+_posN+'</b> · <b>$'+_posV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#1a3a6b;">Inv: <b>'+_inv+'</b> · <b>$'+_invV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#2e6da4;">Con: <b>'+_con+'</b> · <b>$'+_conV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#5aaccf;">Fram: <b>'+_fram+'</b> · <b>$'+_framV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#c0392b;">Sold: <b>'+_sol+'</b> · <b>$'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#2e7d52;">Wish: <b>'+_wsh+'</b> · <b>$'+_wshV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#b06800;">Private COAs: <b>'+_cn+'</b> <span style="opacity:.7;">(not owned)</span></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#2f4a6d;">Inv: <b>'+_inv+'</b> · <b>$'+_invV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#2f7a74;">Con: <b>'+_con+'</b> · <b>$'+_conV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#a8741f;">Fram: <b>'+_fram+'</b> · <b>$'+_framV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#7d2e3a;">Sold: <b>'+_sol+'</b> · <b>$'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#4f7a3a;">Wish: <b>'+_wsh+'</b> · <b>$'+_wshV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
+  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:#6e4a86;">Private COAs: <b>'+_cn+'</b> <span style="opacity:.7;">(not owned)</span></span>';
   h+='</div>';
   if(listMode==="tbl"){
   h+='<div class="scrollbox" style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
@@ -1960,7 +1969,7 @@ function rTable(){
       if(isUrl)h+='<span style="cursor:pointer;opacity:.4;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();showLink(\''+a.id+'\',\''+key+'\')" title="Link">🔗</span>';
       h+='</div></td>';
     });
-    h+='<td class="no-print" style="height:'+rowH+'px;"><div class="tdin"><div class="racts"><button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="inventory" title="Actions">&#x2699; Actions</button><button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="inventory" title="Delete">&#x1F5D1;</button></div></div></td>';
+    h+='<td class="no-print" style="height:'+rowH+'px;"><div class="tdin"><div class="racts"><button class="btn" style="font-size:10px;background:#e6dcc6;color:#1d1b16;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="inventory" title="Actions">&#x2699; Actions</button><button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="inventory" title="Delete">&#x1F5D1;</button></div></div></td>';
     h+='</tr>';
   });
   h+='</tbody></table></div>';
@@ -2027,7 +2036,7 @@ function rWish(){
       h+='<td class="ed" data-id="'+esc(a.id)+'" data-k="'+key+'" onclick="startEditInList(this,\''+esc(a.id)+'\',\''+key+'\',\'wish\')"><div class="tdin" style="height:'+rowH+'px;'+(isML?'align-items:flex-start;padding-top:3px;':'')+'"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:'+(isML?'normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical':'nowrap')+';">'+disp+'</span></div></td>';
     });
     h+='<td class="no-print"><div class="tdin"><div class="racts">';
-    h+='<button class="btn" style="font-size:10px;background:#e6a817;color:#000;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="wish" title="Actions">&#x2699; Actions</button>';
+    h+='<button class="btn" style="font-size:10px;background:#e6dcc6;color:#1d1b16;font-weight:600;" onclick="doListAction(this)" data-id="'+esc(a.id)+'" data-list="wish" title="Actions">&#x2699; Actions</button>';
     h+='<button class="btn bd" style="font-size:10px;" onclick="safeDelete(this.getAttribute(\'data-list\'),this)" data-id="'+esc(a.id)+'" data-list="wish" title="Delete">&#x1F5D1;</button>';
     h+='</div></div></td></tr>';
   });
@@ -2098,12 +2107,12 @@ function startEdit(td,aid,key){
     inp.onchange=function(){commitCell(aid,key,inp.value,old);};
   }else if(fd.t==="ta"){
     inp=document.createElement("textarea");
-    inp.style.cssText="width:100%;border:none;outline:none;background:#fffef5;color:#18180f;-webkit-text-fill-color:#18180f;font-size:12px;font-family:var(--sa);resize:none;min-height:52px;";
+    inp.style.cssText="width:100%;border:none;outline:none;background:#fffef5;color:#1d1b16;-webkit-text-fill-color:#1d1b16;font-size:12px;font-family:var(--sa);resize:none;min-height:52px;";
     inp.value=val;
   }else{
     inp=document.createElement("input");
     inp.type=fd.t==="date"?"date":fd.t==="num"?"number":"text";
-    inp.style.cssText="width:100%;border:none;outline:1px solid var(--ac);outline-offset:-1px;background:#fffef5;color:#18180f;-webkit-text-fill-color:#18180f;font-size:12px;font-family:var(--sa);border-radius:2px;padding:1px 3px;";
+    inp.style.cssText="width:100%;border:none;outline:1px solid var(--ac);outline-offset:-1px;background:#fffef5;color:#1d1b16;-webkit-text-fill-color:#1d1b16;font-size:12px;font-family:var(--sa);border-radius:2px;padding:1px 3px;";
     inp.value=val;
     if(key==="name")inp.oninput=function(){inp.value=inp.value.toUpperCase();};
     if(["artist","location","assignedTo","manufacturer","department","appraiser"].includes(key)){
@@ -2344,7 +2353,7 @@ function rForm(){
   h+='<h2 style="font-family:var(--mo);font-size:13px;letter-spacing:.06em;">'+(editId?("EDITING: "+editId+' <button type="button" class="btn bg" style="font-size:10px;padding:2px 8px;margin-left:6px;" onclick="changeAssetId(\''+editId+'\')">✏ Change ID</button>'):'NEW ASSET')+'</h2>';
   if(editId){
     var _listLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private COAs"};
-    var _listColors={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52",coa:"#b06800"};
+    var _listColors={inventory:"#2f4a6d",consign:"#2f7a74",framing:"#a8741f",sold:"#7d2e3a",wish:"#4f7a3a",coa:"#6e4a86"};
     var _lbl=_listLabels[editMode]||editMode;
     var _clr=_listColors[editMode]||"#888";
     h+='<div style="display:inline-flex;align-items:center;gap:6px;background:'+_clr+';color:#fff;font-size:11px;font-family:var(--mo);padding:3px 10px;border-radius:12px;margin-bottom:8px;">&#x1F4CC; Currently in: '+_lbl+'</div>';
@@ -2368,7 +2377,7 @@ function rForm(){
   h+='<div class="fs"><div class="fsh">Default Photo <span style="font-size:10px;color:var(--mu);font-weight:400;">(used on stickers &amp; the public page)</span></div><div style="display:flex;gap:18px;padding:3px 2px 2px;font-size:12px;"><label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="defph" value="1" '+(a.pubPhoto!=="2"?"checked":"")+'/> Photo 1</label><label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="defph" value="2" '+(a.pubPhoto==="2"?"checked":"")+'/> Photo 2</label></div></div>';
   h+='<form id="aForm"><input type="hidden" name="photo" id="pdata" value="'+(a.photo||"")+'"/><input type="hidden" name="photo2" id="pdata2" value="'+(a.photo2||"")+'"/>';
   sOrd.forEach(function(sec){
-    h+='<div class="fs"><div class="fsh">'+sec+(sec==="Artwork"?'<span class="ab">Artwork Only</span>':"")+(sec==="Authentication"?'<span class="ab" style="background:#b06800;">Private COAs Only</span>':"")+'</div><div class="fg">';
+    h+='<div class="fs"><div class="fsh">'+sec+(sec==="Artwork"?'<span class="ab">Artwork Only</span>':"")+(sec==="Authentication"?'<span class="ab" style="background:#6e4a86;">Private COAs Only</span>':"")+'</div><div class="fg">';
     sMap[sec].forEach(function(fd){h+=bldField(fd);});
     h+='</div></div>';
   });
@@ -2715,15 +2724,15 @@ function rDetail(){
   h+='<div style="flex:1;"></div>';
   h+='<button class="btn bg" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Label</button>';
   h+='<button class="btn bs" style="font-size:11px;" onclick="editAsset(\''+a.id+'\')">✏ Edit</button>';
-  if(_detailSrc==='inventory'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="confirmId=\''+a.id+'\';G(\'mConfirm\').style.display=\'flex\'">💰 Sell/Move</button>';}
-  h+='<button class="btn" style="font-size:11px;'+(a.marked?"background:#e6a817;color:#000;":"background:none;border:1px solid var(--b);")+'" onclick="toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★ Marked":"☆ Mark")+'</button>';
-  if(_detailSrc==='wish'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="buyWishAsset(\''+a.id+'\')">💰 Buy \u2192 Inventory</button>';}
-  if(_detailSrc==='framing'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreFramingToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
-  if(_detailSrc==='consign'){h+='<button class="btn" style="font-size:11px;background:#4a6b8a;color:#fff;" onclick="restoreConsignToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
-  if(_detailSrc==='coa'){h+='<button class="btn" style="font-size:11px;background:#2e7d52;color:#fff;" onclick="addCOAToWish(\''+a.id+'\')">\u2B50 Add to Wish List</button>';}
+  if(_detailSrc==='inventory'){h+='<button class="btn" style="font-size:11px;background:var(--ac);color:#fff;" onclick="confirmId=\''+a.id+'\';G(\'mConfirm\').style.display=\'flex\'">💰 Sell/Move</button>';}
+  h+='<button class="btn" style="font-size:11px;'+(a.marked?"background:#c8961e;color:#000;":"background:none;border:1px solid var(--b);")+'" onclick="toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★ Marked":"☆ Mark")+'</button>';
+  if(_detailSrc==='wish'){h+='<button class="btn" style="font-size:11px;background:#4f7a3a;color:#fff;" onclick="buyWishAsset(\''+a.id+'\')">💰 Buy \u2192 Inventory</button>';}
+  if(_detailSrc==='framing'){h+='<button class="btn" style="font-size:11px;background:#2f4a6d;color:#fff;" onclick="restoreFramingToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
+  if(_detailSrc==='consign'){h+='<button class="btn" style="font-size:11px;background:#2f4a6d;color:#fff;" onclick="restoreConsignToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
+  if(_detailSrc==='coa'){h+='<button class="btn" style="font-size:11px;background:#4f7a3a;color:#fff;" onclick="addCOAToWish(\''+a.id+'\')">\u2B50 Add to Wish List</button>';}
   h+='<button class="btn bd" style="font-size:11px;" onclick="confirmId=\''+a.id+'\';safeDelete(\''+_detailSrc+'\')">🗑</button></div>';
   var _srcLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private COAs"};
-  var _srcColors={inventory:"#1a3a6b",consign:"#2e6da4",framing:"#5aaccf",sold:"#c0392b",wish:"#2e7d52",coa:"#b06800"};
+  var _srcColors={inventory:"#2f4a6d",consign:"#2f7a74",framing:"#a8741f",sold:"#7d2e3a",wish:"#4f7a3a",coa:"#6e4a86"};
   h+='<div style="display:inline-flex;align-items:center;gap:6px;background:'+_srcColors[_detailSrc]+';color:#fff;font-size:11px;font-family:var(--mo);padding:4px 12px;border-radius:12px;margin-bottom:8px;">&#x1F4CC; Currently in: '+_srcLabels[_detailSrc]+(_detailSrc==='coa'?' <span style="opacity:.8;">(not owned)</span>':'')+'</div>';
   h+='<div class="dh'+(art?" art":"")+'">';
   var _xp=a.photo||_photoCache[a.id]||'';
@@ -2739,7 +2748,7 @@ function rDetail(){
   if(art&&a.artist)h+='<div style="font-size:12px;color:var(--ar);margin-bottom:4px;">🖌 '+esc(a.artist)+(a.yearCreated?" · "+a.yearCreated:"")+'</div>';
   h+='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;">';
   h+='<span class="tag tcat'+(art?" art":"")+'">'+esc(a.category)+'</span>';
-  if(a.medium)h+='<span class="tag" style="background:#ede7f6;color:var(--ar);">'+esc(a.medium)+'</span>';
+  if(a.medium)h+='<span class="tag" style="background:#f3e3df;color:var(--ar);">'+esc(a.medium)+'</span>';
   if(a.condition)h+='<span class="tag tcond '+a.condition+'">'+a.condition+'</span>';
   if(_detailSrc==='coa'&&a.coaIssued==='Yes')h+='<span class="tag" style="background:#e8f5e9;color:#2e6b3a;">COA Issued</span>';
   h+='</div>';
@@ -2758,7 +2767,7 @@ function rDetail(){
     var rows=sMap[sec].map(function(fd){var v=fv(fd,fd.k==="__marked"?"★ Yes":a[fd.k]);return v?'<div class="df"><span class="dl">'+fd.lbl+'</span><span class="dv">'+v+'</span></div>':"";}).join("");
     var extra=sec==="Financial"&&dep?'<div class="df"><span class="dl">Annual Depreciation</span><span class="dv">$'+dep+'</span></div>':"";
     if(!rows&&!extra)return;
-    h+='<div class="ds"'+(sec==="Artwork"?' style="border-top:2px solid var(--ar);"':sec==="Authentication"?' style="border-top:2px solid #b06800;"':"")+"><h3>"+sec+(sec==="Artwork"?" 🖼":sec==="Authentication"?" 📜":"")+"</h3>"+rows+extra+"</div>";
+    h+='<div class="ds"'+(sec==="Artwork"?' style="border-top:2px solid var(--ar);"':sec==="Authentication"?' style="border-top:2px solid #6e4a86;"':"")+"><h3>"+sec+(sec==="Artwork"?" 🖼":sec==="Authentication"?" 📜":"")+"</h3>"+rows+extra+"</div>";
   });
   h+='</div></div>';
   return h;
@@ -2778,7 +2787,7 @@ function rSettings(){
     h+='<div class="foi'+(hidden?" dim":"")+'" draggable="true" ondragstart="fdDragIdx='+idx+'" ondragover="event.preventDefault()" ondrop="fdDrop('+idx+')" ondragend="fdDragIdx=null" style="opacity:'+(hidden?.44:1)+'">';
     h+='<span class="dhic">⠿</span>';
     h+='<div style="flex:1;"><div class="filbl" style="text-decoration:'+(hidden?"line-through":"none")+';color:'+(hidden?"var(--mu)":"var(--tx)")+';">'+esc(fd.lbl)+'</div><div class="fisec">'+fd.sec+'</div></div>';
-    h+='<div style="display:flex;gap:4px;align-items:center;">'+(fd.artOnly?'<span class="fibdg aw">Artwork</span>':"")+(fd.coaOnly?'<span class="fibdg aw" style="background:#fdf0da;color:#b06800;">Private Coll.</span>':"")+(fd.always?'<span class="fibdg rq">Required</span>':"")+'</div>';
+    h+='<div style="display:flex;gap:4px;align-items:center;">'+(fd.artOnly?'<span class="fibdg aw">Artwork</span>':"")+(fd.coaOnly?'<span class="fibdg aw" style="background:#efe6f3;color:#6e4a86;">Private Coll.</span>':"")+(fd.always?'<span class="fibdg rq">Required</span>':"")+'</div>';
     h+='<div style="display:flex;gap:2px;"><button style="background:none;border:1px solid var(--b);border-radius:3px;width:20px;height:20px;cursor:pointer;font-size:10px;color:var(--mu);" onclick="nudgeF('+idx+',-1)">▲</button>';
     h+='<button style="background:none;border:1px solid var(--b);border-radius:3px;width:20px;height:20px;cursor:pointer;font-size:10px;color:var(--mu);" onclick="nudgeF('+idx+',1)">▼</button></div>';
     h+='<label class="tog"><input type="checkbox" '+(hidden?"":"checked")+(fd.always?" disabled":"")+' onchange="togFV(\''+key+'\',this.checked)"/><span class="tsl"></span></label></div>';
@@ -2815,7 +2824,7 @@ function rCols(){
   defFds.forEach(function(fd){
     var vis=cols.includes(fd.k);
     h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--b);font-size:12px;">';
-    h+='<span style="flex:1;">'+esc(fd.lbl)+(fd.artOnly?'<span class="fibdg aw" style="margin-left:5px;">Artwork</span>':"")+(fd.coaOnly?'<span class="fibdg aw" style="margin-left:5px;background:#fdf0da;color:#b06800;">Private Coll.</span>':"")+'</span>';
+    h+='<span style="flex:1;">'+esc(fd.lbl)+(fd.artOnly?'<span class="fibdg aw" style="margin-left:5px;">Artwork</span>':"")+(fd.coaOnly?'<span class="fibdg aw" style="margin-left:5px;background:#efe6f3;color:#6e4a86;">Private Coll.</span>':"")+'</span>';
     h+='<span style="font-size:10px;color:var(--mu);font-family:var(--mo);width:76px;">'+esc(fd.sec||"")+'</span>';
     h+='<label class="tog"><input type="checkbox" '+(vis?"checked":"")+' onchange="togListCol(\''+listName+'\',\''+fd.k+'\',this.checked)"/><span class="tsl"></span></label></div>';
   });
@@ -2928,8 +2937,8 @@ function changePIN(){
 // Import/Export
 function rIO(){
   var h='<div style="max-width:540px;margin:0 auto;">';
-  h+='<div style="background:#18180f;border-radius:var(--r);padding:16px;margin-bottom:11px;border:2px solid var(--ac);">';
-  h+='<div style="font-family:var(--mo);font-size:11px;color:#e6e1d6;margin-bottom:5px;font-weight:600;">💾 SAVE ALL DATA</div>';
+  h+='<div style="background:#1d1b16;border-radius:var(--r);padding:16px;margin-bottom:11px;border:2px solid var(--ac);">';
+  h+='<div style="font-family:var(--mo);font-size:11px;color:#ece7d9;margin-bottom:5px;font-weight:600;">💾 SAVE ALL DATA</div>';
   h+='<div style="font-size:13px;color:#aaa;margin-bottom:11px;line-height:1.6;">Data auto-saves when you switch away. Tap to force-save now.</div>';
   h+='<button class="btn bok" style="width:100%;font-size:13px;padding:10px;" onclick="saveAll();toast(\'All data saved\')">💾 Save Now</button></div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
@@ -3302,8 +3311,8 @@ function printQRSheet(items,title){
    +'.lb{width:52.5mm;height:26.5mm;display:flex;flex-direction:column;align-items:center;outline:.1mm solid #ccc;outline-offset:-.1mm;overflow:hidden;}'
    +'.q{width:20mm;height:20mm;margin-top:.4mm;}.q svg{width:100%;height:100%;display:block;}'
    +'.idt{font-size:11pt;font-weight:900;line-height:5.6mm;height:5.6mm;color:#000;white-space:nowrap;letter-spacing:.2mm;}'
-   +'.hint{position:fixed;top:0;left:0;right:0;background:#1a1a18;color:#e6e1d6;padding:10px;font-family:monospace;font-size:12px;text-align:center;z-index:9;}'
-   +'.hint button{background:#bf3a2b;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:13px;}'
+   +'.hint{position:fixed;top:0;left:0;right:0;background:#1a1a18;color:#ece7d9;padding:10px;font-family:monospace;font-size:12px;text-align:center;z-index:9;}'
+   +'.hint button{background:#9a3b2c;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:13px;}'
    +'@media screen{body{margin-top:44px;}.pg{border-bottom:1px dashed #999;}}'
    +'@media print{.hint{display:none!important;}}'
    +'</style></head><body>'
@@ -3431,8 +3440,8 @@ var STICKER_CSS='*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portr
   +'.tx{flex:1;min-width:0;overflow:hidden;}'
   +'.nm{font-size:7pt;font-weight:bold;line-height:1.15;margin-bottom:.6mm;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;}'
   +'.ln{font-size:5.8pt;line-height:1.2;color:#222;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;margin-top:.3mm;}'
-  +'.hint{position:fixed;top:0;left:0;right:0;background:#1a1a18;color:#e6e1d6;padding:10px;font-family:monospace;font-size:12px;text-align:center;z-index:9;}'
-  +'.hint button{background:#bf3a2b;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:13px;}'
+  +'.hint{position:fixed;top:0;left:0;right:0;background:#1a1a18;color:#ece7d9;padding:10px;font-family:monospace;font-size:12px;text-align:center;z-index:9;}'
+  +'.hint button{background:#9a3b2c;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:13px;}'
   +'@media screen{body{margin-top:44px;}}@media print{.hint{display:none!important;}}';
 function _openStickerWindow(arr,title,single){
   if(!arr||!arr.length){toast("No assets to print","e");return;}
@@ -3505,12 +3514,12 @@ function printAllLists(){
       +'<table><thead><tr><th>ID</th>'+hdr+'</tr></thead><tbody>'+makeRows(arr,colList)+'</tbody></table>';
   }
   var w=window.open("","_blank");
-  var content=makeTable(assets,"Inventory","#333",invCols)
-    +makeTable(consignAssets,"Consignment","#4a6b8a",consignCols)
-    +makeTable(framingAssets,"Framing / Restoration","#8a6a2e",framingCols)
-    +makeTable(soldAssets,"Sold","#8a5a2e",soldCols)
-    +makeTable(wishAssets,"Wish List","#2e7d52",wishCols)
-    +makeTable(coaAssets,"Private COAs (not owned \u2014 COA)","#b06800",coaCols);
+  var content=makeTable(assets,"Inventory","#2f4a6d",invCols)
+    +makeTable(consignAssets,"Consignment","#2f7a74",consignCols)
+    +makeTable(framingAssets,"Framing / Restoration","#a8741f",framingCols)
+    +makeTable(soldAssets,"Sold","#7d2e3a",soldCols)
+    +makeTable(wishAssets,"Wish List","#4f7a3a",wishCols)
+    +makeTable(coaAssets,"Private COAs (not owned \u2014 COA)","#6e4a86",coaCols);
   w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>'
     +'body{font-family:Arial,sans-serif;font-size:9pt;padding:10px;}'
     +'table{width:100%;border-collapse:collapse;margin-bottom:20px;}'
@@ -3607,12 +3616,12 @@ function startEditInList(td,aid,key,listName){
     inp.onchange=function(){commitFn(aid,key,inp.value,old);};
   }else if(fd.t==="ta"){
     inp=document.createElement("textarea");
-    inp.style.cssText="width:100%;border:none;outline:none;background:#fffef5;color:#18180f;font-size:12px;font-family:var(--sa);resize:none;min-height:52px;";
+    inp.style.cssText="width:100%;border:none;outline:none;background:#fffef5;color:#1d1b16;font-size:12px;font-family:var(--sa);resize:none;min-height:52px;";
     inp.value=val;
   }else{
     inp=document.createElement("input");
     inp.type=fd.t==="date"?"date":fd.t==="num"?"number":"text";
-    inp.style.cssText="width:100%;border:none;outline:1px solid var(--ac);background:#fffef5;color:#18180f;font-size:12px;font-family:var(--sa);padding:1px 3px;";
+    inp.style.cssText="width:100%;border:none;outline:1px solid var(--ac);background:#fffef5;color:#1d1b16;font-size:12px;font-family:var(--sa);padding:1px 3px;";
     inp.value=val;
   }
   var inner=td.querySelector(".tdin");if(inner){inner.innerHTML="";inner.appendChild(inp);}
@@ -3810,29 +3819,29 @@ function showListAction(listType){
   wrap.style.cssText="display:flex;flex-direction:column;gap:8px;";
   if(listType==="inventory"){
     if(title)title.textContent="ASSET ACTIONS";
-    wrap.appendChild(mb("#1a3a6b","&#x270F;","Edit Asset",function(){editAsset(id);}));
+    wrap.appendChild(mb("#2f4a6d","&#x270F;","Edit Asset",function(){editAsset(id);}));
     wrap.appendChild(mb("#888","&#x1F4B0;","Sell / Move / Send...",function(){confirmId=id;document.getElementById("mConfirm").style.display="flex";}));
   } else if(listType==="consign"){
     if(title)title.textContent="CONSIGNMENT ACTIONS";
-    wrap.appendChild(mb("#1a3a6b","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
-    wrap.appendChild(mb("#5aaccf","&#x1F58C;","Send to Framing",function(){moveToFraming(id);}));
-    wrap.appendChild(mb("#c0392b","&#x1F4B0;","Mark as Sold",function(){moveToSold(id);}));
+    wrap.appendChild(mb("#2f4a6d","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
+    wrap.appendChild(mb("#a8741f","&#x1F58C;","Send to Framing",function(){moveToFraming(id);}));
+    wrap.appendChild(mb("#7d2e3a","&#x1F4B0;","Mark as Sold",function(){moveToSold(id);}));
   } else if(listType==="framing"){
     if(title)title.textContent="FRAMING ACTIONS";
-    wrap.appendChild(mb("#1a3a6b","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
-    wrap.appendChild(mb("#2e6da4","&#x1F4E6;","Send to Consignment",function(){moveToConsign(id);}));
-    wrap.appendChild(mb("#c0392b","&#x1F4B0;","Mark as Sold",function(){moveToSold(id);}));
+    wrap.appendChild(mb("#2f4a6d","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
+    wrap.appendChild(mb("#2f7a74","&#x1F4E6;","Send to Consignment",function(){moveToConsign(id);}));
+    wrap.appendChild(mb("#7d2e3a","&#x1F4B0;","Mark as Sold",function(){moveToSold(id);}));
   } else if(listType==="sold"){
     if(title)title.textContent="SOLD ASSET ACTIONS";
-    wrap.appendChild(mb("#1a3a6b","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
+    wrap.appendChild(mb("#2f4a6d","&#x21A9;","Restore to Inventory",function(){restoreToInventory(id);}));
   } else if(listType==="wish"){
     if(title)title.textContent="WISH LIST ACTIONS";
-    wrap.appendChild(mb("#2e7d52","&#x1F4B0;","Buy \u2192 Add to Inventory",function(){buyWishAsset(id);}));
-    wrap.appendChild(mb("#1a3a6b","&#x270F;","Edit",function(){editAsset(id);}));
+    wrap.appendChild(mb("#4f7a3a","&#x1F4B0;","Buy \u2192 Add to Inventory",function(){buyWishAsset(id);}));
+    wrap.appendChild(mb("#2f4a6d","&#x270F;","Edit",function(){editAsset(id);}));
   } else if(listType==="coa"){
     if(title)title.textContent="PRIVATE COLLECTION ACTIONS";
-    wrap.appendChild(mb("#1a3a6b","&#x270F;","Edit",function(){editAsset(id);}));
-    wrap.appendChild(mb("#2e7d52","&#x2B50;","Add to Wish List",function(){addCOAToWish(id);}));
+    wrap.appendChild(mb("#2f4a6d","&#x270F;","Edit",function(){editAsset(id);}));
+    wrap.appendChild(mb("#4f7a3a","&#x2B50;","Add to Wish List",function(){addCOAToWish(id);}));
   }
   body.innerHTML="";
   body.appendChild(wrap);
@@ -3916,7 +3925,7 @@ document.addEventListener("DOMContentLoaded",function(){
 </script>
 <div id="LS">
   <div class="lb">
-    <div style="font-size:38px;margin-bottom:10px;">⬡</div>
+    <div style="font-size:38px;margin-bottom:10px;color:var(--ac);">⬡</div>
     <h1>ASSET CAPITALIZER</h1>
     <p>Secure Asset Management</p>
     <div class="atabs">
