@@ -376,6 +376,9 @@ html[data-theme="dark"] .brand-nm em{background:linear-gradient(180deg,#fbe7a6 0
 .iolast{font-family:var(--mo);font-size:10px;color:var(--mu);line-height:1.35;padding-left:2px;}
 .iob.iofull{display:flex;}
 .iolast.iodark{color:#a49e8e;margin-top:3px;}
+.sbposh{font-size:11px;color:#ece7d9;font-weight:600;letter-spacing:.02em;}
+.sbposi{font-size:12px;color:#c9c2b2;margin-top:3px;padding-left:4px;}
+.sbposi b{color:#e9c873;font-family:var(--mo);}
 @media print{.tbl{border-collapse:collapse!important;border-spacing:0;}.tbl td,.tbl tbody td{background:none!important;box-shadow:none!important;border-radius:0!important;}.topbar,.sb{box-shadow:none!important;}}
 /* dashboard: metal boxes + cylinder category bars */
 .sc3d,.dpanel{background:linear-gradient(180deg,#fffefa 0%,#f3eee3 46%,#e9e2d2 54%,#f7f3eb 100%);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(0,0,0,.08),3px 4px 8px var(--shd-soft);}
@@ -428,9 +431,8 @@ body.app-locked .shell * { pointer-events: none !important; }
       <button class="sblk" onclick="doLogout()">🔒</button>
     </div>
     <div class="sbst">
-      <div><b id="sCnt">0</b> assets · <b id="sVal">$0</b></div>
-      <div style="margin-top:2px;font-size:10px;" id="sEx">0/1000</div>
-      <div class="sbbar"><div class="sbfill" id="sFill" style="width:0%"></div></div>
+      <div class="sbposh">Items in Possession:</div>
+      <div id="sPos"></div>
       <div id="sSave" style="font-size:9px;color:#44432e;margin-top:2px;"></div>
     </div>
     <nav class="sbnav">
@@ -1201,11 +1203,11 @@ function getUserMeds(){return LS.get("acap_user_meds",null)||MEDS;}
 function getUserFramed(){return LS.get("acap_user_framed",null)||["Yes","Old","No","N/A"];}
 function updSidebar(){
   const total=assets.length,val=assets.reduce((s,a)=>s+parseFloat(a.currentValue||0),0);
-  const sc=G("sCnt"),sv=G("sVal"),sx=G("sEx"),sf=G("sFill"),scat=G("sCats");
-  if(sc)sc.textContent=total;
-  if(sv)sv.textContent="$"+val.toLocaleString(undefined,{maximumFractionDigits:0});
-  if(sx)sx.textContent=total+"/1000 · "+assets.filter(a=>isArt(a.category)).length+" artworks";
-  if(sf)sf.style.width=Math.min(total/10,100)+"%";
+  const scat=G("sCats"),spos=G("sPos");
+  // Items in possession (Inventory + Consignment + Framing), per category (session 6, Jim)
+  if(spos){var _pc={};assets.concat(consignAssets,framingAssets).forEach(function(a){var c=a.category||"Other";_pc[c]=(_pc[c]||0)+1;});
+    var _pk=Object.keys(_pc).sort(function(x,y){return _pc[y]-_pc[x]||x.localeCompare(y);});
+    spos.innerHTML=_pk.length?_pk.map(function(c){return '<div class="sbposi">\u2022 '+esc(c)+' = <b>'+_pc[c]+'</b></div>';}).join(""):'<div class="sbposi">\u2022 none</div>';}
   if(scat)scat.innerHTML=CATS.map(c=>{
     const n=assets.filter(a=>a.category===c).length;
     return '<div class="sbcat'+(c==="Artworks"?" art":"")+'" onclick="filterByCat(\''+esc(c)+'\')">'+(c==="Artworks"?"🖼 "+c:c)+'<span style="font-family:var(--mo);font-size:10px;">'+n+'</span></div>';
