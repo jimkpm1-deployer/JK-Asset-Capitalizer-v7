@@ -372,6 +372,10 @@ html[data-theme="dark"] .tbl th{background:linear-gradient(180deg,rgba(255,255,2
 html[data-theme="dark"] .brand-nm em{background:linear-gradient(180deg,#fbe7a6 0%,#dcb15a 55%,#a97a2a 100%);-webkit-background-clip:text;background-clip:text;}
 @media(max-width:680px){.brand-ic{width:26px;height:26px;border-radius:6px;}.brand-nm{font-size:13px;}.brand-nm em{font-size:11.5px;}.brand{padding-right:7px;gap:6px;}}
 @media(max-width:380px){.brand-nm{font-size:12px;}}
+.iob{display:inline-flex;flex-direction:column;align-items:stretch;gap:4px;}
+.iolast{font-family:var(--mo);font-size:10px;color:var(--mu);line-height:1.35;padding-left:2px;}
+.iob.iofull{display:flex;}
+.iolast.iodark{color:#a49e8e;margin-top:3px;}
 @media print{.tbl{border-collapse:collapse!important;border-spacing:0;}.tbl td,.tbl tbody td{background:none!important;box-shadow:none!important;border-radius:0!important;}.topbar,.sb{box-shadow:none!important;}}
 /* dashboard: metal boxes + cylinder category bars */
 .sc3d,.dpanel{background:linear-gradient(180deg,#fffefa 0%,#f3eee3 46%,#e9e2d2 54%,#f7f3eb 100%);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(0,0,0,.08),3px 4px 8px var(--shd-soft);}
@@ -2811,6 +2815,7 @@ async function exportPublicPages(mode){
     await new Promise(function(r){setTimeout(r,900);});
   }
   entries.forEach(function(e){if(e.retire)delete done[e.tok];else done[e.tok]=e.sig;});LS.set("acap_pub_exp_v1",done);
+  _ioStamp(mode==="new"?"pubnew":"puball");
   toast("Exported "+(entries.length-retire.length)+(mode==="new"?" new/changed":"")+" item(s)"+(retire.length?" + "+retire.length+" page(s) to hide":"")+" in "+parts.length+" ZIP file(s)"+(noPhoto?" ("+noPhoto+" without photo)":""),"s",8000);
 }
 // All items' QR codes as one CSV (private file) - to match the "QR code" dimension in Google Analytics
@@ -2825,7 +2830,7 @@ function exportAllQRCodesCSV(){
   });
   var d=new Date(),ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   dl("﻿"+rows.join("\r\n"),"text/csv;charset=utf-8","jk-qr-codes-all-"+ds+".csv");
-  toast("Exported "+all.length+" QR codes to CSV","s",5000);
+  _ioStamp("qrcsv");toast("Exported "+all.length+" QR codes to CSV","s",5000);
 }
 // ===== QR codes (encoder: qrcode-generator, scanner fallback: jsQR) =====
 function qrMatrix(text){
@@ -3117,34 +3122,46 @@ function changePIN(){
 }
 
 // Import/Export
+// Import/Export history: last date & time of each action on this device (session 6)
+var IOLOG_KEY="acap_iolog_v1";
+function _ioFmt(t){
+  if(!t)return '<span style="opacity:.75">Never on this device</span>';
+  var d=new Date(t),now=new Date();
+  var s=d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})+", "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  var d0=new Date(now.getFullYear(),now.getMonth(),now.getDate()),d1=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  var days=Math.round((d0-d1)/864e5),rel=days<=0?"today":days===1?"yesterday":days+" days ago";
+  return s+' <span style="opacity:.75">('+rel+')</span>';
+}
+function _ioStamp(k){var L=LS.get(IOLOG_KEY,{})||{};L[k]=Date.now();LS.set(IOLOG_KEY,L);var el=G("iol-"+k);if(el)el.innerHTML="Last: "+_ioFmt(L[k]);}
+function _ioBtn(btn,k){var L=LS.get(IOLOG_KEY,{})||{};return '<div class="iob">'+btn+'<div class="iolast" id="iol-'+k+'">Last: '+_ioFmt(L[k])+'</div></div>';}
 function rIO(){
   var h='<div style="max-width:540px;margin:0 auto;">';
   h+='<div style="background:#1d1b16;border-radius:var(--r);padding:16px;margin-bottom:11px;border:2px solid var(--ac);">';
   h+='<div style="font-family:var(--mo);font-size:11px;color:#ece7d9;margin-bottom:5px;font-weight:600;">💾 SAVE ALL DATA</div>';
   h+='<div style="font-size:13px;color:#aaa;margin-bottom:11px;line-height:1.6;">Data auto-saves when you switch away. Tap to force-save now.</div>';
-  h+='<button class="btn bok" style="width:100%;font-size:13px;padding:10px;" onclick="saveAll();toast(\'All data saved\')">💾 Save Now</button></div>';
+  h+=_ioBtn('<button class="btn bok" style="width:100%;font-size:13px;padding:10px;" onclick="saveAll();_ioStamp(\'save\');toast(\'All data saved\')">💾 Save Now</button>','save').replace('class="iolast"','class="iolast iodark"').replace('class="iob"','class="iob iofull"')+'</div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:8px;">IMPORT</h3>';
   h+='<div style="display:flex;gap:7px;flex-wrap:wrap;">';
-  h+='<button class="btn bs" onclick="G(\'jsonImp\').click()">📥 Restore JSON</button>';
-  h+='<button class="btn bg" onclick="G(\'csvImp\').click()">📊 Import CSV</button></div>';
+  h+=_ioBtn('<button class="btn bs" onclick="G(\'jsonImp\').click()">📥 Restore JSON</button>','restore');
+  h+=_ioBtn('<button class="btn bg" onclick="G(\'csvImp\').click()">📊 Import CSV</button>','csvimp')+'</div>';
   h+='<input type="file" id="jsonImp" accept=".json" style="display:none" onchange="importJSON(this)"/>';
   h+='<input type="file" id="csvImp" accept=".csv" style="display:none" onchange="importCSV(this)"/></div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">EXPORT</h3>';
   h+='<div style="font-size:13px;color:var(--mu);margin-bottom:11px;">'+(assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length)+' total records ('+assets.length+' inv · '+consignAssets.length+' con · '+framingAssets.length+' fram · '+soldAssets.length+' sold · '+wishAssets.length+' wish · '+coaAssets.length+' priv.coll). JSON includes all lists + photos.</div>';
   h+='<div style="display:flex;gap:7px;flex-wrap:wrap;">';
-  h+='<button class="btn bp" onclick="exportJSON()">💾 JSON Backup</button>';
-  h+='<button class="btn bg" onclick="exportCSV()">📊 Export CSV</button></div></div>';
+  h+=_ioBtn('<button class="btn bp" onclick="exportJSON()">💾 JSON Backup</button>','backup');
+  h+=_ioBtn('<button class="btn bg" onclick="exportCSV()">📊 Export CSV</button>','csv')+'</div></div>';
   var _pc=pubCfg(),_pn=_allItems().filter(isPublicItem).length;
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">\uD83C\uDF10 PUBLIC QR PAGES</h3>';
   h+='<div style="font-size:12px;color:var(--mu);margin-bottom:9px;line-height:1.6;">A visitor who scans a sticker sees the photo and details only if the item is public; otherwise a "currently Private" message. Choose which lists are public (a single item can override this in its detail view).</div>';
   PUB_LISTS.forEach(function(p){h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--b);font-size:12px;"><span style="flex:1;">'+p[1]+'</span><label class="tog"><input type="checkbox" '+(_pc[p[0]]?"checked":"")+' onchange="togPub(\''+p[0]+'\',this.checked)"/><span class="tsl"></span></label></div>';});
   h+='<div style="font-size:12px;margin:9px 0;">Public items now: <b>'+_pn+'</b></div>';
-  h+='<div style="display:flex;gap:7px;flex-wrap:wrap;"><button class="btn bp" onclick="exportPublicPages(\'new\')">\u2B07 Export only new / changed</button><button class="btn bg" onclick="exportPublicPages(\'all\')">\u2B07 Export everything</button></div>';
+  h+='<div style="display:flex;gap:7px;flex-wrap:wrap;">'+_ioBtn('<button class="btn bp" onclick="exportPublicPages(\'new\')">\u2B07 Export only new / changed</button>','pubnew')+_ioBtn('<button class="btn bg" onclick="exportPublicPages(\'all\')">\u2B07 Export everything</button>','puball')+'</div>';
   h+='<div style="font-size:11px;color:var(--mu);margin-top:6px;line-height:1.5;">Large exports are split into several ZIPs of at most 90 files (GitHub accepts 100 per upload). "New / changed" skips items already exported before.</div>';
-  h+='<div style="margin-top:10px;"><button class="btn bs" onclick="exportAllQRCodesCSV()">⬇ All QR codes list (CSV)</button></div>';
+  h+='<div style="margin-top:10px;">'+_ioBtn('<button class="btn bs" onclick="exportAllQRCodesCSV()">⬇ All QR codes list (CSV)</button>','qrcsv')+'</div>';
   h+='<div style="font-size:11px;color:var(--mu);margin-top:6px;line-height:1.5;">One row per item in all six lists (QR code, ID, title, list, Public/Private) to put names on the scans in Google Analytics. Keep this file private and don\'t upload it to GitHub.</div>';
   h+='<div style="font-size:10px;color:var(--mu);margin-top:8px;font-family:var(--mo);word-break:break-all;">QR address: '+esc(PUBLIC_BASE)+'?c=\u2026</div></div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;">';
@@ -3172,6 +3189,7 @@ async function exportJSON(){
   var _listCols2={};Object.keys(LIST_COLS_KEYS).forEach(function(ln){_listCols2[ln]=getListCols(ln);});
   dl(JSON.stringify({assets:withPhotos,soldAssets:withSold,consignAssets:withConsign,framingAssets:withFraming,wishAssets:withWish,coaAssets:withCoa,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,pubLists:pubCfg(),colW:colW,rowH:rowH,listCols:_listCols2,legend:_leg,ps:_ps,consignLegend:_consignLeg,consignPs:_consignPs,soldLegend:_soldLeg,soldPs:_soldPs,framingLegend:_framLeg,framingPs:_framPs,wishLegend:_wishLeg,wishPs:_wishPs,coaLegend:_coaLeg,coaPs:_coaPs},null,2),"application/json","assets_backup.json");
   var _total=assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length;
+  _ioStamp("backup");
   toast("Backup complete: "+assets.length+" inv · "+consignAssets.length+" con · "+framingAssets.length+" fram · "+soldAssets.length+" sold · "+wishAssets.length+" wish · "+coaAssets.length+" priv.coll ("+_total+" total)","s",6000);
 }
 function exportCSV(){
@@ -3182,7 +3200,7 @@ function exportCSV(){
   var footer="";
   if(leg2)footer+="\n\"Legend: "+leg2.replace(/"/g,'')+"\"";
   if(ps2)footer+="\n\"PS: "+ps2.replace(/"/g,'')+"\"";
-  dl(hdr+"\n"+rows.join("\n")+footer,"text/csv","assets.csv");toast("CSV exported");
+  dl(hdr+"\n"+rows.join("\n")+footer,"text/csv","assets.csv");_ioStamp("csv");toast("CSV exported");
 }
 async function importJSON(inp){
   var f=inp.files[0];if(!f)return;toast("Importing…","i",15000);
@@ -3283,7 +3301,7 @@ async function importJSON(inp){
         try{localStorage.setItem("acap_coa_v3",JSON.stringify(slimCoa2));}catch(e){console.warn("coa quota",e);}
       }
       await loadPhotosAndRender();
-      goTo("list");toast("Restored "+assets.length+" assets + "+photosToSave.length+" photos","s",6000);
+      _ioStamp("restore");goTo("list");toast("Restored "+assets.length+" assets + "+photosToSave.length+" photos","s",6000);
     }catch(e){toast("Import failed: "+e.message,"e",8000);}
   };
   r.readAsText(f);inp.value="";
@@ -3300,7 +3318,7 @@ function importCSV(inp){
         var base=CFIELDS.reduce(function(o,fd){o[fd.k]="";return o;},{photo:"",category:"Electronics"});
         return Object.assign(base,obj,{id:obj.id||_nextId(),seq:_nextSeq(),createdAt:obj.createdat||today(),updatedAt:today()});
       });
-      assets=assets.concat(imp);saveAll();goTo("list");toast("Imported "+imp.length+" assets");
+      assets=assets.concat(imp);saveAll();_ioStamp("csvimp");goTo("list");toast("Imported "+imp.length+" assets");
     }catch(e){toast("CSV error: "+e.message,"e");}
   };
   r.readAsText(f);inp.value="";
