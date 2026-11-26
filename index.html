@@ -822,6 +822,13 @@ let coaAssets=(function(){try{var r=localStorage.getItem("acap_coa_v3");if(r){va
 let editMode="inventory"; // "inventory" | "consign" | "framing" | "wish" | "coa"
 let fOrder=LS.get("acap_order_v3",DORDER);
 let hiddenFlds=LS.get("acap_hidden_v3",[]);
+// Per-list Field Order & visibility (session 7, Jim): {inventory:{o:[...],h:[...]},consign:...}. First run copies the old shared setting to every list.
+var FO_LISTS=["inventory","consign","framing","wish","sold","coa"];
+let foL=LS.get("acap_fo_lists_v1",null);
+if(!foL||typeof foL!=="object"){foL={};FO_LISTS.forEach(function(l){foL[l]={o:fOrder.slice(),h:hiddenFlds.slice()};});}
+function _fo(l){l=FO_LISTS.indexOf(l)>=0?l:"inventory";if(!foL[l]||!Array.isArray(foL[l].o))foL[l]={o:(foL.inventory&&foL.inventory.o?foL.inventory.o:DORDER).slice(),h:(foL.inventory&&foL.inventory.h?foL.inventory.h:[]).slice()};return foL[l];}
+function _foNormalize(){FO_LISTS.forEach(function(l){var F=_fo(l);DORDER.forEach(function(k){if(F.o.indexOf(k)<0)F.o.push(k);});F.o=F.o.filter(function(k){return DORDER.includes(k)||customCols.find(function(c){return c.key===k;});});if(!Array.isArray(F.h))F.h=[];});}
+let _foList="inventory";
 let customCols=LS.get("acap_custom_v3",[]);
 // Sold-price columns: soldAt = my net share, soldGross = full price incl. auction/gallery fees & commissions (>= net)
 var SOLD_NET_LBL="Net Share",SOLD_GROSS_LBL="Gross Price";
@@ -830,6 +837,8 @@ function _fmtMoney(v){return v?"$"+parseFloat(v).toLocaleString():"";}
 const LIST_DEFAULT16=["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","exhibitionHistory","location","currentValue","assignedTo","notes"];
 const LIST_COLS_KEYS={inventory:"acap_tcols_v3",consign:"acap_tcols_consign_v3",framing:"acap_tcols_framing_v3",wish:"acap_tcols_wish_v3",sold:"acap_tcols_sold_v3",coa:"acap_tcols_coa_v3"};
 let _listCols={};
+// Custom columns hidden per list (session 7): {listName:[keys]} so a custom column can be off in one list and on in another
+let _colsOff=LS.get("acap_tcols_off_v1",{})||{};
 function _defaultListCols(listName){
   if(listName==="sold")return["photo","category","artist","serialNumber","name","yearCreated","medium","dimensions","condition","framed","authenticCert","currentValue","soldAt","soldGross","soldDate","location","assignedTo","notes"];
   if(listName==="coa")return["photo","artist","name","yearCreated","medium","dimensions","condition","ownerName","ownerContact","dateSubmitted","authResult","coaIssued","coaNumber","coaDate","fee","notes"];
@@ -846,11 +855,13 @@ function getListCols(listName){
     }
     _listCols[listName]=(stored&&stored.length)?stored.slice():_defaultListCols(listName);
   }
-  customCols.forEach(function(c){if(!_listCols[listName].includes(c.key))_listCols[listName].push(c.key);});
+  var _off=_colsOff[listName]||[];
+  customCols.forEach(function(c){if(!_listCols[listName].includes(c.key)&&_off.indexOf(c.key)<0)_listCols[listName].push(c.key);});
   return _listCols[listName];
 }
-function setListCols(listName,cols){listName=listName&&LIST_COLS_KEYS[listName]?listName:"inventory";_listCols[listName]=cols;LS.set(LIST_COLS_KEYS[listName],cols);}
-function resetListCols(listName){listName=listName&&LIST_COLS_KEYS[listName]?listName:"inventory";_listCols[listName]=_defaultListCols(listName).slice();LS.set(LIST_COLS_KEYS[listName],null);localStorage.removeItem(LIST_COLS_KEYS[listName]);}
+function setListCols(listName,cols){listName=listName&&LIST_COLS_KEYS[listName]?listName:"inventory";_listCols[listName]=cols;LS.set(LIST_COLS_KEYS[listName],cols);
+  _colsOff[listName]=customCols.filter(function(c){return cols.indexOf(c.key)<0;}).map(function(c){return c.key;});LS.set("acap_tcols_off_v1",_colsOff);}
+function resetListCols(listName){listName=listName&&LIST_COLS_KEYS[listName]?listName:"inventory";delete _colsOff[listName];LS.set("acap_tcols_off_v1",_colsOff);_listCols[listName]=_defaultListCols(listName).slice();LS.set(LIST_COLS_KEYS[listName],null);localStorage.removeItem(LIST_COLS_KEYS[listName]);}
 let appName=LS.get("acap_name_v3","Asset Capitalizer");
 let rowH=LS.get("acap_rowh_v3",36);
 let colW=(function(){var s=LS.get("acap_colw_v3",{});return(s&&s._v===5)?s:{_v:5};})();
@@ -865,6 +876,7 @@ let isAuth=false,sessTmr=null,pinEntry="";
 
 function saveAll(){
   ensureTokens();
+  _trackDataMod();
   // Keep all lists sorted by ID at all times
   sortById(assets);
   sortById(soldAssets);
@@ -928,7 +940,8 @@ function saveAll(){
     var slimCoa=coaAssets.map(function(a){if(a.photo2)savePhoto2(a.id,a.photo2);var r=Object.assign({},a);delete r.photo;delete r.photo2;return r;});
     localStorage.setItem('acap_coa_v3',JSON.stringify(slimCoa));
   }catch(e){console.warn('saveAll coa',e);}
-  LS.set('acap_order_v3',fOrder);LS.set('acap_hidden_v3',hiddenFlds);LS.set('acap_custom_v3',customCols);
+  fOrder=_fo("inventory").o;hiddenFlds=_fo("inventory").h;
+  LS.set('acap_order_v3',fOrder);LS.set('acap_hidden_v3',hiddenFlds);LS.set('acap_fo_lists_v1',foL);LS.set('acap_custom_v3',customCols);LS.set('acap_tcols_off_v1',_colsOff);
   Object.keys(_listCols).forEach(function(ln){LS.set(LIST_COLS_KEYS[ln],_listCols[ln]);});
   LS.set('acap_name_v3',appName);LS.set('acap_rowh_v3',rowH);
   colW._v=5;LS.set('acap_colw_v3',colW);LS.set('acap_auth_v3',authCfg);
@@ -1420,7 +1433,7 @@ function rConsign(){
     h+='<div class="thin"><span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>';
     h+='<span class="colx" onclick="hideCol(\''+key+'\',\'consign\')" title="Hide">✕</span></div></th>';
   });
-  h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
+  h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">Actions</span></div></th>';
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
@@ -1487,7 +1500,7 @@ function rFraming(){
     h+='<div class="thin"><span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>';
     h+='<span class="colx" onclick="hideCol(\''+key+'\',\'framing\')" title="Hide">\u2715</span></div></th>';
   });
-  h+='<th class="no-print" style="width:130px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
+  h+='<th class="no-print" style="width:130px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">Actions</span></div></th>';
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
@@ -1659,7 +1672,7 @@ function rCOA(){
     h+='<div class="thin"><span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>';
     h+='<span class="colx" onclick="hideCol(\''+key+'\',\'coa\')" title="Hide">\u2715</span></div></th>';
   });
-  h+='<th class="no-print" style="width:120px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
+  h+='<th class="no-print" style="width:120px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">Actions</span></div></th>';
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
@@ -1761,7 +1774,7 @@ function rSold(){
     h+='<div class="thin">'+(key==="photo"?'<span class="thlbl">📷</span>':'<span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>');
     h+='<span class="colx" onclick="hideCol(\''+key+'\',\'sold\')" title="Hide">✕</span></div></th>';
   });
-  h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
+  h+='<th class="no-print" style="width:90px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">Actions</span></div></th>';
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
@@ -2091,7 +2104,8 @@ function defW(k){
   return W[k]||88;
 }
 
-function cw(k){return colW[k]||defW(k);}
+function _cwK(k){return _viewList(view)+":"+k;}
+function cw(k){return colW[_cwK(k)]||colW[k]||defW(k);}
 
 function rTable(){
   const tblA=viewItems("table");
@@ -2131,7 +2145,7 @@ function rTable(){
     h+='<span class="colx" onclick="hideCol(\''+key+'\')" title="Hide">✕</span></div>';
     h+='</th>';
   });
-  h+='<th class="no-print" style="width:66px;min-width:50px;"><div class="thin">Actions</div></th></tr></thead><tbody>';
+  h+='<th class="no-print" style="width:66px;min-width:50px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">Actions</span></div></th></tr></thead><tbody>';
   tblA.forEach(function(a){
     h+='<tr data-id="'+a.id+'" class="'+(isArt(a.category)?"artrow":"")+'"'+markRowAttr(a)+'>';
     h+='<td style="height:'+rowH+'px;"><div class="tdin" style="display:flex;align-items:center;gap:3px;">'+markStar(a)+'<span style="cursor:pointer;font-family:var(--mo);font-size:10px;color:var(--mu);" onclick="viewDetail(\''+a.id+'\')">'+a.id+'</span></div></td>';
@@ -2200,7 +2214,7 @@ function rWish(){
     h+='<div class="thin"><span class="thlbl" contenteditable="true" spellcheck="false" onblur="renameCol(\''+key+'\',this.textContent.trim())" onclick="event.stopPropagation()">'+esc(lbl)+'</span>';
     h+='<span class="colx" onclick="hideCol(\''+key+'\',\'wish\')" title="Hide">\u2715</span></div></th>';
   });
-  h+='<th class="no-print" style="width:100px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin">Actions</div></th>';
+  h+='<th class="no-print" style="width:100px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">Actions</span></div></th>';
   h+='</tr></thead><tbody>';
   list.forEach(function(a){
     var ph=a.photo||_photoCache[a.id]||"";
@@ -2252,7 +2266,7 @@ function cdE(){document.querySelectorAll(".tbl th").forEach(function(t){t.classL
 function onRS(e){
   if(!rsCol)return;
   var nw=Math.max(34,rsW+(e.clientX-rsX));
-  colW[rsCol]=nw;
+  colW[_cwK(rsCol)]=nw;
   // Update th width
   var th=document.querySelector('[data-ck="'+rsCol+'"]');
   if(th)th.style.width=nw+"px";
@@ -2378,7 +2392,8 @@ function addCol(){
   var lbl=(G("nColName")||{value:""}).value.trim();if(!lbl){toast("Name required","e");return;}
   var key="cc_"+Date.now();customCols.push({key:key,label:lbl,type:(G("nColType")||{value:"text"}).value});
   var listName=_viewList(view);
-  var cols=getListCols(listName);cols.push(key);setListCols(listName,cols);saveAll();closeM("mAddCol");render();toast("Column added");
+  Object.keys(LIST_COLS_KEYS).forEach(function(ln){if(ln!==listName){var o=_colsOff[ln]||[];if(o.indexOf(key)<0)o.push(key);_colsOff[ln]=o;}});LS.set("acap_tcols_off_v1",_colsOff);
+  var cols=getListCols(listName);if(cols.indexOf(key)<0)cols.push(key);setListCols(listName,cols);saveAll();closeM("mAddCol");render();toast("Column added to this list (turn it on for others in Manage Columns)","s",6000);
 }
 
 // Print
@@ -2496,8 +2511,8 @@ function editAsset(id){
   closeSB();render();
 }
 function ordDefs(cat,mode){
-  var all=allFDs();
-  return fOrder.map(function(k){return all.find(function(f){return f.k===k;});}).filter(function(f){return f&&!hiddenFlds.includes(f.k);}).filter(function(f){return!(f.artOnly&&!isArt(cat));}).filter(function(f){return!(f.coaOnly&&mode!=="coa");});
+  var all=allFDs(),F=_fo(mode);
+  return F.o.map(function(k){return all.find(function(f){return f.k===k;});}).filter(function(f){return f&&!F.h.includes(f.k);}).filter(function(f){return!(f.artOnly&&!isArt(cat));}).filter(function(f){return!(f.coaOnly&&mode!=="coa");});
 }
 function rForm(){
   var _formArr=editMode==="consign"?consignAssets:editMode==="framing"?framingAssets:editMode==="wish"?wishAssets:editMode==="coa"?coaAssets:editMode==="sold"?soldAssets:assets;
@@ -2880,7 +2895,7 @@ function rDetail(){
   var dep=a.purchasePrice&&a.usefulLife?((parseFloat(a.purchasePrice)-parseFloat(a.currentValue||0))/parseFloat(a.usefulLife)).toFixed(2):null;
   // Detail shows EVERY populated field: ignores form-hide settings and category/list restrictions
   var _all=allFDs(),_known={};
-  var fds=fOrder.map(function(k){return _all.find(function(f){return f.k===k;});}).filter(Boolean);
+  var fds=_fo(_detailSrc).o.map(function(k){return _all.find(function(f){return f.k===k;});}).filter(Boolean);
   _all.forEach(function(f){if(fds.indexOf(f)<0)fds.push(f);});
   fds=fds.filter(function(f){return f.k!=="name"&&f.k!=="category"&&f.k!=="description";});
   fds.forEach(function(f){_known[f.k]=1;});
@@ -2963,13 +2978,18 @@ function rDetail(){
 }
 
 // Settings
+var FO_TABS=[["inventory","Inventory"],["consign","Consignment"],["framing","Framing"],["wish","Wish List"],["sold","Sold"],["coa","Private COAs"]];
+function setFOList(l){_foList=l;render();}
 function rSettings(){
-  var fds=allFDs();
-  var h='<div class="sw"><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);margin-bottom:11px;">';
+  var fds=allFDs(),F=_fo(_foList),fOrder=F.o,hiddenFlds=F.h;
+  var _tn=(FO_TABS.find(function(t){return t[0]===_foList;})||["","Inventory"])[1];
+  var h='<div class="sw"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:11px;">';
+  FO_TABS.forEach(function(t){h+='<button class="btn '+(_foList===t[0]?"bs":"bg")+'" style="font-size:11px;" onclick="setFOList(\''+t[0]+'\')">'+t[1]+'</button>';});
+  h+='</div><div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);margin-bottom:11px;">';
   h+='<div style="padding:10px 12px;border-bottom:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">';
-  h+='<div><div style="font-family:var(--mo);font-size:12px;font-weight:600;letter-spacing:.06em;">FIELD ORDER & VISIBILITY</div>';
-  h+='<div style="font-size:11px;color:var(--mu);margin-top:2px;">Drag ⠿ to reorder · ▲▼ nudge · toggle show/hide</div></div>';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="resetFO()">↺ Reset</button></div>';
+  h+='<div><div style="font-family:var(--mo);font-size:12px;font-weight:600;letter-spacing:.06em;">'+esc(_tn).toUpperCase()+' — FIELD ORDER & VISIBILITY</div>';
+  h+='<div style="font-size:11px;color:var(--mu);margin-top:2px;">Independent from other lists · used by this list’s Add/Edit form and detail view · drag ⠿ to reorder · ▲▼ nudge · toggle show/hide</div></div>';
+  h+='<div style="display:flex;gap:5px;"><button class="btn bg" style="font-size:11px;" onclick="copyFOAll()">⧉ Copy to all lists</button><button class="btn bg" style="font-size:11px;" onclick="resetFO()">↺ Reset</button></div></div>';
   fOrder.forEach(function(key,idx){
     var fd=fds.find(function(f){return f.k===key;});if(!fd)return;
     var hidden=hiddenFlds.includes(key)&&!fd.always;
@@ -2984,10 +3004,11 @@ function rSettings(){
   return h+'</div></div>';
 }
 function bindFDrag(){}
-function fdDrop(i){if(fdDragIdx===null||fdDragIdx===i)return;var m=fOrder.splice(fdDragIdx,1)[0];fOrder.splice(i,0,m);fdDragIdx=null;saveAll();render();}
-function nudgeF(i,d){var t=i+d;if(t<0||t>=fOrder.length)return;var tmp=fOrder[i];fOrder[i]=fOrder[t];fOrder[t]=tmp;saveAll();render();}
-function togFV(key,show){if(show)hiddenFlds=hiddenFlds.filter(function(k){return k!==key;});else if(!hiddenFlds.includes(key))hiddenFlds.push(key);saveAll();render();}
-function resetFO(){fOrder=DORDER.slice();hiddenFlds=[];saveAll();render();toast("Reset","i");}
+function fdDrop(i){var o=_fo(_foList).o;if(fdDragIdx===null||fdDragIdx===i)return;var m=o.splice(fdDragIdx,1)[0];o.splice(i,0,m);fdDragIdx=null;saveAll();render();}
+function nudgeF(i,d){var o=_fo(_foList).o;var t=i+d;if(t<0||t>=o.length)return;var tmp=o[i];o[i]=o[t];o[t]=tmp;saveAll();render();}
+function togFV(key,show){var F=_fo(_foList);if(show)F.h=F.h.filter(function(k){return k!==key;});else if(!F.h.includes(key))F.h.push(key);saveAll();render();}
+function resetFO(){var F=_fo(_foList);F.o=DORDER.slice();F.h=[];_foNormalize();saveAll();render();toast("Reset (this list only)","i");}
+function copyFOAll(){var F=_fo(_foList),n=(FO_TABS.find(function(t){return t[0]===_foList;})||["",""])[1];if(!confirm("Copy the "+n+" field order and visibility to ALL other lists?\n\nTheir current settings will be replaced."))return;FO_LISTS.forEach(function(l){if(l!==_foList)foL[l]={o:F.o.slice(),h:F.h.slice()};});saveAll();render();toast("Copied to all lists \u2713","s");}
 
 // Manage Columns
 let _colsSettingsList="inventory";
@@ -3031,7 +3052,7 @@ function rCols(){
     h+='<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--b);">';
     h+='<input type="text" value="'+esc(fd.label)+'" onblur="renCC(\''+fd.key+'\',this.value)" style="flex:1;border:1px solid var(--b);border-radius:4px;padding:4px 7px;font-size:12px;font-family:var(--sa);outline:none;color:var(--tx);"/>';
     h+='<span style="font-size:10px;color:var(--mu);font-family:var(--mo);width:76px;">Custom</span>';
-    h+='<button class="btn bd" style="font-size:10px;" onclick="delCC(\''+fd.key+'\')">✕</button></div>';
+    h+='<button class="btn bd" style="font-size:10px;" title="Delete from ALL lists" onclick="if(confirm(\'Delete this custom column from ALL lists (and its data)?\'))delCC(\''+fd.key+'\')">✕</button></div>';
   });
   h+='</div>';
   // Customize dropdown lists
@@ -3136,6 +3157,57 @@ function _ioFmt(t){
 }
 function _ioStamp(k){var L=LS.get(IOLOG_KEY,{})||{};L[k]=Date.now();LS.set(IOLOG_KEY,L);var el=G("iol-"+k);if(el)el.innerHTML="Last: "+_ioFmt(L[k]);}
 function _ioBtn(btn,k){var L=LS.get(IOLOG_KEY,{})||{};return '<div class="iob">'+btn+'<div class="iolast" id="iol-'+k+'">Last: '+_ioFmt(L[k])+'</div></div>';}
+// ---- Data "last changed" clock + older-file warning on restore (session 7, Jim) ----
+var DM_KEY="acap_datamod_v1",_dmOverride=0;
+function _dataSig(){
+  var str=JSON.stringify([assets,soldAssets,consignAssets,framingAssets,wishAssets,coaAssets],function(k,v){return(k==="photo"||k==="photo2"||(k&&k.charAt(0)==="_"))?undefined:v;});
+  var h=0x811c9dc5|0;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}
+  return (h>>>0).toString(36)+"."+str.length;
+}
+function _dmInitial(){
+  var t=0;[assets,soldAssets,consignAssets,framingAssets,wishAssets,coaAssets].forEach(function(L){(L||[]).forEach(function(a){var x=Date.parse(a.updatedAt||a.createdAt||"");if(x>t)t=x;});});
+  var io=LS.get(IOLOG_KEY,{})||{};if(io.restore&&io.restore>t)t=io.restore;
+  return t||Date.now();
+}
+function _trackDataMod(){
+  try{var sig=_dataSig(),st=LS.get(DM_KEY,null);
+    if(_dmOverride){LS.set(DM_KEY,{sig:sig,t:_dmOverride});return;}
+    if(!st||!st.t){LS.set(DM_KEY,{sig:sig,t:_dmInitial()});return;}
+    if(st.sig!==sig)LS.set(DM_KEY,{sig:sig,t:Date.now()});
+  }catch(e){}
+}
+function dataModTime(){var st=LS.get(DM_KEY,null);return st&&st.t?st.t:0;}
+function _allCount(){return assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length;}
+// Popup: resolves true (Resume) or false (Cancel)
+function _askOlder(o){
+  return new Promise(function(res){
+    var bg=document.createElement("div");bg.className="mbg";bg.id="mOlder";bg.style.zIndex="150";
+    var row=function(lbl,val,sub){return '<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--b);font-size:12px;"><span style="width:118px;flex-shrink:0;color:var(--mu);font-family:var(--mo);font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding-top:2px;">'+lbl+'</span><span style="flex:1;">'+val+(sub?'<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+sub+'</div>':'')+'</span></div>';};
+    bg.innerHTML='<div class="mdl" style="max-width:460px;"><div class="mhd"><h3 style="color:var(--wn);">⚠ OLDER FILE</h3><button class="mcls" data-a="0">✕</button></div>'
+      +'<div class="mbd"><div style="font-size:13px;line-height:1.55;margin-bottom:10px;"><b>'+esc(o.fileName)+'</b> is older than the data currently in the app.</div>'
+      +row("This file",_ioFmt(o.fileTime),(o.fileItems!=null?o.fileItems+" items":"")+(o.fileDateNote?(o.fileItems!=null?" · ":"")+o.fileDateNote:""))
+      +row("App data now","Last changed "+_ioFmt(o.curTime),o.curItems+" items")
+      +'<div style="font-size:12px;line-height:1.55;margin-top:11px;padding:9px 11px;border-radius:6px;background:var(--s2);border-left:4px solid var(--wn);">'+o.effect+'</div>'
+      +'<div style="font-size:11px;color:var(--mu);margin-top:9px;">Tip: Cancel, then make a 💾 JSON Backup of the current data first.</div></div>'
+      +'<div class="mft"><button class="btn bg" data-a="0">Cancel</button><button class="btn bok" data-a="1">Resume '+(o.kind==="csv"?"import":"restore")+'</button></div></div>';
+    function done(v){document.removeEventListener("keydown",kd);bg.remove();res(v);}
+    function kd(e){if(e.key==="Escape")done(false);}
+    bg.addEventListener("click",function(e){var t=e.target.closest("[data-a]");if(t)done(t.getAttribute("data-a")==="1");else if(e.target===bg)done(false);});
+    document.addEventListener("keydown",kd);document.body.appendChild(bg);
+    var c=bg.querySelector('.mft [data-a="0"]');if(c)c.focus();
+  });
+}
+// Returns true when the restore may go on
+async function _olderCheck(kind,fileName,fileTime,fileItems,fileDateNote){
+  _trackDataMod();var cur=dataModTime();
+  if(!cur||!fileTime||fileTime>=cur-60000)return true;
+  var eff=kind==="csv"
+    ?"Importing <b>adds</b> the "+fileItems+" rows of this CSV to Inventory as new items. Nothing is deleted."
+    :"Restoring <b>replaces all current data</b> (all six lists, photos and settings) with the file’s content. Changes made after "+_ioFmt(fileTime).replace(/ <span.*$/,"")+" will be lost.";
+  var ok=await _askOlder({kind:kind,fileName:fileName,fileTime:fileTime,fileItems:fileItems,fileDateNote:fileDateNote,curTime:cur,curItems:_allCount(),effect:eff});
+  if(!ok)toast((kind==="csv"?"Import":"Restore")+" cancelled — nothing changed","i",5000);
+  return ok;
+}
 function rIO(){
   var h='<div style="max-width:540px;margin:0 auto;">';
   h+='<div style="background:#1d1b16;border-radius:var(--r);padding:16px;margin-bottom:11px;border:2px solid var(--ac);">';
@@ -3174,6 +3246,7 @@ function rIO(){
 }
 async function exportJSON(){
   toast("Preparing…","i",8000);
+  _trackDataMod();var _expAt=Date.now(),_dmAt=dataModTime()||_expAt;
   var pm=await loadAllPhotos();
   var pm2=await loadAllPhotos2();
   var withPhotos=assets.map(function(a){return Object.assign({},a,{photo:a.photo||_photoCache[a.id]||pm[a.id]||"",photo2:a.photo2||_photoCache2[a.id]||pm2[a.id]||""});});
@@ -3189,7 +3262,7 @@ async function exportJSON(){
   var _wishLeg=LS.get("acap_wish_legend",""),_wishPs=LS.get("acap_wish_ps","");
   var _coaLeg=LS.get("acap_coa_legend",""),_coaPs=LS.get("acap_coa_ps","");
   var _listCols2={};Object.keys(LIST_COLS_KEYS).forEach(function(ln){_listCols2[ln]=getListCols(ln);});
-  dl(JSON.stringify({assets:withPhotos,soldAssets:withSold,consignAssets:withConsign,framingAssets:withFraming,wishAssets:withWish,coaAssets:withCoa,fOrder:fOrder,hiddenFlds:hiddenFlds,customCols:customCols,appName:appName,pubLists:pubCfg(),colW:colW,rowH:rowH,listCols:_listCols2,legend:_leg,ps:_ps,consignLegend:_consignLeg,consignPs:_consignPs,soldLegend:_soldLeg,soldPs:_soldPs,framingLegend:_framLeg,framingPs:_framPs,wishLegend:_wishLeg,wishPs:_wishPs,coaLegend:_coaLeg,coaPs:_coaPs},null,2),"application/json","assets_backup.json");
+  dl(JSON.stringify({assets:withPhotos,soldAssets:withSold,consignAssets:withConsign,framingAssets:withFraming,wishAssets:withWish,coaAssets:withCoa,fOrder:_fo("inventory").o,hiddenFlds:_fo("inventory").h,foLists:foL,colsOff:_colsOff,customCols:customCols,appName:appName,pubLists:pubCfg(),colW:colW,rowH:rowH,listCols:_listCols2,legend:_leg,ps:_ps,consignLegend:_consignLeg,consignPs:_consignPs,soldLegend:_soldLeg,soldPs:_soldPs,framingLegend:_framLeg,framingPs:_framPs,wishLegend:_wishLeg,wishPs:_wishPs,coaLegend:_coaLeg,coaPs:_coaPs,exportedAt:_expAt,dataModifiedAt:_dmAt},null,2),"application/json","assets_backup.json");
   var _total=assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length;
   _ioStamp("backup");
   toast("Backup complete: "+assets.length+" inv · "+consignAssets.length+" con · "+framingAssets.length+" fram · "+soldAssets.length+" sold · "+wishAssets.length+" wish · "+coaAssets.length+" priv.coll ("+_total+" total)","s",6000);
@@ -3205,12 +3278,17 @@ function exportCSV(){
   dl(hdr+"\n"+rows.join("\n")+footer,"text/csv","assets.csv");_ioStamp("csv");toast("CSV exported");
 }
 async function importJSON(inp){
-  var f=inp.files[0];if(!f)return;toast("Importing…","i",15000);
+  var f=inp.files[0];if(!f)return;toast("Reading file…","i",4000);
   var r=new FileReader();
   r.onload=async function(ev){
     try{
       var d=JSON.parse(ev.target.result);
       if(!d.assets||!Array.isArray(d.assets)){toast("Invalid backup","e");return;}
+      var _inT=d.dataModifiedAt||d.exportedAt||f.lastModified||0;
+      var _inN=["assets","soldAssets","consignAssets","framingAssets","wishAssets","coaAssets"].reduce(function(n,k){return n+(Array.isArray(d[k])?d[k].length:0);},0);
+      if(!(await _olderCheck("json",f.name,_inT,_inN,(d.dataModifiedAt||d.exportedAt)?"":"date taken from the file itself (older backup without a date inside)")))return;
+      toast("Importing…","i",15000);
+      _dmOverride=_inT;
       var photosToSave=[];var photos2ToSave=[];
       // Normalize IDs to 3-digit format before processing
       d.assets.forEach(function(a){
@@ -3235,7 +3313,9 @@ async function importJSON(inp){
       wishAssets=d.wishAssets&&Array.isArray(d.wishAssets)?d.wishAssets:wishAssets;
       coaAssets=d.coaAssets&&Array.isArray(d.coaAssets)?d.coaAssets:coaAssets;
       if(d.fOrder)fOrder=d.fOrder;if(d.hiddenFlds)hiddenFlds=d.hiddenFlds;
-      if(d.customCols)customCols=d.customCols;if(d.appName){appName=d.appName;document.title=appName;}if(d.pubLists&&typeof d.pubLists==="object")LS.set("acap_pub_v3",d.pubLists);
+      if(d.foLists&&typeof d.foLists==="object")foL=d.foLists;else if(d.fOrder){foL={};FO_LISTS.forEach(function(l){foL[l]={o:d.fOrder.slice(),h:(d.hiddenFlds||[]).slice()};});}
+      if(d.colsOff&&typeof d.colsOff==="object")_colsOff=d.colsOff;
+      if(d.customCols)customCols=d.customCols;_foNormalize();if(d.appName){appName=d.appName;document.title=appName;}if(d.pubLists&&typeof d.pubLists==="object")LS.set("acap_pub_v3",d.pubLists);
       if(d.colW)colW=d.colW;if(d.rowH)rowH=d.rowH;
       if(d.listCols){Object.keys(LIST_COLS_KEYS).forEach(function(ln){if(d.listCols[ln])setListCols(ln,d.listCols[ln]);});}
       else if(d.tableCols){setListCols("inventory",d.tableCols);}
@@ -3303,16 +3383,18 @@ async function importJSON(inp){
         try{localStorage.setItem("acap_coa_v3",JSON.stringify(slimCoa2));}catch(e){console.warn("coa quota",e);}
       }
       await loadPhotosAndRender();
+      _dmOverride=_inT;_trackDataMod();_dmOverride=0;
       _ioStamp("restore");goTo("list");toast("Restored "+assets.length+" assets + "+photosToSave.length+" photos","s",6000);
-    }catch(e){toast("Import failed: "+e.message,"e",8000);}
+    }catch(e){_dmOverride=0;toast("Import failed: "+e.message,"e",8000);}
   };
   r.readAsText(f);inp.value="";
 }
 function importCSV(inp){
   var f=inp.files[0];if(!f)return;var r=new FileReader();
-  r.onload=function(ev){
+  r.onload=async function(ev){
     try{
       var lines=ev.target.result.split("\n").filter(Boolean);
+      if(!(await _olderCheck("csv",f.name,f.lastModified||0,Math.max(lines.length-1,0),"date of the file on your device")))return;
       var hdrs=lines[0].split(",").map(function(h){return h.replace(/^"|"$/g,"").trim().toLowerCase().replace(/ /g,"");});
       var imp=lines.slice(1).map(function(line,i){
         var vals=line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(function(v){return v.replace(/^"|"$/g,"").replace(/""/g,'"');});
@@ -4074,6 +4156,7 @@ document.addEventListener("DOMContentLoaded",function(){
   try{new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)_bigIcons(n);else if(n.nodeType===3&&n.parentNode)_bigIcons(n.parentNode);});});}).observe(document.body,{childList:true,subtree:true});}catch(e){}
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
   fOrder=fOrder.filter(function(k){return DORDER.includes(k)||customCols.find(function(c){return c.key===k;});});
+  _foNormalize();
   document.title=appName;
   if("serviceWorker"in navigator)
   // Check persisted session
