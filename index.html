@@ -379,6 +379,25 @@ html[data-theme="dark"] .brand-nm em{background:linear-gradient(180deg,#fbe7a6 0
 .sbposh{font-size:11px;color:#ece7d9;font-weight:600;letter-spacing:.02em;}
 .sbposi{font-size:12px;color:#c9c2b2;margin-top:3px;padding-left:4px;}
 .sbposi b{color:#e9c873;font-family:var(--mo);}
+/* Price mask (session 8) */
+.pmtog{cursor:pointer;user-select:none;border-radius:6px;padding:1px 4px;transition:background .15s;}
+.pmtog:hover{background:rgba(200,150,30,.14);}
+.pmeye{font-size:13px;opacity:.75;margin-left:2px;}
+/* Column resize + Excel-like wrap (session 8) */
+.tbl{table-layout:fixed;}
+.tbl th{overflow:visible;}
+.rsh{position:absolute;top:0;bottom:0;left:-7px;width:14px;cursor:col-resize;z-index:6;touch-action:none;}
+.rsh.rsh-r{left:auto;right:-7px;}
+.rsh::before{content:"";position:absolute;left:6px;top:2px;bottom:2px;width:2px;border-radius:1px;background:var(--gold);opacity:0;transition:opacity .12s;}
+.rsh::after{content:"\21D4";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11px;line-height:15px;padding:0 3px;border-radius:8px;color:#fff;background:var(--gold);box-shadow:1px 2px 3px var(--shd);opacity:0;transition:opacity .12s;pointer-events:none;white-space:nowrap;}
+.rsh:hover::before,.rsh:hover::after,.rsh.on::before,.rsh.on::after{opacity:1;}
+.rsh.on::before{top:0;bottom:-100vh;width:2px;opacity:.85;}
+@media (hover:none){.rsh{left:-10px;width:20px;}.rsh.rsh-r{right:-10px;}.rsh::before{left:9px;opacity:.35;}}
+.colx{margin-left:auto;margin-right:12px;padding:0 3px;}
+.tbl .tdin{height:auto!important;min-height:var(--rowh,36px);white-space:normal!important;text-overflow:clip!important;}
+.tbl .tdin>span{white-space:normal!important;overflow:hidden!important;text-overflow:clip!important;word-break:normal;overflow-wrap:break-word;}
+.tbl .thlbl{white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.35;}
+@media print{.rsh{display:none!important;}.tbl{table-layout:auto!important;}}
 @media print{.tbl{border-collapse:collapse!important;border-spacing:0;}.tbl td,.tbl tbody td{background:none!important;box-shadow:none!important;border-radius:0!important;}.topbar,.sb{box-shadow:none!important;}}
 /* dashboard: metal boxes + cylinder category bars */
 .sc3d,.dpanel{background:linear-gradient(180deg,#fffefa 0%,#f3eee3 46%,#e9e2d2 54%,#f7f3eb 100%);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(0,0,0,.08),3px 4px 8px var(--shd-soft);}
@@ -1372,6 +1391,19 @@ function toggleTheme(){
   LS.set("acap_theme_v1",d?"dark":"light");_syncThemeBtn();toast(d?"Night mode on":"Day mode on","i");
 }
 // Render
+// ---- Price mask (session 8, Jim): click the In Possession amount to hide/show every $ figure ----
+var _pmask=!!LS.get("acap_pmask_v1",false);
+var _PM_RE=/\$\s?\d[\d,]*(?:\.\d+)?/g;
+function _maskMoney(root){
+  if(!_pmask||!root)return;
+  if(root.nodeType===3){if(_PM_RE.test(root.nodeValue)){_PM_RE.lastIndex=0;root.nodeValue=root.nodeValue.replace(_PM_RE,"$*****");}_PM_RE.lastIndex=0;return;}
+  if(root.nodeType!==1||/^(SCRIPT|STYLE|TEXTAREA|INPUT|SELECT|OPTION)$/.test(root.tagName))return;
+  var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null),n,list=[];
+  while((n=w.nextNode())){var p=n.parentNode;if(p&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(p.tagName))continue;if(p&&p.isContentEditable)continue;if(n.nodeValue.indexOf("$")>=0)list.push(n);}
+  list.forEach(function(t){t.nodeValue=t.nodeValue.replace(_PM_RE,"$*****");});
+}
+function _afterRender(){try{document.documentElement.style.setProperty("--rowh",rowH+"px");_initColResize();}catch(e){}}
+function togglePriceMask(ev){if(ev)ev.stopPropagation();_pmask=!_pmask;LS.set("acap_pmask_v1",_pmask);document.documentElement.classList.toggle("pmask",_pmask);render();toast(_pmask?"Prices hidden \u2014 click the In Possession amount again to show them":"Prices shown","i",4000);}
 function render(){
   updSidebar();
   const ct=G("CT");if(!ct)return;
@@ -1400,6 +1432,7 @@ function render(){
   if(sv)_applyScroll(ct,sv);else if(_wasNewView){_scrollEls(ct).forEach(function(e){e.scrollTop=0;});}
   _lastRenderView=view;
   _applyListTint(ct);
+  _afterRender();
 
   ["fCat","fCond","fLoc","fAsgn","fMed","fYear","fOwner","fFrame","fList"].forEach(function(id){var el=G(id);if(el)el.classList.toggle("active-filter",!!(el.value));});var _si=G("srchIn");if(_si)_si.classList.toggle("active-filter",!!_si.value);}
 
@@ -1918,7 +1951,7 @@ function rDash(){
   function _pctPos(v){return inPossessionVal>0?' <span style="font-size:11px;opacity:.75;font-weight:500;">\u00b7 '+Math.round(v/inPossessionVal*100)+'%</span>':'';} // share of the In Possession total
   var grandVal=inPossessionVal+soldFaceVal;
   h+='<div style="font-size:10px;color:var(--mu);font-family:var(--mo);padding:0 2px 8px;white-space:nowrap;overflow-x:auto;">Total tracked: <b>'+grandTotal+'</b> assets &nbsp;\u00b7&nbsp; face value: <b>$'+grandVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></div>';
-  h+='<div class="sc sc3d" style="grid-column:span 2;border-left:5px solid var(--ac);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl">In Possession <span style="font-size:10px;color:var(--mu);">(inv+con+framing)</span></div><div class="sv" style="font-size:13px;">'+inPossession+' items</div></div><div class="sv ac" style="font-size:16px;">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div></div>';
+  h+='<div class="sc sc3d" style="grid-column:span 2;border-left:5px solid var(--ac);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl">In Possession <span style="font-size:10px;color:var(--mu);">(inv+con+framing)</span></div><div class="sv" style="font-size:13px;">'+inPossession+' items</div></div><div class="sv ac pmtog" style="font-size:16px;" onclick="togglePriceMask(event)" title="'+(_pmask?'Click to show all prices':'Click to hide all prices')+'">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span class="pmeye">'+(_pmask?'\uD83D\uDE48':'\uD83D\uDC41')+'</span></div></div></div>';
   h+='<div class="sc sc3d" style="cursor:pointer;border-left:5px solid var(--l-inv);" onclick="goTo(\'table\')" title="Inventory"><div class="sl" style="color:var(--t-inv)">Inventory ('+total+')</div><div class="sv" style="color:var(--t-inv)">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(val)+'</div></div>';
   h+='<div class="sc sc3d" style="cursor:pointer;border-left:5px solid var(--l-con);" onclick="goTo(\'consign\')" title="Consignment"><div class="sl" style="color:var(--t-con)">Consignment ('+conTotal+')</div><div class="sv" style="color:var(--t-con)">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(conVal)+'</div></div>';
   h+='<div class="sc sc3d" style="cursor:pointer;border-left:5px solid var(--l-fram);" onclick="goTo(\'framing\')" title="Framing"><div class="sl" style="color:var(--t-fram)">Framing ('+framTotal+')</div><div class="sv" style="color:var(--t-fram)">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(framVal)+'</div></div>';
@@ -2252,6 +2285,38 @@ function rWish(){
 }
 function setRH(v){rowH=parseInt(v);var l=G("rhLbl");if(l)l.textContent=v+"px";LS.set("acap_rowh_v3",rowH);document.querySelectorAll("#MT td[style]").forEach(function(td){td.style.height=v+"px";});document.querySelectorAll("#MT .tdin[style*='height']").forEach(function(d){d.style.height=v+"px";});}
 function bindTbl(){}
+// ---- Column resize by dragging the left edge of a header (session 8, Jim): Excel-style, resizes the column on the left of that edge ----
+function _rsKey(th,i){if(th.dataset.ck)return th.dataset.ck;if(i===0)return"_id";if(th.classList.contains("no-print"))return"_act";return"photo";}
+function _rsTotal(tbl){var t=0;[].forEach.call(tbl.tHead.rows[0].cells,function(c){t+=parseFloat(c.style.width)||c.offsetWidth;});tbl.style.width=Math.ceil(t)+"px";}
+function _initColResize(){
+  document.querySelectorAll("#CT table.tbl").forEach(function(tbl){
+    if(!tbl.tHead||!tbl.tHead.rows[0])return;var ths=[].slice.call(tbl.tHead.rows[0].cells);
+    ths.forEach(function(th,i){th.dataset.rk=_rsKey(th,i);var w=colW[_cwK(th.dataset.rk)];if(w)th.style.width=w+"px";});
+    // Fixed layout: widen the Actions/ID columns to fit their buttons unless the user set a width
+    ths.forEach(function(th,i){var k=th.dataset.rk;if((k!=="_act"&&k!=="_id")||colW[_cwK(k)])return;var need=0,rows=tbl.tBodies[0]?[].slice.call(tbl.tBodies[0].rows,0,8):[];
+      rows.forEach(function(r){var c=r.cells[i];if(!c)return;var d=c.firstElementChild||c;var inner=d.firstElementChild||d;need=Math.max(need,inner.scrollWidth+(d.offsetWidth-d.clientWidth)+22);});
+      if(need>(parseFloat(th.style.width)||th.offsetWidth))th.style.width=need+"px";});
+    ths.forEach(function(th,i){
+      if(th.querySelector(":scope > .rsh"))return;
+      if(i>0){var h=document.createElement("span");h.className="rsh";h.title="Drag to resize the column on the left";h.addEventListener("pointerdown",function(e){_rsStart(e,ths[i-1],tbl,h);});h.addEventListener("dragstart",function(e){e.preventDefault();});th.appendChild(h);}
+      if(i===ths.length-2||(i===ths.length-1&&!th.classList.contains("no-print"))){var r=document.createElement("span");r.className="rsh rsh-r";r.title="Drag to resize this column";r.addEventListener("pointerdown",function(e){_rsStart(e,th,tbl,r);});th.appendChild(r);}
+    });
+    _rsTotal(tbl);
+  });
+}
+var _rs=null;
+function _rsStart(e,th,tbl,handle){
+  e.preventDefault();e.stopPropagation();
+  var ths=[].slice.call(tbl.tHead.rows[0].cells);ths.forEach(function(t){t._dg=t.getAttribute("draggable");t.setAttribute("draggable","false");});
+  _rs={th:th,tbl:tbl,h:handle,x0:e.clientX,w0:th.getBoundingClientRect().width,key:th.dataset.rk,ths:ths};
+  handle.classList.add("on");tbl.classList.add("rsing");document.body.style.cursor="col-resize";document.body.style.userSelect="none";
+  try{handle.setPointerCapture(e.pointerId);}catch(x){}
+  window.addEventListener("pointermove",_rsMove);window.addEventListener("pointerup",_rsEnd);window.addEventListener("pointercancel",_rsEnd);
+}
+function _rsMove(e){if(!_rs)return;var nw=Math.max(40,Math.round(_rs.w0+(e.clientX-_rs.x0)));_rs.th.style.width=nw+"px";colW[_cwK(_rs.key)]=nw;_rsTotal(_rs.tbl);}
+function _rsEnd(){if(!_rs)return;_rs.h.classList.remove("on");_rs.tbl.classList.remove("rsing");_rs.ths.forEach(function(t){if(t._dg!==null)t.setAttribute("draggable",t._dg);else t.removeAttribute("draggable");});
+  document.body.style.cursor="";document.body.style.userSelect="";colW._v=5;LS.set("acap_colw_v3",colW);_rs=null;
+  window.removeEventListener("pointermove",_rsMove);window.removeEventListener("pointerup",_rsEnd);window.removeEventListener("pointercancel",_rsEnd);}
 
 // Col drag
 function cdS(e,i,listName){colDragSrc=i;colDragList=listName||"inventory";e.currentTarget.classList.add("cdrag");}
@@ -4193,7 +4258,8 @@ function safeDelete(listType, btn){
 document.addEventListener("DOMContentLoaded",function(){
   _syncThemeBtn();
   _bigIcons(document.body);
-  try{new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)_bigIcons(n);else if(n.nodeType===3&&n.parentNode)_bigIcons(n.parentNode);});});}).observe(document.body,{childList:true,subtree:true});}catch(e){}
+  try{new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)_bigIcons(n);else if(n.nodeType===3&&n.parentNode)_bigIcons(n.parentNode);if(_pmask)_maskMoney(n);});});}).observe(document.body,{childList:true,subtree:true});}catch(e){}
+  document.documentElement.classList.toggle("pmask",_pmask);if(_pmask)_maskMoney(document.body);
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
   fOrder=fOrder.filter(function(k){return DORDER.includes(k)||customCols.find(function(c){return c.key===k;});});
   _foNormalize();
