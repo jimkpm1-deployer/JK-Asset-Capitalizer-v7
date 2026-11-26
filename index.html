@@ -1392,7 +1392,7 @@ function toggleTheme(){
 }
 // Render
 // ---- Price mask (session 8, Jim): click the In Possession amount to hide/show every $ figure ----
-var _pmask=!!LS.get("acap_pmask_v1",false);
+var _pmask=true; // masked by default every time the app opens (Jim, session 8); a click shows prices for this session only
 var _PM_RE=/\$\s?\d[\d,]*(?:\.\d+)?/g;
 function _maskMoney(root){
   if(!_pmask||!root)return;
@@ -1403,7 +1403,7 @@ function _maskMoney(root){
   list.forEach(function(t){t.nodeValue=t.nodeValue.replace(_PM_RE,"$*****");});
 }
 function _afterRender(){try{document.documentElement.style.setProperty("--rowh",rowH+"px");_initColResize();}catch(e){}}
-function togglePriceMask(ev){if(ev)ev.stopPropagation();_pmask=!_pmask;LS.set("acap_pmask_v1",_pmask);document.documentElement.classList.toggle("pmask",_pmask);render();toast(_pmask?"Prices hidden \u2014 click the In Possession amount again to show them":"Prices shown","i",4000);}
+function togglePriceMask(ev){if(ev)ev.stopPropagation();_pmask=!_pmask;document.documentElement.classList.toggle("pmask",_pmask);render();toast(_pmask?"Prices hidden":"Prices shown until the app is closed \u2014 click the amount to hide them again","i",4500);}
 function render(){
   updSidebar();
   const ct=G("CT");if(!ct)return;
