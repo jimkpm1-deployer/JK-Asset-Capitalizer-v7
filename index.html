@@ -798,12 +798,12 @@ function compressPhoto(dataUrl){
   return new Promise(res=>{
     const img=new Image();
     img.onload=()=>{
-      // Use 400px max to keep localStorage usage low (fits 300+ photos in 5MB)
-      const MAX=350;let w=img.width,h=img.height;
+      // 600px max, JPEG quality 0.60 (session 10, Jim): sharper public pages and stickers; photos live in IndexedDB (was 350px / 0.38)
+      const MAX=600;let w=img.width,h=img.height;
       if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
       const cv=document.createElement("canvas");cv.width=w;cv.height=h;
       cv.getContext("2d").drawImage(img,0,0,w,h);
-      res(cv.toDataURL("image/jpeg",0.38));
+      res(cv.toDataURL("image/jpeg",0.60));
     };
     img.onerror=()=>res(dataUrl);img.src=dataUrl;
   });
@@ -3281,6 +3281,106 @@ async function _olderCheck(kind,fileName,fileTime,fileItems,fileDateNote){
   if(!ok)toast((kind==="csv"?"Import":"Restore")+" cancelled — nothing changed","i",5000);
   return ok;
 }
+// ---- Replace photos from files (session 10, Jim): photo 1 of AST- items in Inventory / Consignment / Framing / Sold,
+// matched by the number at the start of the file name ("007 Flowers 1977, oil on canvas, 50x50cm.jpg" -> AST-007). Photo 2 untouched.
+var _bp={files:[],urls:[]};
+var BP_LISTS=[["inventory","Inventory"],["consign","Consignment"],["framing","Framing"],["sold","Sold"]];
+function _bpNorm(s){return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
+function _bpParse(name){
+  var base=String(name).replace(/\.[^.]+$/,"");
+  var m=base.match(/^\s*(\d{1,4})(?!\d)[\s._\-]*(.*)$/);if(!m)return null;
+  var t=m[2].split(",")[0].replace(/\s*\b(1[89]|20)\d\d\s*$/,"").trim();
+  return {id:"AST-"+String(parseInt(m[1],10)).padStart(3,"0"),title:t};
+}
+function _bpFind(id){
+  var out=[];BP_LISTS.forEach(function(l){_listArr(l[0]).forEach(function(a){if(a.id===id)out.push({a:a,list:l[1]});});});
+  return out;
+}
+function openBulkPhotos(){_bp={files:[],urls:[]};_bpShow();}
+function _bpAdd(inp){
+  var seen={};_bp.files.forEach(function(r){seen[r.key]=1;});
+  Array.prototype.forEach.call(inp.files||[],function(f){
+    if(!/\.(jpe?g|png|webp)$/i.test(f.name))return;
+    var key=(f.webkitRelativePath||f.name)+"|"+f.size;if(seen[key])return;seen[key]=1;
+    var p=_bpParse(f.name),hit=p?_bpFind(p.id):[];
+    var r={key:key,f:f,name:f.name,path:f.webkitRelativePath||f.name,p:p,hit:hit,st:"",on:false};
+    if(!p)r.st="nonum";else if(!hit.length)r.st="nf";
+    else{var at=_bpNorm(hit[0].a.name),ft=_bpNorm(p.title);
+      r.st=(!ft||!at||at===ft||at.indexOf(ft)===0||ft.indexOf(at)===0)?"ok":"diff";}
+    _bp.files.push(r);
+  });
+  inp.value="";_bpRecalc();_bpShow();
+}
+function _bpRecalc(){
+  var by={};_bp.files.forEach(function(r){if(r.hit.length){(by[r.p.id]=by[r.p.id]||[]).push(r);}});
+  Object.keys(by).forEach(function(id){
+    var g=by[id];
+    if(g.length>1){g.forEach(function(r){if(r.st!=="diff")r.st="dup";r.dup=true;});}
+    else{g[0].dup=false;if(g[0].st==="dup")g[0].st="ok";}
+  });
+  _bp.files.forEach(function(r){if(r._set)return;r.on=(r.st==="ok");r._set=true;});
+}
+function _bpTick(i,on){
+  var r=_bp.files[i];if(!r)return;
+  if(on&&r.dup)_bp.files.forEach(function(x){if(x!==r&&x.p&&r.p&&x.p.id===r.p.id)x.on=false;});
+  r.on=on;_bpShow();
+}
+function _bpUrl(f){var u=URL.createObjectURL(f);_bp.urls.push(u);return u;}
+function _bpClose(){var m=G("mBulkPh");if(m)m.remove();_bp.urls.forEach(function(u){try{URL.revokeObjectURL(u);}catch(e){}});_bp.urls=[];}
+function _bpShow(){
+  var old=G("mBulkPh"),sc=old?(old.querySelector(".mbd")||{}).scrollTop:0;if(old)old.remove();
+  _bp.urls.forEach(function(u){try{URL.revokeObjectURL(u);}catch(e){}});_bp.urls=[];
+  var F=_bp.files,c={ok:0,diff:0,dup:0,nf:0,nonum:0},sel=0;
+  F.forEach(function(r){c[r.st]=(c[r.st]||0)+1;if(r.on)sel++;});
+  var ST={ok:["Matched","var(--ok-tx)","var(--ok-bg)"],diff:["Title differs — check","#7a4a00","#ffe2b3"],dup:["Same number twice — pick one","#7a4a00","#ffe2b3"],nf:["No item with this ID","var(--mu)","var(--s3)"],nonum:["No number at the start","var(--mu)","var(--s3)"]};
+  var bg=document.createElement("div");bg.className="mbg";bg.id="mBulkPh";bg.style.display="flex";bg.style.zIndex="150";
+  var h='<div class="mdl" style="max-width:760px;"><div class="mhd"><h3>🖼 REPLACE PHOTOS FROM FILES</h3><button class="mcls" onclick="_bpClose()">✕</button></div><div class="mbd" style="max-height:62vh;overflow-y:auto;">';
+  h+='<div style="font-size:12px;line-height:1.6;margin-bottom:10px;">Replaces <b>photo 1</b> of Inventory, Consignment, Framing and Sold items (photo 2 is not touched). The number at the start of the file name gives the ID: <span style="font-family:var(--mo);">007 Flowers 1977, oil on canvas, 50x50cm.jpg</span> → <b>AST-007</b>. Photos are saved at 600 px.</div>';
+  h+='<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;"><button class="btn bp" onclick="G(\'bpDir\').click()">📁 Add a folder</button><button class="btn bg" onclick="G(\'bpFiles\').click()">🖼 Add photo files</button>'+(F.length?'<button class="btn bg" onclick="_bp.files=[];_bpShow()">↺ Clear list</button>':'')+'</div>';
+  h+='<div style="font-size:11px;color:var(--mu);margin-bottom:10px;">Add your three folders one after another (or their common parent folder). On a phone, use “Add photo files” and select many at once.</div>';
+  if(F.length){
+    h+='<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;margin-bottom:8px;">';
+    ["ok","diff","dup","nf","nonum"].forEach(function(k){if(c[k])h+='<span style="padding:2px 8px;border-radius:10px;background:'+ST[k][2]+';color:'+ST[k][1]+';">'+ST[k][0]+': <b>'+c[k]+'</b></span>';});
+    h+='</div>';
+    var ord={diff:0,dup:1,ok:2,nf:3,nonum:4};
+    var idx=F.map(function(r,i){return i;}).sort(function(a,b){var ra=F[a],rb=F[b];return (ord[ra.st]-ord[rb.st])||String(ra.p?ra.p.id:ra.name).localeCompare(String(rb.p?rb.p.id:rb.name));});
+    h+='<table style="width:100%;border-collapse:collapse;font-size:12px;"><tr style="font-family:var(--mo);font-size:10px;color:var(--mu);text-align:left;"><th></th><th>ID</th><th>Now</th><th>New</th><th>File / title in the app</th></tr>';
+    idx.forEach(function(i){
+      var r=F[i],s=ST[r.st],can=r.hit.length>0,a=can?r.hit[0].a:null;
+      var now=a&&(a.photo||_photoCache[a.id])?'<img src="'+(a.photo||_photoCache[a.id])+'" style="width:44px;height:44px;object-fit:cover;border-radius:4px;">':'<span style="color:var(--mu);">—</span>';
+      var nw=can?'<img src="'+_bpUrl(r.f)+'" loading="lazy" style="width:44px;height:44px;object-fit:cover;border-radius:4px;">':'';
+      h+='<tr style="border-top:1px solid var(--b);'+(r.st==="diff"||r.st==="dup"?'background:rgba(232,150,30,.16);':'')+'">'
+        +'<td style="padding:5px 4px;">'+(can?'<input type="checkbox" '+(r.on?'checked':'')+' onchange="_bpTick('+i+',this.checked)" style="width:18px;height:18px;">':'')+'</td>'
+        +'<td style="padding:5px 4px;font-family:var(--mo);white-space:nowrap;">'+(r.p?esc(r.p.id):'')+(can?'<div style="font-size:10px;color:var(--mu);">'+esc(r.hit.map(function(x){return x.list;}).join(", "))+'</div>':'')+'</td>'
+        +'<td style="padding:5px 4px;">'+now+'</td><td style="padding:5px 4px;">'+nw+'</td>'
+        +'<td style="padding:5px 4px;word-break:break-word;"><div>'+esc(r.path)+'</div>'+(a?'<div style="color:var(--mu);font-size:11px;">App: '+esc(a.name||"(no title)")+'</div>':'')
+        +'<div style="font-size:10px;margin-top:2px;"><span style="padding:1px 6px;border-radius:8px;background:'+s[2]+';color:'+s[1]+';">'+s[0]+'</span></div></td></tr>';
+    });
+    h+='</table>';
+  }
+  h+='</div><div class="mft" style="align-items:center;"><span style="flex:1;font-size:11px;color:var(--mu);">Tip: make a 💾 JSON Backup first. Old photos can\'t be brought back otherwise.</span><button class="btn bg" onclick="_bpClose()">Cancel</button><button class="btn bok" id="bpGo" '+(sel?'':'disabled style="opacity:.5;"')+' onclick="_bpRun()">Replace '+sel+' photo'+(sel===1?'':'s')+'</button></div></div>';
+  h+='<input type="file" id="bpDir" webkitdirectory directory multiple style="display:none" onchange="_bpAdd(this)"/><input type="file" id="bpFiles" accept="image/*" multiple style="display:none" onchange="_bpAdd(this)"/>';
+  bg.innerHTML=h;document.body.appendChild(bg);
+  var b=bg.querySelector(".mbd");if(b&&sc)b.scrollTop=sc;
+}
+function _bpRead(f){return new Promise(function(res){var r=new FileReader();r.onload=function(e){res(e.target.result);};r.onerror=function(){res(null);};r.readAsDataURL(f);});}
+async function _bpRun(){
+  var todo=_bp.files.filter(function(r){return r.on&&r.hit.length;});if(!todo.length)return;
+  if(!confirm("Replace photo 1 of "+todo.length+" item"+(todo.length===1?"":"s")+"?\nPhoto 2 is not touched. This can't be undone (except by restoring a JSON backup)."))return;
+  var btn=G("bpGo"),ok=0,bad=[];
+  for(var i=0;i<todo.length;i++){
+    var r=todo[i];if(btn){btn.disabled=true;btn.textContent="Working… "+(i+1)+" / "+todo.length;}
+    var raw=await _bpRead(r.f),c=raw?await compressPhoto(raw):null;
+    if(!c||c===raw||c.indexOf("data:image/jpeg")!==0){bad.push(r.name);continue;}
+    try{localStorage.removeItem("acap_ph_"+r.p.id);}catch(e){}
+    await savePhoto(r.p.id,c);
+    r.hit.forEach(function(x){x.a.photo=c;x.a.updatedAt=today();});
+    ok++;
+  }
+  saveAll();_ioStamp("photos");_bpClose();render();
+  alert("✓ "+ok+" photo"+(ok===1?"":"s")+" replaced."+(bad.length?"\n\n"+bad.length+" file(s) could not be read (e.g. HEIC):\n"+bad.slice(0,10).join("\n")+(bad.length>10?"\n…":""):"")
+    +"\n\nNext:\n1. Make a 💾 JSON Backup.\n2. Public QR pages: “Export only new / changed” and upload the ZIP to jk-verify, so the scans show the sharper photos.");
+}
 // ---- Allowed Moves (session 7, Jim; trial): switch any existing move/copy on or off ----
 var MOVES=[
   ["inventory","consign","Move to Consignment"],["inventory","framing","Send to Framing / Restoration"],["inventory","sold","Mark as Sold"],
@@ -3356,6 +3456,10 @@ function rIO(){
   h+=_ioBtn('<button class="btn bg" onclick="G(\'csvImp\').click()">📊 Import CSV</button>','csvimp')+'</div>';
   h+='<input type="file" id="jsonImp" accept=".json" style="display:none" onchange="importJSON(this)"/>';
   h+='<input type="file" id="csvImp" accept=".csv" style="display:none" onchange="importCSV(this)"/></div>';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
+  h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">🖼 PHOTOS</h3>';
+  h+='<div style="font-size:12px;color:var(--mu);margin-bottom:9px;line-height:1.6;">Replace photo 1 of many Inventory, Consignment, Framing and Sold items at once from your photo folders. Files are matched by the number at the start of the name (007 … → AST-007); you check the list before anything changes.</div>';
+  h+=_ioBtn('<button class="btn bp" onclick="openBulkPhotos()">🖼 Replace photos from files</button>','photos')+'</div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">EXPORT</h3>';
   h+='<div style="font-size:13px;color:var(--mu);margin-bottom:11px;">'+(assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length)+' total records ('+assets.length+' inv · '+consignAssets.length+' con · '+framingAssets.length+' fram · '+soldAssets.length+' sold · '+wishAssets.length+' wish · '+coaAssets.length+' priv.coll). JSON includes all lists + photos.</div>';
