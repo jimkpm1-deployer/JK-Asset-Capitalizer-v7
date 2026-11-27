@@ -433,6 +433,45 @@ html[data-theme="dark"]{color-scheme:dark;--bg:#16150f;--s:#201e17;--s2:#29261e;
 html[data-theme="dark"] body{background:var(--bg);}
 html[data-theme="dark"] .fr input,html[data-theme="dark"] .fr select,html[data-theme="dark"] .fr textarea{background:var(--s2);}
 html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;}
+/* Toolbar regroup (session 10) */
+.topbar{flex-direction:column;align-items:stretch;gap:6px;}
+.tbr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.tbapp{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;}
+#bMore{display:none;}
+.tbr2 .srch{max-width:260px;}
+.tbn{display:inline-block;min-width:16px;padding:0 5px;border-radius:9px;background:var(--gold);color:#1d1b16;font-size:10px;line-height:15px;text-align:center;font-family:var(--mo);}
+.fpanel{padding:7px;border:1px solid var(--b);border-radius:var(--r);background:var(--s2);box-shadow:inset 1px 2px 3px var(--shd-soft);}
+.fchips{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:11px;}
+.fclbl{font-family:var(--mo);color:var(--mu);font-size:10px;}
+.fchip{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 9px;border-radius:12px;background:var(--filt,#f3e3b5);border:1px solid var(--filt-b,var(--gold));color:var(--tx);}
+.fchip button{border:none;background:none;color:var(--mu);cursor:pointer;font-size:11px;padding:0 4px;}
+.fclr{border:none;background:none;color:var(--ac);cursor:pointer;font-size:11px;text-decoration:underline;}
+.tbmenu{position:fixed;z-index:4600;min-width:210px;max-width:92vw;background:var(--s);color:var(--tx);border:1px solid var(--b);border-radius:10px;box-shadow:3px 6px 18px var(--shd);padding:5px;display:flex;flex-direction:column;}
+.tbmenu>button{text-align:left;border:none;background:none;color:var(--tx);padding:9px 11px;border-radius:7px;font-size:13px;cursor:pointer;white-space:nowrap;}
+.tbmenu>button:hover{background:var(--hover,var(--s2));}
+.tbmx{display:flex;align-items:center;gap:8px;padding:9px 11px;border-top:1px solid var(--b);margin-top:4px;font-size:12px;color:var(--mu);font-family:var(--mo);}
+.tbmh{padding:4px 11px 7px;font-size:11px;color:var(--mu);line-height:1.5;white-space:normal;max-width:260px;}
+#SCRB{position:fixed;right:16px;bottom:86px;z-index:4400;display:flex;flex-direction:column;gap:8px;opacity:0;pointer-events:none;transition:opacity .35s;}
+#SCRB.on{opacity:1;pointer-events:auto;}
+#SCRB button{width:44px;height:44px;border-radius:50%;border:1px solid var(--b);background:var(--s);color:var(--tx);font-size:17px;box-shadow:2px 3px 6px var(--shd);cursor:pointer;}
+@media(max-width:680px){
+ .tbapp #bTheme,.tbapp #bCalc,.tbapp #bDiag{display:none;}
+ #bMore{display:inline-flex;}
+ .tbr1 .tlb,.tbr2 .tlb{display:none;}
+ .tbapp{flex-wrap:nowrap;}
+ .tbr1,.tbr1 .tbapp{gap:4px;}
+ .tbr1 .btn{padding-left:6px;padding-right:6px;}
+ .tbr2 #fSort{max-width:84px;}
+ .tbr2 .sp{display:none;}
+ .tbr .btn{padding-left:8px;padding-right:8px;}
+ .tbr1{flex-wrap:nowrap;}
+ #TBT{display:flex!important;flex-wrap:nowrap;}
+ #TBT h2{flex:0 1 auto;max-width:48%;overflow:hidden;text-overflow:ellipsis;min-width:0;margin:0;}
+ #TBT .srch{flex:1 1 auto;min-width:0;max-width:none;}
+ .tbr1 .brand{border-right:none;}
+ .fpanel .sel{flex:1 1 44%;min-width:0;}
+}
+@media print{#SCRB,.tbmenu,.fchips,.fpanel{display:none!important;}}
 </style>
 </head>
 <body class="app-locked">
@@ -478,27 +517,32 @@ body.app-locked .shell * { pointer-events: none !important; }
   <div class="sbovl" id="SOVL" onclick="closeSB()"></div>
   <div class="main">
     <div class="topbar" id="TB">
+      <div class="tbr tbr1">
       <button class="mbtn" onclick="toggleSB()">☰</button>
       <div class="brand" onclick="goTo('dash')" title="Dashboard"><img class="brand-ic" alt="" src="data:image/png;base64,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"/><span class="brand-nm">Asset Capitalizer <em>by JK</em></span></div>
       <h2 id="pgTit">Dashboard</h2>
+      <div class="sp"></div>
+      <span class="tbapp no-print">
+      <button class="btn bg no-print" id="bScan"   style="display:none" onclick="openScanner()">🔍<span class="tlb"> Scan</span></button>
+      <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾<span class="tlb"> Save</span></button>
+      <button class="btn bg no-print" id="bTheme" onclick="toggleTheme()" title="Night mode">🌙</button>
+      <button class="btn bg no-print" id="bCalc" onclick="toggleCalc()" title="Calculator">🧮</button>
+      <button class="btn bg no-print" id="bDiag" style="font-size:10px;" onclick="showStorageDiag()">🗄 Storage</button>
+      </span>
+      <button class="btn bnew no-print" id="bNew" onclick="newAsset()">＋<span class="tlb"> Add</span></button>
+      <button class="btn bg no-print" id="bMore" onclick="tbMenu(this,'more')" title="More">⋯</button>
+      </div>
+      <div class="tbr" id="TBT" style="display:none"></div>
+      <div class="tbr tbr2 no-print" id="LB" style="display:none">
       <div class="srch" id="srchWrap" style="display:none">
         <input type="search" id="srchIn" placeholder="Search…" oninput="doFilter()"/>
       </div>
-      <select class="sel" id="fCat"  onchange="doFilter()" style="display:none"></select>
-      <select class="sel" id="fCond" onchange="doFilter()" style="display:none"></select>
-      <select class="sel" id="fLoc"  onchange="doFilter()" style="display:none"></select>
-      <select class="sel" id="fAsgn" onchange="doFilter()" style="display:none"></select>
-      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="framing">Framing</option><option value="sold">Sold</option><option value="wish">Wish List</option><option value="coa">Private COAs</option></select>
-      <select class="sel" id="fMed" onchange="doFilter()" style="display:none"><option value="">All Mediums</option></select>
-      <select class="sel" id="fYear" onchange="doFilter()" style="display:none"><option value="">All Years</option></select>
-      <select class="sel" id="fOwner" onchange="doFilter()" style="display:none"><option value="">All Owners</option></select>
-      <select class="sel" id="fFrame" onchange="doFilter()" style="display:none"><option value="">All Frame Status</option></select>
+      <button class="btn bg" id="bFilt" onclick="toggleFiltPanel()">⚲ Filters</button>
       <button class="btn bg no-print" id="bMarked" style="display:none" onclick="toggleMarkedFilter()">☆ Marked</button>
       <select class="sel" id="fSort" onchange="doFilter()" style="display:none">
         <option value="name">Name</option><option value="cat">Category</option>
         <option value="val">Value ↓</option><option value="date">Date</option><option value="id">ID</option>
       </select>
-      <div class="sp"></div>
       <div class="vt no-print" id="vtgl" style="display:none">
         <button class="on" id="vtG" onclick="setLM('grid')">⊞</button>
         <button id="vtT" onclick="setLM('tbl')">☰</button>
@@ -509,24 +553,30 @@ body.app-locked .shell * { pointer-events: none !important; }
         <option value="2">2 Columns</option>
         <option value="3">3 Columns</option>
       </select>
-      <button class="btn bg no-print" id="bScan"   style="display:none" onclick="openScanner()">🔍 Scan</button>
-      <button class="btn bg no-print" id="bPrint"  style="display:none" onclick="openPrintDlg()">🖨 Print</button>
-      <button class="btn bg no-print" id="bAddCol" style="display:none" onclick="showAddCol()">＋ Col</button>
-      <button class="btn bg no-print" id="bUnhide" style="display:none" onclick="showUnhide()">👁 Unhide</button>
-      <button class="btn bg no-print" id="bBC"     style="display:none" onclick="printStickers()">🖨 Stickers</button>
-      <button class="btn bg no-print" id="bBCpdf"  style="display:none" onclick="stickersPDF()">📄 PDF</button>
-      <button class="btn bg no-print" id="bTheme" onclick="toggleTheme()" title="Night mode">🌙</button>
-      <button class="btn bg no-print" id="bCalc" onclick="toggleCalc()" title="Calculator">🧮</button>
-      <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾 Save</button>
-      <button class="btn bg no-print" id="bDiag" style="font-size:10px;" onclick="showStorageDiag()">🗄 Storage</button>
-      <button class="btn bg no-print" id="bStickerList" style="display:none;font-size:11px;" onclick="printCurrentListStickers()">🏷 Stickers</button>
-      <button class="btn bg no-print" id="bBCList" style="display:none;font-size:11px;" onclick="qrSheetsClick()">▣ List QRs</button>
-      <button class="btn bg no-print" id="bPrintAll" style="display:none;font-size:11px;" onclick="printAllLists()">🖨 All Lists</button>
-      <button class="btn bnew no-print" id="bNew" onclick="newAsset()">＋ New</button>
+      <div class="sp"></div>
+      <button class="btn bg" id="bPQ" onclick="tbMenu(this,'pq')">🖨<span class="tlb"> Print &amp; QR</span> ▾</button>
+      <button class="btn bg" id="bVW" onclick="tbMenu(this,'view')">▥<span class="tlb"> View</span> ▾</button>
+      <button class="btn bnew" id="bAdd" onclick="tbAdd()">＋<span class="tlb"> Add</span></button>
+      </div>
+      <div class="tbr fpanel no-print" id="FP" style="display:none">
+      <select class="sel" id="fCat"  onchange="doFilter()" style="display:none"></select>
+      <select class="sel" id="fCond" onchange="doFilter()" style="display:none"></select>
+      <select class="sel" id="fLoc"  onchange="doFilter()" style="display:none"></select>
+      <select class="sel" id="fAsgn" onchange="doFilter()" style="display:none"></select>
+      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="framing">Framing</option><option value="sold">Sold</option><option value="wish">Wish List</option><option value="coa">Private COAs</option></select>
+      <select class="sel" id="fMed" onchange="doFilter()" style="display:none"><option value="">All Mediums</option></select>
+      <select class="sel" id="fYear" onchange="doFilter()" style="display:none"><option value="">All Years</option></select>
+      <select class="sel" id="fOwner" onchange="doFilter()" style="display:none"><option value="">All Owners</option></select>
+      <select class="sel" id="fFrame" onchange="doFilter()" style="display:none"><option value="">All Frame Status</option></select>
+      <button class="btn bg" id="bFClr" onclick="clearFilters()">✕ Clear all</button>
+      </div>
+      <div class="fchips no-print" id="FCH" style="display:none"></div>
+      <div style="display:none"><button class="btn bg no-print" id="bPrint"  style="display:none" onclick="openPrintDlg()">🖨 Print</button> <button class="btn bg no-print" id="bAddCol" style="display:none" onclick="showAddCol()">＋ Col</button> <button class="btn bg no-print" id="bUnhide" style="display:none" onclick="showUnhide()">👁 Unhide</button> <button class="btn bg no-print" id="bBC"     style="display:none" onclick="printStickers()">🖨 Stickers</button> <button class="btn bg no-print" id="bBCpdf"  style="display:none" onclick="stickersPDF()">📄 PDF</button> <button class="btn bg no-print" id="bStickerList" style="display:none" onclick="printCurrentListStickers()">🏷 Stickers</button> <button class="btn bg no-print" id="bBCList" style="display:none" onclick="qrSheetsClick()">▣ List QRs</button> <button class="btn bg no-print" id="bPrintAll" style="display:none" onclick="printAllLists()">🖨 All Lists</button></div>
     </div>
     <div class="content" id="CT"><div class="empty"><div class="big">⬡</div>Loading…</div></div>
   </div>
 </div>
+<div id="SCRB" class="no-print"><button id="scrUp" onclick="scrTo(0)" title="Go to top">▲</button><button id="scrDn" onclick="scrTo(1)" title="Go to bottom">▼</button></div>
 <div id="CALC" class="no-print" style="display:none;position:fixed;right:16px;bottom:16px;width:232px;z-index:4500;background:var(--s);color:var(--tx);border:1px solid var(--b);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.35);user-select:none;-webkit-user-select:none;">
   <div id="CALChd" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:move;touch-action:none;border-bottom:1px solid var(--b);font-family:var(--mo);font-size:11px;color:var(--mu);">
     <span>🧮 Calculator</span><span><button class="mcls" style="font-size:12px;margin-right:6px;" onclick="calcCopy()" title="Copy result">⧉</button><button class="mcls" style="font-size:13px;" onclick="toggleCalc()" title="Close">✕</button></span>
@@ -1199,7 +1249,7 @@ function _applyViewChrome(v){
   var foEl=G("fOwner");if(foEl)foEl.style.display=v==="coa"?"":"none";
   var flcEl=G("fLoc");if(flcEl&&v==="coa")flcEl.style.display="none"; // Owner replaces Location in Private COAs
   var ffEl=G("fFrame");if(ffEl)ffEl.style.display=v==="table"?"":"none";
-  var bMk=G("bMarked");if(bMk){bMk.style.display=LIST_VIEWS.indexOf(v)>=0?"":"none";bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}
+  var bMk=G("bMarked");if(bMk){bMk.style.display=LIST_VIEWS.indexOf(v)>=0?"":"none";}
   const vg=G("vtgl");if(vg)vg.style.display=v==="list"?"":"none";
   const vgc=G("vtCols");if(vgc){vgc.style.display=v==="list"?"":"none";vgc.value=gridCols||"";}
   ["bAddCol"].forEach(id=>{const el=G(id);if(el)el.style.display=v==="table"?"":"none";});
@@ -1211,6 +1261,7 @@ function _applyViewChrome(v){
   var bBL=G("bBCList");if(bBL)bBL.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
   if(bBL)bBL.textContent=(v==="list"||v==="table")?"\u25A3 QR Sheets":"\u25A3 List QRs";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
+  try{_tbCloseMenu();_tbSync();}catch(e){}
   var ct=G("CT");if(ct){ct.classList.toggle("tbl-view",v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa");}
 }
 function goTo(v){
@@ -1224,7 +1275,7 @@ function newAsset(){
   if(!window._newAssetModeSet)editMode="inventory";
   window._newAssetModeSet=false;
   const t=G("pgTit");if(t)t.textContent="New Asset";
-  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan"].forEach(id=>{const el=G(id);if(el)el.style.display="none";});
+  ["srchWrap","fCat","fCond","fLoc","fAsgn","fSort","vtgl","vtCols","bPrint","bAddCol","bUnhide","bBC","bBCpdf","bScan","LB","FP","FCH","bNew"].forEach(id=>{const el=G(id);if(el)el.style.display="none";});
   closeSB();render();
 }
 function toggleSB(){const sb=G("SB");sb.classList.toggle("open");G("SOVL").style.display=sb.classList.contains("open")?"block":"none";}
@@ -1335,7 +1386,6 @@ function doFilter(keepScroll){
   render();
 }
 function toggleMarkedFilter(){markedOnly=!markedOnly;_syncMarkBtn();doFilter();}
-function _syncMarkBtn(){var bMk=G("bMarked");if(bMk){bMk.textContent=markedOnly?"★ Marked":"☆ Marked";bMk.classList.toggle("bp",markedOnly);}}
 // Mark (star) - works for items in ANY of the six lists; the flag lives on the item so it moves with it
 function markStar(a){var m=!!a.marked;return '<span class="no-print mstar" style="cursor:pointer;font-size:16px;line-height:1;color:'+(m?"var(--gold)":"#aaa")+';flex-shrink:0;" onclick="event.stopPropagation();toggleMark(\''+esc(a.id)+'\')" title="'+(m?"Unmark":"Mark")+'">'+(m?"★":"☆")+'</span>';}
 function markRowAttr(a){return a.marked?' style="background:linear-gradient(rgba(200,150,30,.24),rgba(200,150,30,.24)),var(--s);"':'';}
@@ -1403,7 +1453,7 @@ function _maskMoney(root){
   while((n=w.nextNode())){var p=n.parentNode;if(p&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(p.tagName))continue;if(p&&p.isContentEditable)continue;if(n.nodeValue.indexOf("$")>=0)list.push(n);}
   list.forEach(function(t){t.nodeValue=t.nodeValue.replace(_PM_RE,"$*****");});
 }
-function _afterRender(){try{document.documentElement.style.setProperty("--rowh",rowH+"px");_initColResize();}catch(e){}}
+function _afterRender(){try{document.documentElement.style.setProperty("--rowh",rowH+"px");_initColResize();}catch(e){}try{_tbSync();_scrN=_scrCount();_scrUpd(false);}catch(e){}}
 function togglePriceMask(ev){if(ev)ev.stopPropagation();_pmask=!_pmask;document.documentElement.classList.toggle("pmask",_pmask);render();toast(_pmask?"Prices hidden":"Prices shown until the app is closed \u2014 click the amount to hide them again","i",4500);}
 function render(){
   updSidebar();
@@ -1450,9 +1500,6 @@ function rConsign(){
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px;">';
   h+='<span style="font-family:var(--mo);font-size:11px;color:var(--mu);">'+(hasFilter()?list.length+' of ':'')+consignAssets.length+' consignment assets</span>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-  h+='<button class="btn bnew" style="font-size:11px;" onclick="newConsignAsset()">＋ Add</button>';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="exportConsignCSV()">&#x1F4CA; CSV</button>';
-  h+='<button class="btn bg" style="font-size:11px;" title="Bilingual letter for the owner, with the IDs of the \u2605 marked items" onclick="qrLetterMarked(\'consign\')">\u2709 QR Letter</button>';
   h+='</div></div>';
   if(!consignAssets.length){
     h+='<div class="empty"><div class="big">&#x1F4E6;</div>No consignment assets yet.<br><span style="font-size:12px;">Tap + Add to create one.</span></div>';
@@ -1518,9 +1565,6 @@ function rFraming(){
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px;">';
   h+='<span style="font-family:var(--mo);font-size:11px;color:var(--mu);">'+(hasFilter()?list.length+' of ':'')+framingAssets.length+' framing/restoration assets</span>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-  h+='<button class="btn bnew" style="font-size:11px;" onclick="newFramingAsset()">\uFF0B Add</button>';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="exportFramingCSV()">&#x1F4CA; CSV</button>';
-  h+='<button class="btn bg" style="font-size:11px;" title="Bilingual letter for the owner, with the IDs of the \u2605 marked items" onclick="qrLetterMarked(\'framing\')">\u2709 QR Letter</button>';
   h+='</div></div>';
   if(!framingAssets.length){
     h+='<div class="empty"><div class="big">&#x1F58C;</div>No items at framing/restoration.<br><span style="font-size:12px;">Tap + Add to send one.</span></div>';
@@ -1690,9 +1734,6 @@ function rCOA(){
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px;">';
   h+='<span style="font-family:var(--mo);font-size:11px;color:var(--mu);">'+(hasFilter()?list.length+' of ':'')+coaAssets.length+' private collection pieces \u00b7 '+issuedN+' COA issued</span>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-  h+='<button class="btn bnew" style="font-size:11px;" onclick="newCOAAsset()">\uFF0B Add</button>';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="exportCOACSV()">&#x1F4CA; CSV</button>';
-  h+='<button class="btn bg" style="font-size:11px;" title="Bilingual letter for the owner, with the IDs of the \u2605 marked items" onclick="qrLetterMarked(\'coa\')">\u2709 QR Letter</button>';
   h+='</div></div>';
   h+='<div style="font-size:11px;color:var(--mu);margin-bottom:9px;">Pieces brought in by their owners for authentication / Certificate of Authenticity \u2014 not part of your owned inventory.</div>';
   if(!coaAssets.length){
@@ -1800,8 +1841,6 @@ function rSold(){
   var h='<div>';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px;">';
   h+='<span style="font-family:var(--mo);font-size:11px;color:var(--mu);">'+(hasFilter()?list.length+' of ':'')+soldAssets.length+' sold assets</span>';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="exportSoldCSV()">&#x1F4CA; CSV</button>';
-  h+='<button class="btn bg" style="font-size:11px;" title="Bilingual letter for the owner, with the IDs of the \u2605 marked items" onclick="qrLetterMarked(\'sold\')">\u2709 QR Letter</button>';
   h+='</div>';
   if(!soldAssets.length){h+='<div class="empty"><div class="big">&#x1F4B0;</div>No sold assets yet.</div>';return h+'</div>';}
   if(!list.length){h+='<div class="empty">No sold assets match filter.</div>';return h+'</div>';}
@@ -2167,12 +2206,7 @@ function rTable(){
   else h+='<div style="font-size:9px;color:#666;margin-top:1px;">'+tblA.length+' assets total</div>';
   h+='</div>';
   h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;" class="no-print">';
-  h+='<span style="font-family:var(--mo);font-size:10px;color:var(--mu);">Row height:</span>';
-  h+='<input type="range" min="26" max="100" value="'+rowH+'" oninput="setRH(this.value)" style="width:70px;"/>';
-  h+='<span id="rhLbl" style="font-family:var(--mo);font-size:10px;color:var(--mu);">'+rowH+'px</span>';
-  h+='<span style="color:var(--mu);font-size:10px;">Drag header=reorder · edge=resize · click=edit · 📷=photo</span>';
-  h+='<span style="font-family:var(--mo);font-size:11px;color:var(--mu);margin-left:8px;">'+(hasFilter()?tblA.length+' of '+assets.length+' assets':tblA.length+' assets')+'</span>';
-  h+='<span style="margin-left:auto;">'+'<button class="btn bg" style="font-size:11px;" title="Bilingual letter for the owner, with the IDs of the \u2605 marked items" onclick="qrLetterMarked(\'inventory\')">\u2709 QR Letter</button>'+'</span>';
+  h+='<span style="font-family:var(--mo);font-size:11px;color:var(--mu);">'+(hasFilter()?tblA.length+' of '+assets.length+' assets':tblA.length+' assets')+'</span>';
   h+='</div>';
   h+='<div class="twrap" id="TW"><table class="tbl" id="MT" style="width:'+totalW+'px;">';
   h+='<thead><tr><th style="width:78px;min-width:48px;position:sticky;top:0;z-index:3;background:var(--s2);"><div class="thin"><span class="thlbl">ID</span></div></th>';
@@ -2236,9 +2270,6 @@ function rWish(){
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px;">';
   h+='<span style="font-family:var(--mo);font-size:11px;color:var(--mu);">'+(hasFilter()?list.length+' of ':'')+wishAssets.length+' wish list items \u00b7 $'+wishTotalVal.toLocaleString(undefined,{maximumFractionDigits:0})+' total</span>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-  h+='<button class="btn bnew" style="font-size:11px;" onclick="newWishAsset()">\uFF0B Add</button>';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="exportWishCSV()">&#x1F4CA; CSV</button>';
-  h+='<button class="btn bg" style="font-size:11px;" title="Bilingual letter for the owner, with the IDs of the \u2605 marked items" onclick="qrLetterMarked(\'wish\')">\u2709 QR Letter</button>';
   h+='</div></div>';
   if(!wishAssets.length){
     h+='<div class="empty"><div class="big">\u2B50</div>No wish list items yet.<br><span style="font-size:12px;">Tap + Add to add something you want to acquire.</span></div>';
@@ -3382,6 +3413,108 @@ async function _bpRun(){
   alert("✓ "+ok+" photo"+(ok===1?"":"s")+" replaced."+(bad.length?"\n\n"+bad.length+" file(s) could not be read (e.g. HEIC):\n"+bad.slice(0,10).join("\n")+(bad.length>10?"\n…":""):"")
     +"\n\nNext:\n1. Make a 💾 JSON Backup.\n2. Public QR pages: “Export only new / changed” and upload the ZIP to jk-verify, so the scans show the sharper photos.");
 }
+// Phone header (session 10, Jim): row 1 = icon + "Asset Capitalizer by JK" + Scan/Save/⋯; row 2 (#TBT) = page/list name + search bar
+var _tbMQ=window.matchMedia?window.matchMedia("(max-width:680px)"):null;
+function _tbPlace(){
+  var ph=_tbMQ&&_tbMQ.matches,t=G("pgTit"),sw=G("srchWrap"),tbt=G("TBT"),lb=G("LB");if(!t||!sw||!tbt||!lb)return;
+  if(ph){if(t.parentNode!==tbt){tbt.appendChild(t);tbt.appendChild(sw);}}
+  else if(t.parentNode===tbt){var br=document.querySelector(".tbr1 .brand");br.parentNode.insertBefore(t,br.nextSibling);lb.insertBefore(sw,lb.firstChild);}
+}
+if(_tbMQ){if(_tbMQ.addEventListener)_tbMQ.addEventListener("change",_tbPlace);else if(_tbMQ.addListener)_tbMQ.addListener(_tbPlace);}
+// ---- Toolbar regroup (session 10, Jim): app tools in row 1; list bar = Search · Filters (n) · Marked (n) · Sort · Print & QR ▾ · View ▾ · ＋ Add;
+// filter pull-downs live in the Filters panel (#FP); active filters shown as chips (#FCH); phone: Night/Calculator/Storage under ⋯.
+var _fpOpen=false;
+var FILT_IDS=[["fCat","Category"],["fCond","Condition"],["fLoc","Location"],["fAsgn","Assigned"],["fList","List"],["fMed","Medium"],["fYear","Year"],["fOwner","Owner"],["fFrame","Frame"]];
+function _tbLK(v){return v==="table"?"inventory":v;}
+function _tbVis(id){var el=G(id);return el&&el.style.display!=="none"?el:null;}
+function toggleFiltPanel(){_fpOpen=!_fpOpen;_tbSync();}
+function clearFilters(){
+  FILT_IDS.forEach(function(f){var el=G(f[0]);if(el)el.value="";});
+  var s=G("srchIn");if(s)s.value="";markedOnly=false;_syncMarkBtn();doFilter();
+}
+function _clrOne(id){if(id==="srchIn"){G("srchIn").value="";}else if(id==="marked"){markedOnly=false;_syncMarkBtn();}else{var el=G(id);if(el)el.value="";}doFilter();}
+function _markCount(){
+  var v=view==="detail"||view==="form"?(detailOrigin||view):view;
+  var arr=v==="list"?_allItems():LIST_VIEWS.indexOf(v)>=0?_listArr(v):[];
+  return arr.filter(function(a){return a&&a.marked;}).length;
+}
+function _syncMarkBtn(){var bMk=G("bMarked");if(bMk){var n=_markCount();bMk.innerHTML=(markedOnly?"★":"☆")+'<span class="tlb"> Marked</span>'+(n?' <b class="tbn">'+n+'</b>':'');bMk.title="Show only ★ marked items ("+n+" marked in this list)";bMk.classList.toggle("bp",markedOnly);}}
+function _tbSync(){
+  _tbPlace();
+  var isL=LIST_VIEWS.indexOf(view)>=0;
+  var lb=G("LB"),fp=G("FP"),ch=G("FCH");
+  if(lb)lb.style.display=isL?"":"none";
+  if(fp)fp.style.display=isL&&_fpOpen?"":"none";
+  var ba=G("bAdd");if(ba)ba.style.display=isL&&view!=="sold"?"":"none";
+  var bn=G("bNew");if(bn)bn.style.display=(!isL&&view!=="form"&&view!=="detail")?"":"none";
+  if(!isL){if(ch)ch.style.display="none";return;}
+  var n=0,chips=[];
+  FILT_IDS.forEach(function(f){var el=_tbVis(f[0]);if(el&&el.value){n++;var t=el.options[el.selectedIndex]?el.options[el.selectedIndex].text:el.value;chips.push([f[0],f[1]+": "+t]);}});
+  var q=(G("srchIn")||{value:""}).value.trim();if(q)chips.unshift(["srchIn","Search: "+q]);
+  if(markedOnly)chips.push(["marked","★ Marked only"]);
+  var bf=G("bFilt");if(bf){bf.innerHTML='⚲<span class="tlb"> Filters</span>'+(n?' <b class="tbn">'+n+'</b>':'')+(_fpOpen?' ▴':' ▾');bf.classList.toggle("bp",n>0);bf.title=_fpOpen?"Hide filters":"Show filters";}
+  _syncMarkBtn();
+  if(ch){
+    if(chips.length){ch.style.display="";ch.innerHTML='<span class="fclbl">Filtered:</span>'+chips.map(function(c){return '<span class="fchip">'+esc(c[1])+' <button onclick="_clrOne(\''+c[0]+'\')" title="Remove this filter">✕</button></span>';}).join("")+'<button class="fclr" onclick="clearFilters()">Clear all</button>';}
+    else{ch.style.display="none";ch.innerHTML="";}
+  }
+}
+function tbAdd(){
+  var v=view;
+  if(v==="consign")newConsignAsset();else if(v==="framing")newFramingAsset();else if(v==="wish")newWishAsset();else if(v==="coa")newCOAAsset();else newAsset();
+}
+function _tbCloseMenu(){var m=G("TBM");if(m)m.remove();document.removeEventListener("pointerdown",_tbOut,true);}
+function _tbOut(e){var m=G("TBM");if(m&&!m.contains(e.target)&&!(e.target.closest&&e.target.closest("[data-tbm]")))_tbCloseMenu();}
+function _tbRun(i){var f=(window._tbItems||[])[i];_tbCloseMenu();if(f)setTimeout(f,0);}
+function tbMenu(btn,kind){
+  var open=G("TBM");if(open){var same=open.dataset.kind===kind;_tbCloseMenu();if(same)return;}
+  var v=view,lk=_tbLK(v),it=[],extra="";
+  if(kind==="pq"){
+    if(v!=="list")it.push(["🖨 Print list",function(){openPrintDlg();}]);
+    it.push(["🏷 Stickers",function(){printCurrentListStickers();}]);
+    if(v==="list"){it.push(["🏷 Stickers — Inventory",function(){printStickers();}]);it.push(["📄 Stickers PDF — Inventory",function(){stickersPDF();}]);}
+    it.push(["▣ QR sheets",function(){qrSheetsClick();}]);
+    if(v!=="list")it.push(["✉ QR letter (★ marked)",function(){qrLetterMarked(lk);}]);
+    var csv={table:"exportCSV",consign:"exportConsignCSV",framing:"exportFramingCSV",sold:"exportSoldCSV",wish:"exportWishCSV",coa:"exportCOACSV"}[v];
+    if(csv)it.push(["📊 Export CSV",function(){window[csv]();}]);
+    if(v==="list")it.push(["🖨 Print all lists",function(){printAllLists();}]);
+  }else if(kind==="view"){
+    if(v!=="list"){it.push(["＋ Add column",function(){showAddCol();}]);it.push(["👁 Unhide columns",function(){showUnhide();}]);}
+    it.push(["▦ Manage columns",function(){goTo("cols");try{if(v!=="list")setColsSettingsList(lk);}catch(e){}}]);
+    it.push(["⇅ Field order",function(){goTo("settings");try{if(v!=="list")setFOList(lk);}catch(e){}}]);
+    if(v!=="list")extra='<div class="tbmx"><span>Row height</span><input type="range" min="26" max="100" value="'+rowH+'" oninput="setRH(this.value);document.documentElement.style.setProperty(\'--rowh\',this.value+\'px\')" style="flex:1;"/><span id="rhLbl">'+rowH+'px</span></div>'
+      +'<div class="tbmh">Drag a header to reorder · drag its left edge to resize · click a cell to edit · 📷 = photo</div>';
+  }else if(kind==="more"){
+    var dk=document.documentElement.getAttribute("data-theme")==="dark";
+    it.push([dk?"☀️ Day mode":"🌙 Night mode",function(){toggleTheme();}]);
+    it.push(["🧮 Calculator",function(){toggleCalc();}]);
+    it.push(["🗄 Storage",function(){showStorageDiag();}]);
+  }
+  window._tbItems=it.map(function(x){return x[1];});
+  var m=document.createElement("div");m.id="TBM";m.className="tbmenu no-print";m.dataset.kind=kind;
+  m.innerHTML=it.map(function(x,i){return '<button onclick="_tbRun('+i+')">'+x[0]+'</button>';}).join("")+extra;
+  document.body.appendChild(m);
+  var r=btn.getBoundingClientRect(),w=m.offsetWidth,left=Math.min(r.left,window.innerWidth-w-8);
+  m.style.left=Math.max(8,left)+"px";m.style.top=(r.bottom+4)+"px";
+  btn.setAttribute("data-tbm","1");
+  setTimeout(function(){document.addEventListener("pointerdown",_tbOut,true);},0);
+}
+// ---- Floating ▲ / ▼ for long lists (session 10, Jim): lists with more than 50 items; shows while scrolling, fades after 2.5 s
+var _scrN=0,_scrT=null;
+function _scrCount(){
+  if(LIST_VIEWS.indexOf(view)<0)return 0;
+  try{return view==="list"?document.querySelectorAll("#CT .acard,#CT tbody tr").length||_allItems().length:viewItems(view).length;}catch(e){return 0;}
+}
+function _scrEl(){var ct=G("CT");if(!ct)return null;var tw=ct.querySelector(".twrap");return tw&&tw.scrollHeight>tw.clientHeight+40?tw:ct;}
+function _scrUpd(show){
+  var b=G("SCRB"),ct=_scrEl();if(!b||!ct)return;
+  if(_scrN<=50||ct.scrollHeight<=ct.clientHeight+40){b.classList.remove("on");return;}
+  var top=ct.scrollTop>150,bot=ct.scrollTop+ct.clientHeight<ct.scrollHeight-150;
+  G("scrUp").style.visibility=top?"visible":"hidden";G("scrDn").style.visibility=bot?"visible":"hidden";
+  if(show){b.classList.add("on");clearTimeout(_scrT);_scrT=setTimeout(function(){b.classList.remove("on");},2500);}
+}
+function scrTo(end){var ct=_scrEl();if(!ct)return;ct.scrollTo({top:end?ct.scrollHeight:0,behavior:"smooth"});_scrUpd(true);}
+document.addEventListener("scroll",function(e){var t=e.target;if(t&&(t.id==="CT"||(t.classList&&t.classList.contains("twrap")&&t.closest&&t.closest("#CT"))))_scrUpd(true);},true);
 // ---- Allowed Moves (session 7, Jim; trial): switch any existing move/copy on or off ----
 var MOVES=[
   ["inventory","consign","Move to Consignment"],["inventory","framing","Send to Framing / Restoration"],["inventory","sold","Mark as Sold"],
