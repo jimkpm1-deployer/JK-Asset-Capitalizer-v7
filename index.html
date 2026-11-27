@@ -1133,7 +1133,7 @@ function calcPlace(){
   var hd=G("CALChd"),box=G("CALC"),drag=null;
   if(hd&&box){
     hd.addEventListener("pointerdown",function(e){
-      if(e.target.tagName==="BUTTON")return;
+      if(e.target.closest&&e.target.closest("button"))return; // the ✕ / ⧉ may hold an icon span (session 10 fix: X did not close on PC)
       var r=box.getBoundingClientRect();drag={dx:e.clientX-r.left,dy:e.clientY-r.top};
       try{hd.setPointerCapture(e.pointerId);}catch(x){}
     });
