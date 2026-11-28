@@ -16,10 +16,13 @@
 try{if(localStorage.getItem('acap_theme_v1')==='"dark"')document.documentElement.setAttribute('data-theme','dark');}catch(e){}
 </script>
 <script>
-// Unregister old service workers silently
-if(navigator.serviceWorker)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister();});});
-if(window.caches)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});
-if(window.caches)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});
+// Offline use (session 11, Jim): keep only our offline helper offline-sw.js (network first, device copy when there is no internet);
+// any other old service worker / cache (Netlify era) is still removed.
+if(navigator.serviceWorker){
+  navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){var u=(s.active||s.waiting||s.installing||{}).scriptURL||"";if(!/offline-sw\.js/.test(u))s.unregister();});});
+  if(location.protocol==="https:"||location.hostname==="localhost"||location.hostname==="127.0.0.1")window.addEventListener("load",function(){navigator.serviceWorker.register("./offline-sw.js",{scope:"./"}).catch(function(){});});
+}
+if(window.caches)caches.keys().then(function(k){k.forEach(function(n){if(n.indexOf("acap-offline-")!==0)caches.delete(n);});});
 </script>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2"/>
 <link rel="icon" href="favicon.ico?v=2" sizes="any"/>
@@ -462,6 +465,22 @@ html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;
 /* Session 11 (Jim): one look for every Actions button (lists + detail view): sky blue, "⇄ Actions" */
 .btn.actbtn,html[data-theme="dark"] .btn.actbtn{background:#87ceeb!important;color:#0b2a3a!important;font-weight:700;border-color:#5aa9c9;}
 .btn.actbtn:hover{background:#a3dcf2!important;}
+/* Licence (session 11) */
+.brand-own{display:block;font-size:10.5px;font-style:italic;font-weight:600;color:var(--mu);line-height:1.1;margin-top:1px;}
+#LIC{position:fixed;inset:0;z-index:100000;background:rgba(10,9,7,.72);display:flex;align-items:center;justify-content:center;padding:14px;}
+#LIC .licbox{background:var(--s);color:var(--tx);border:1px solid var(--b);border-radius:12px;max-width:440px;width:100%;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.45);font-size:13px;}
+#LIC .lict{font-family:var(--mo);font-weight:700;font-size:13px;margin-bottom:10px;}
+#LIC .licrow{margin:6px 0;line-height:1.5;}
+#LIC .licmsg{background:#fff4d6;color:#5c4300;border-radius:6px;padding:8px;margin:8px 0;line-height:1.5;}
+#LIC .licmsg.ro{background:#fde2de;color:#7a1d12;}
+#LIC .licdc{font-family:var(--mo);font-size:22px;font-weight:700;letter-spacing:.12em;text-align:center;padding:8px;border:1px dashed var(--b);border-radius:8px;margin:4px 0 10px;user-select:all;}
+#LIC textarea{width:100%;font-family:var(--mo);font-size:11px;padding:7px;border:1px solid var(--b);border-radius:6px;background:var(--s2);color:var(--tx);word-break:break-all;}
+#LIC .licerr{color:#b42318;font-size:12px;min-height:16px;margin:4px 0;}
+#LIC .licbtns{display:flex;gap:8px;justify-content:flex-end;}
+#LICB{display:flex;align-items:center;gap:10px;padding:7px 12px;font-size:12px;line-height:1.45;border-bottom:1px solid var(--b);}
+#LICB.warn{background:#fff4d6;color:#5c4300;}#LICB.ro{background:#fde2de;color:#7a1d12;}
+#LICB span{flex:1;}#LICB .btn{font-size:11px;white-space:nowrap;}
+html.licro #bAdd,html.licro #bNew,html.licro .actbtn,html.licro .bd{opacity:.4;}
 .tbmenu .mvdot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:-1px;box-shadow:inset 0 1px 1px rgba(255,255,255,.35);}
 .tbmenu .tbdf.on{font-weight:700;color:var(--ac);}
 #SCRB{position:fixed;right:16px;bottom:86px;z-index:4400;display:flex;flex-direction:column;gap:8px;opacity:0;pointer-events:none;transition:opacity .35s;}
@@ -1504,6 +1523,172 @@ function _fmtDates(root){
 function _fmtDsample(f){var o=_dfmt;_dfmt=f;var r=fmtDateObj(new Date());_dfmt=o;return r;}
 function _pwFix(w){try{if(w&&!w._dfx){var d=w.document,o=d.write.bind(d);d.write=function(h){o(fmtDatesHTML(h));};w._dfx=1;}}catch(e){}}
 function setDateFmt(f){_dfmt=f;LS.set("acap_datefmt_v1",f);_tbCloseMenu();render();updSidebar();toast("Date format: "+f,"s");}
+// ==== Licences (session 11, Jim) ====
+// Keys are made only with Jim's private "JK Licence Maker" page (never uploaded). Each key is signed (ECDSA P-256) and bound to ONE device code.
+// Plans: perm (permanent) · y1 (1-year subscription) · m1 (1-month trial) · w1 (1-week trial). Roles: f = Foundation staff, b = buyer / potential buyer.
+// No valid key -> licence screen (new devices). Expired key or device clock turned back -> READ-ONLY (view, search, print, export only), with pre-warnings.
+// Devices that already had data before licences existed get a 30-day transition with full use, then read-only until a key is entered.
+var LIC_PUB={"kty":"EC","crv":"P-256","x":"TKIENLM6vxHsVqZlORxcsb2p6gKeg6EOs2PE2CBfD7E","y":"MPhzOH8z0ahP1p2NOhxIHvwfD3OlaJ8GTRqFzXzZrkw"};
+var LIC_PLANS={perm:"Permanent",y1:"1-year subscription",m1:"1-month trial",w1:"1-week trial"};
+var LIC_ROLES={f:"Foundation staff",b:"Buyer"};
+var LIC_WARN={y1:30,m1:7,w1:3,legacy:30}; // days before the end when warnings start
+var _lic={state:"pending",info:null,days:null,msg:""};
+function _licB64d(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function _licToday(){var d=new Date();function p(n){return (n<10?"0":"")+n;}return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());}
+function _licDays(a,b){return Math.round((Date.parse(b+"T00:00:00Z")-Date.parse(a+"T00:00:00Z"))/864e5);}
+function licDeviceCode(){
+  var c=LS.get("acap_devid_v1","");
+  if(!c){var A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",r=new Uint8Array(8);try{crypto.getRandomValues(r);}catch(e){for(var i=0;i<8;i++)r[i]=Math.floor(Math.random()*256);}
+    c="";for(var j=0;j<8;j++)c+=A.charAt(r[j]%A.length);c=c.slice(0,4)+"-"+c.slice(4);LS.set("acap_devid_v1",c);}
+  return c;
+}
+async function licVerify(key){
+  try{
+    key=String(key||"").replace(/\s+/g,"");var parts=key.split(".");if(parts.length!==2)return {ok:false,why:"This is not a licence key."};
+    var pl=_licB64d(parts[0]),sig=_licB64d(parts[1]);
+    var k=await crypto.subtle.importKey("jwk",Object.assign({ext:true},LIC_PUB),{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+    var ok=await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},k,sig,pl);
+    if(!ok)return {ok:false,why:"This key is not valid (it was changed or not made by the App creator)."};
+    var info=JSON.parse(new TextDecoder().decode(pl));
+    if(info.d!==licDeviceCode())return {ok:false,why:"This key was made for another device ("+info.d+"). This device code is "+licDeviceCode()+"."};
+    return {ok:true,info:info,key:key};
+  }catch(e){return {ok:false,why:"This key could not be read. Copy it again completely."};}
+}
+async function licCompute(){
+  var today=_licToday(),seen=LS.get("acap_lic_seen","")||"";
+  if(seen&&_licDays(seen,today)<-1){_lic={state:"ro",info:null,days:null,msg:"The date on this device ("+fmtDate(today)+") is earlier than a date already seen ("+fmtDate(seen)+"). Correct the device date and time, then reopen the app."};return _lic;}
+  if(!seen||today>seen)LS.set("acap_lic_seen",today);
+  var key=LS.get("acap_lic_v1","");
+  if(key){
+    var v=await licVerify(key);
+    if(v.ok){
+      var i=v.info,left=i.e?_licDays(today,i.e):null;
+      if(i.e&&left<0){_lic={state:"ro",info:i,days:left,msg:"Your "+(LIC_PLANS[i.p]||"licence")+" ended on "+fmtDate(i.e)+". The app is now read-only: you can still view, search, print and export your data. Contact the App creator to renew."};return _lic;}
+      var w=i.e&&left<=(LIC_WARN[i.p]||0);
+      _lic={state:w?"warn":"ok",info:i,days:left,msg:w?("Your "+(LIC_PLANS[i.p]||"licence")+" ends "+(left===0?"today":"in "+left+" day"+(left>1?"s":""))+" ("+fmtDate(i.e)+"). After that the app becomes read-only. Contact the App creator to renew."):""};return _lic;
+    }
+  }
+  // no (valid) key
+  var leg=LS.get("acap_lic_legacy","");
+  if(!leg&&ACAP_EDITION.type!=="buyer"){var had=0;try{had=_allItems().length;}catch(e){}
+    if(had&&!LS.get("acap_lic_everkey",false)){leg=today;LS.set("acap_lic_legacy",leg);}}
+  if(leg){var end=new Date(Date.parse(leg+"T00:00:00Z")+30*864e5).toISOString().slice(0,10),l2=_licDays(today,end);
+    if(l2>=0){_lic={state:"warn",info:{p:"legacy",e:end},days:l2,msg:"This device needs a licence key. Full use continues for "+(l2===0?"today only":l2+" more day"+(l2>1?"s":""))+" (until "+fmtDate(end)+"), then the app becomes read-only. Device code: "+licDeviceCode()};return _lic;}
+    _lic={state:"ro",info:{p:"legacy",e:end},days:l2,msg:"This device has no licence key, so the app is read-only. Send the device code "+licDeviceCode()+" to the App creator to get your key."};return _lic;}
+  _lic={state:"none",info:null,days:null,msg:""};return _lic;
+}
+var LIC_RO_FUNCS=["newAsset","editAsset","submitForm","startEdit","startEditInList","editCellPhoto","commitCell","safeDelete","confirmDel","askDel","deleteSold","delConsignAsset","delWishAsset","delFramingAsset",
+  "moveToConsign","moveToFraming","moveToSold","restoreToInventory","restoreAsset","buyWishAsset","addCOAToWish","openMoveWin","doListAction","confirmSell","confirmConsign","confirmFraming","mActConfirm",
+  "tbAdd","toggleMark","unmarkAll","importJSON","importCSV","openBulkPhotos","_bpRun","setPubOverride","setPubPhoto","togPub","changeAssetId","showAddCol","addCol","hideCol","unhideCol","renameCol",
+  "saveListEdit","resetListDef","togListCol","resetListColsUI","delCC","renCC","setMove","resetMoves","togFV","nudgeF","resetFO","copyFOAll","swapPhotos","clearPhoto","pickFile","snapPhoto","openCam","doUndo","exportPublicPages","saveAN"];
+var _licWrapped=false;
+
+// ---- Buyer edition (session 11, Jim): public QR pages, QR Verify and QR letter are Foundation-only; buyers get SAMPLES ----
+var ACAP_EDITION=window.ACAP_EDITION||{type:"foundation"};
+function _isBuyer(){return ACAP_EDITION.type==="buyer"||!!(typeof _lic!=="undefined"&&_lic.info&&_lic.info.r==="b");}
+function _wmCSS(t){return 'body::after{content:"'+t+'";white-space:pre;position:fixed;top:34%;left:-20%;right:-20%;text-align:center;font:700 64px/1.15 Arial,sans-serif;letter-spacing:.04em;color:rgba(190,30,30,.15);transform:rotate(-30deg);pointer-events:none;z-index:9999;}';}
+var _SAMPLE_CSS=_wmCSS("SAMPLE\\A TO BE CUSTOMIZED");
+function sampleQRVerify(){var f=[];for(var i=0;i<8;i++)f.push({id:"AST-00"+(i+1),qrToken:"sample0"+i});printQRSheet(f,"SAMPLE - QR Verify",1,1);}
+function sampleQRLetter(){
+  // Session 11 (Jim): generic sample (fake company, a furniture item, sticker in a hidden spot), not the Foundation letter
+  var d=fmtDateObj(new Date());
+  var w=window.open("","_blank");if(!w){toast("Please allow pop-ups to see the sample","e");return;}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>SAMPLE - customized QR letter</title><style>'
+   +'@page{size:A4 portrait;margin:14mm 16mm;}body{font-family:Calibri,Carlito,Arial,sans-serif;font-size:11pt;color:#222;line-height:1.45;max-width:178mm;margin:0 auto;}'
+   +'.hd{display:flex;align-items:center;gap:14px;border-bottom:2px solid #8a7550;padding-bottom:8px;margin-bottom:10px;}.logo{width:58px;height:58px;border:2px dashed #8a7550;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#8a7550;text-align:center;}'
+   +'.co{flex:1;text-align:center;}.co b{font-size:19pt;font-family:Georgia,serif;}.co div{font-size:9pt;color:#666;}'
+   +'.ref{display:flex;justify-content:space-between;font-weight:700;margin:6px 0;}h3{color:#8a7550;font-size:12pt;margin:12px 0 4px;}ol{margin:4px 0 6px 20px;padding:0;}li{margin:2px 0;}'
+   +'.box{border:1px solid #c9b88f;background:#f8f4ea;border-radius:6px;padding:9px 11px;margin:8px 0;}.imp{border-left:4px solid #9a3b2c;background:#fbeeea;padding:8px 11px;margin:8px 0;}'
+   +'.lang{border:1px dashed #aaa;color:#777;text-align:center;padding:10px;margin:12px 0;font-style:italic;}.sig{margin-top:14px;}'
+   +_wmCSS("CUSTOMIZED QR LETTER\\A SAMPLE")+'</style></head><body>'
+   +'<div class="hd"><div class="logo">YOUR<br>LOGO</div><div class="co"><b>Heritage Furniture House</b><div>Your address · your website · your email · your phone</div></div></div>'
+   +'<div class="ref"><span>ID: QR-A001</span><span>Date: '+d+'</span></div>'
+   +'<p><b>Dear Owner of the walnut writing cabinet (circa 1890),</b></p>'
+   +'<p>Thank you for your trust in Heritage Furniture House. Your printed Certificate of Authenticity is unique to this piece and comes with a matching QR sticker for electronic verification.</p>'
+   +'<h3>Placing the QR sticker</h3><ol>'
+   +'<li>Choose a hidden spot that is clean, dry and dust-free: for this cabinet, <b>under the top drawer</b>, near the back right corner.</li>'
+   +'<li>Peel the sticker from one corner without touching the adhesive.</li>'
+   +'<li>Place it flat on bare wood, away from hinges, locks and moving parts, so it is not rubbed when the drawer opens.</li>'
+   +'<li>Press gently from the centre outwards, taking care not to scratch or crease the QR code.</li>'
+   +'<li>Scan it with your phone: it must open the same page as the QR code on your printed certificate.</li></ol>'
+   +'<p>Scanning the QR code opens your verification page with this notice:</p>'
+   +'<div class="box"><b>This is not the certificate.</b> This QR code is registered by Heritage Furniture House for the piece shown on the sticker, as originally documented. Authenticity requires both: the QR codes on the certificate and on the piece open the same page, and the piece matches the photos with no alteration.</div>'
+   +'<div class="imp"><b>Important:</b> this letter is only for placing the sticker. It is not a certificate. In case of sale or gift, hand over the original printed certificate only.</div>'
+   +'<div class="lang">The same letter in your second language (e.g. Arabic or French) is printed here.</div>'
+   +'<div class="sig">With our best regards,<br><b>Your name</b> · Heritage Furniture House<br><span style="color:#999;">(your signature or initials here)</span></div>'
+   +'</body></html>');
+  w.document.close();
+}
+function samplePublicPage(){
+  var w=window.open("","_blank");if(!w){toast("Please allow pop-ups to see the sample","e");return;}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SAMPLE - public QR page</title><style>'
+   +'body{margin:0;background:#0d0c0a;color:#ece7d9;font-family:Georgia,serif;display:flex;justify-content:center;padding:18px;}'
+   +'.c{max-width:420px;width:100%;background:linear-gradient(#2b2721,#181612);border-top:4px solid #9c855b;border-radius:12px;box-shadow:4px 6px 14px rgba(0,0,0,.5);overflow:hidden;}'
+   +'.h{background:linear-gradient(#ad966a,#7f6a45);color:#14110b;padding:12px 16px;font-weight:700;font-size:18px;}.h small{display:block;font-weight:400;font-size:12px;}'
+   +'.ph{margin:16px;background:#f7f3ea;border-radius:6px;height:230px;display:flex;align-items:center;justify-content:center;color:#7f6a45;font-size:60px;}'
+   +'.t{padding:0 16px;font-size:22px;}.m{margin:10px 16px;background:#14120f;border-radius:6px;padding:10px;font:13px Arial,sans-serif;line-height:1.7;}'
+   +'.n{margin:12px 16px 18px;border-left:4px solid #9c855b;background:#221f1a;padding:10px;font:12.5px Arial,sans-serif;line-height:1.6;}.n b{color:#c8b083;}'
+   +_wmCSS("PUBLIC QR PAGE\\A TO BE CUSTOMIZED")+'</style></head><body><div class="c"><div class="h">Your Gallery / Collection<small>Electronic verification page</small></div>'
+   +'<div class="ph">🖼</div><div class="t">Sample Artwork Title</div>'
+   +'<div class="m">Year: 1965<br>Medium: Oil on canvas<br>Size: 60 x 80 cm</div>'
+   +'<div class="n"><b>This is not the certificate.</b> This QR code is registered for the artwork shown above. A visitor who scans the sticker on the back of the painting opens this page; if the item is private, a "cannot be verified" message is shown instead. Available in EN / FR / Arabic.</div></div></body></html>');
+  w.document.close();
+}
+function _buyerWrap(){
+  var NO=function(){toast("Not included in your edition — see the samples (Import / Export page)","i",5000);};
+  ["exportPublicPages","exportAllQRCodesCSV","togPub","setPubOverride"].forEach(function(n){var f=window[n];if(typeof f!=="function")return;window[n]=function(){if(_isBuyer()){NO();try{render();}catch(e){}return;}return f.apply(this,arguments);};});
+  var pl=window.printQRLetter;window.printQRLetter=function(ids,sample){if(_isBuyer())return sampleQRLetter();return pl.apply(this,arguments);};
+  var ps=window.printQRSheet;window.printQRSheet=function(items,title,verify,sample){if(_isBuyer()&&verify&&!sample)return sampleQRVerify();return ps.apply(this,arguments);};
+  var qm=window.qrLetterMarked;if(qm)window.qrLetterMarked=function(){if(_isBuyer())return sampleQRLetter();return qm.apply(this,arguments);};
+}
+function _editionBrand(){
+  if(ACAP_EDITION.type!=="buyer")return;
+  var nm=document.querySelector(".brand-nm");if(nm&&ACAP_EDITION.owner&&!document.getElementById("brOwner"))nm.insertAdjacentHTML("beforeend",'<span id="brOwner" class="brand-own">for '+esc(ACAP_EDITION.owner)+'</span>');
+  if(ACAP_EDITION.owner)document.title=ACAP_EDITION.owner+" — Asset Capitalizer";
+}
+function licReadOnly(){return _lic.state==="ro"||_lic.state==="none";}
+function _licWrap(){
+  if(_licWrapped)return;_licWrapped=true;
+  LIC_RO_FUNCS.forEach(function(n){var f=window[n];if(typeof f!=="function")return;
+    window[n]=function(){if(licReadOnly()){toast("🔒 Read-only: "+(_lic.state==="none"?"enter a licence key":"licence ended")+" (⋯ menu → 🔑 Licence)","e",5000);var inp=arguments[0];if(inp&&inp.tagName==="INPUT"&&inp.type==="file")inp.value="";try{render();}catch(e){}return;}return f.apply(this,arguments);};});
+  var _sa=window.saveAll;window.saveAll=function(){if(licReadOnly())return;return _sa.apply(this,arguments);};
+}
+function _licBanner(){
+  var b=G("LICB");
+  if(_lic.state==="ok"||_lic.state==="pending"||_lic.state==="none"){if(b)b.remove();document.documentElement.classList.remove("licro");return;}
+  if(!b){b=document.createElement("div");b.id="LICB";b.className="no-print";var ct=G("CT");if(ct&&ct.parentNode)ct.parentNode.insertBefore(b,ct);else document.body.appendChild(b);}
+  b.className="no-print "+(_lic.state==="ro"?"ro":"warn");
+  b.innerHTML='<span>'+(_lic.state==="ro"?"🔒 ":"⚠ ")+esc(_lic.msg)+'</span><button class="btn" onclick="licOpen()">🔑 Licence</button>';
+  document.documentElement.classList.toggle("licro",_lic.state==="ro");
+}
+function licOpen(force){
+  var m=G("LIC");if(m)m.remove();
+  m=document.createElement("div");m.id="LIC";
+  var i=_lic.info,dc=licDeviceCode(),blocking=_lic.state==="none";
+  var cur=i&&i.p!=="legacy"?('<div class="licrow"><b>'+esc(i.n||"")+'</b> · '+(LIC_ROLES[i.r]||"")+' · '+(LIC_PLANS[i.p]||i.p)+(i.e?' · until '+fmtDate(i.e):'')+'</div>'):'<div class="licrow">No licence key on this device.</div>';
+  m.innerHTML='<div class="licbox"><div class="lict">🔑 Asset Capitalizer by JK — Licence</div>'
+    +(blocking?'<div class="licrow">This device needs a licence key from the App creator to use the app.</div>':cur)
+    +(_lic.msg&&!blocking?'<div class="licmsg '+(_lic.state==="ro"?"ro":"")+'">'+esc(_lic.msg)+'</div>':'')
+    +'<div class="licrow">Device code (send it to the App creator to get your key):</div><div class="licdc nodf">'+dc+'</div>'
+    +'<textarea id="licKey" rows="4" placeholder="Paste your licence key here" spellcheck="false"></textarea>'
+    +'<div id="licErr" class="licerr"></div>'
+    +'<div class="licbtns">'+(blocking?'':'<button class="btn bg" onclick="G(\'LIC\').remove()">Close</button>')+'<button class="btn bok" onclick="licActivate()">Activate key</button></div></div>';
+  document.body.appendChild(m);
+}
+async function licActivate(){
+  var t=(G("licKey")||{}).value||"",v=await licVerify(t);
+  if(!v.ok){G("licErr").textContent=v.why;return;}
+  LS.set("acap_lic_v1",v.key);LS.set("acap_lic_everkey",true);
+  await licCompute();G("LIC").remove();_licBanner();try{render();}catch(e){}
+  toast("Licence activated ✓ "+(LIC_PLANS[v.info.p]||"")+(v.info.e?" until "+fmtDate(v.info.e):""),"s",6000);
+}
+async function licBoot(){
+  licDeviceCode();_licWrap();try{_buyerWrap();_editionBrand();}catch(e){}
+  await licCompute();_licBanner();
+  if(_lic.state==="none"){licOpen();return;}
+  // pre-warning popup once a day during the warning period (banner stays visible)
+  if(_lic.state==="warn"||_lic.state==="ro"){var d=_licToday();if(LS.get("acap_lic_popup","")!==d){LS.set("acap_lic_popup",d);setTimeout(function(){alert((_lic.state==="ro"?"🔒 ":"⚠ ")+_lic.msg);},900);}}
+}
 function _afterRender(){if(view!=="form")_formSnap=null;else if(_formSnap===null)setTimeout(function(){if(view==="form"&&_formSnap===null)_formSnap=_formSer();},150);try{document.documentElement.style.setProperty("--rowh",rowH+"px");_initColResize();}catch(e){}try{_tbSync();_scrN=_scrCount();_scrUpd(false);}catch(e){}}
 function togglePriceMask(ev){if(ev)ev.stopPropagation();_pmask=!_pmask;document.documentElement.classList.toggle("pmask",_pmask);render();toast(_pmask?"Prices hidden":"Prices shown until the app is closed \u2014 click the amount to hide them again","i",4500);}
 function render(){
@@ -2899,6 +3084,7 @@ function ensureTokens(){
 }
 function qrPayload(a){
   if(!a.qrToken){ensureTokens();try{saveAll();}catch(e){}}
+  if(_isBuyer())return "ACAP:"+a.qrToken; // buyer edition: in-app code only, never the Foundation's public site
   return PUBLIC_BASE+"?c="+a.qrToken;
 }
 function isPublicItem(a){
@@ -2940,6 +3126,7 @@ function defPhotoFrom(a,pm,pm2){
 function setPubPhoto(id,val){var a=_findAsset(id);if(!a)return;if(val==='2')a.pubPhoto='2';else delete a.pubPhoto;saveAll();render();}
 function _tokFromText(t){
   t=String(t||"").trim();
+  var m0=/^ACAP:([a-z0-9]{6,16})$/i.exec(t);if(m0)return m0[1].toLowerCase();
   try{var u=new URL(t);var c=u.searchParams.get("c");if(c&&/^[a-z0-9]{6,16}$/.test(c))return c;}catch(e){}
   return /^[a-z0-9]{8}$/.test(t)?t:null;
 }
@@ -3182,8 +3369,8 @@ function rDetail(){
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:5px;font-weight:600;">QR Code</div>';
   h+=qrImgTag(qrPayload(a),"width:110px;height:110px;display:block;border:1px solid var(--b);border-radius:4px;")+'</div>';
   h+='<div style="flex:1;padding-left:11px;"><div style="font-size:12px;color:var(--mu);margin-bottom:5px;">Scan the sticker with the app\'s Scan button.</div>';
-  h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🏷 Label Sticker</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'jpeg\')">⬇ QR JPEG</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'png\')">⬇ PNG</button> <button class="btn bs" style="font-size:11px;" title="Bilingual letter for the owner with this ID" onclick="printQRLetter([\''+a.id+'\'])">\u2709 QR Letter</button>'
-    +'<div style="margin-top:8px;font-size:11px;color:var(--mu);">\uD83C\uDF10 Public page: <b>'+(isPublicItem(a)?'PUBLIC':'Private')+'</b> <select class="sel" style="font-size:11px;" onchange="setPubOverride(\''+a.id+'\',this.value)"><option value=""'+(!a.pubOverride?' selected':'')+'>Follow list setting</option><option value="on"'+(a.pubOverride==="on"?' selected':'')+'>Force public</option><option value="off"'+(a.pubOverride==="off"?' selected':'')+'>Force private</option></select></div>'
+  h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🏷 Label Sticker</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'jpeg\')">⬇ QR JPEG</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'png\')">⬇ PNG</button> <button class="btn bs" style="font-size:11px;" title="Bilingual letter for the owner with this ID" onclick="printQRLetter([\''+a.id+'\'])">\u2709 QR Letter'+(_isBuyer()?' (sample)':'')+'</button>'
+    +(_isBuyer()?'':'<div style="margin-top:8px;font-size:11px;color:var(--mu);">\uD83C\uDF10 Public page: <b>'+(isPublicItem(a)?'PUBLIC':'Private')+'</b> <select class="sel" style="font-size:11px;" onchange="setPubOverride(\''+a.id+'\',this.value)"><option value=""'+(!a.pubOverride?' selected':'')+'>Follow list setting</option><option value="on"'+(a.pubOverride==="on"?' selected':'')+'>Force public</option><option value="off"'+(a.pubOverride==="off"?' selected':'')+'>Force private</option></select></div>')
     +((a.photo2||_photoCache2[a.id])?'<div style="margin-top:6px;font-size:11px;color:var(--mu);">\uD83D\uDDBC Default photo (Label Stickers &amp; public page): <select class="sel" style="font-size:11px;" onchange="setPubPhoto(\''+a.id+'\',this.value)"><option value="1"'+(a.pubPhoto!=="2"?' selected':'')+'>Photo 1</option><option value="2"'+(a.pubPhoto==="2"?' selected':'')+'>Photo 2</option></select></div>':'')+'</div></div>';
   h+='<div class="dgrid">';
   sOrd.forEach(function(sec){
@@ -3617,8 +3804,9 @@ function tbMenu(btn,kind){
       if(!one)return;
       it.push(["🏷 Label Sticker",function(){printBC(one.id);}]);
       it.push(["▣ QR Sticker",function(){printQRSheet([one],"QR Sticker "+_qrRef(one.id),0);}]);
-      it.push(["✔ QR Verify",function(){printQRSheet([one],"QR Verify "+_qrRef(one.id),1);}]);
-      it.push(["✉ QR letter",function(){printQRLetter([one.id]);}]);
+      if(_isBuyer()){it.push(["✔ QR Verify (sample)",function(){sampleQRVerify();}]);it.push(["✉ QR letter (sample)",function(){sampleQRLetter();}]);}
+      else{it.push(["✔ QR Verify",function(){printQRSheet([one],"QR Verify "+_qrRef(one.id),1);}]);
+      it.push(["✉ QR letter",function(){printQRLetter([one.id]);}]);}
     }else{
       if(v!=="list")it.push(["🖨 Print list",function(){openPrintDlg();}]);
       it.push(["🏷 Label Stickers",function(){printCurrentListStickers();}]);
@@ -3626,9 +3814,10 @@ function tbMenu(btn,kind){
       it.push(["🏷 Label Stickers (★ marked)",function(){_printMarked("label");},1]);
       it.push(["▣ QR Stickers",function(){qrSheetsClick(0);}]);
       it.push(["▣ QR Stickers (★ marked)",function(){_printMarked("qr");}]);
-      it.push(["✔ QR Verify",function(){qrSheetsClick(1);}]);
+      if(_isBuyer()){it.push(["✔ QR Verify (sample)",function(){sampleQRVerify();}]);it.push(["✉ QR letter (sample)",function(){sampleQRLetter();}]);}
+      else{it.push(["✔ QR Verify",function(){qrSheetsClick(1);}]);
       it.push(["✔ QR Verify (★ marked)",function(){_printMarked("verify");}]);
-      if(v!=="list")it.push(["✉ QR letter (★ marked)",function(){qrLetterMarked(lk);}]);
+      if(v!=="list")it.push(["✉ QR letter (★ marked)",function(){qrLetterMarked(lk);}]);}
       if(v==="list")it.push(["🖨 Print all lists",function(){printAllLists();}]);
       it.push(["☆ Unmark all",function(){unmarkAll();}]);
     }
@@ -3646,6 +3835,7 @@ function tbMenu(btn,kind){
     it.push([dk?"☀️ Day mode":"🌙 Night mode",function(){toggleTheme();}]);
     it.push(["🧮 Calculator",function(){toggleCalc();}]);
     it.push(["🗄 Storage",function(){showStorageDiag();}]);
+    it.push(["🔑 Licence",function(){licOpen();}]);
     extra='<div class="tbmh" style="margin-top:4px;">📅 Date format</div>'+DATE_FMTS.map(function(f){return '<button class="tbdf'+(f===_dfmt?' on':'')+'" onclick="setDateFmt(\''+f+'\')">'+(f===_dfmt?'✓ ':'<span style="visibility:hidden">✓ </span>')+f+' <span class="nodf" style="opacity:.6;font-size:10px;">('+_fmtDsample(f)+')</span></button>';}).join("");
   }
   window._tbItems=it.map(function(x){return x[1];});
@@ -3724,16 +3914,17 @@ function _qrlDate(){return new Date().toLocaleDateString("en-GB",{day:"numeric",
 // Only in the QR letter; the app ID is not printed there. Searchable in the lists. A future ID series needs its own unused letter here.
 var QR_REF_LETTER={AST:"A",COA:"C",WSH:"W"};
 function _qrRef(id){var m=String(id||"").match(/^([A-Za-z]+)-(.+)$/);if(!m)return "QR-"+id;var L=QR_REF_LETTER[m[1].toUpperCase()];return "QR-"+(L||m[1].toUpperCase()+"-")+m[2];}
-function printQRLetter(ids){
+function printQRLetter(ids,sample){
   ids=(ids||[]).filter(Boolean).map(_qrRef);
   if(!ids.length){toast("No item selected for the QR letter","e");return;}
   var pl=ids.length>1;
   var ref='<div class="ref"><span class="ids"><b>'+(pl?'IDs':'ID')+':</b> <span class="v">'+ids.map(function(i){return '<span class=id>'+esc(i)+'</span>';}).join(' \u00b7 ')+(pl?' <span class=cnt>('+ids.length+' stickers)</span>':'')+'</span></span><span class="dt"><b>Date:</b> <span class="v">'+_qrlDate()+'</span></span></div>';
   var ref2='<b>'+(pl?'IDs':'ID')+':</b> '+ids.map(function(i){return '<span class=id>'+esc(i)+'</span>';}).join(' \u00b7 ');
-  var body=(pl?_QRL_BN:_QRL_B1).replace('%%REF%%',function(){return ref;}).replace('%%REF2%%',function(){return ref2;}).replace(/%%LOGO%%/g,function(){return _QRL_LOGO;}).replace(/%%SIG%%/g,function(){return _QRL_SIG;});
+  var body=(pl?_QRL_BN:_QRL_B1).replace('%%REF%%',function(){return ref;}).replace('%%REF2%%',function(){return ref2;}).replace(/%%LOGO%%/g,function(){return _QRL_LOGO;}).replace(/%%SIG%%/g,function(){return sample?'data:image/gif;base64,R0lGODlhAQABAAAAACw=':_QRL_SIG;});
   var head=_QRL_HEAD.replace('<title>QR Letter</title>',function(){return '<title>'+esc('JK QR Letter - '+ids.join(' '))+'</title>';});
   var w=window.open("","_blank");
   if(!w){toast("Please allow pop-ups to print the QR letter","e",6000);return;}
+  if(sample)head=head.replace('</style>',function(){return _SAMPLE_CSS+'</style>';});
   _pwFix(w);w.document.write(head+body+'<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){window.print();},300);});<\/script></body></html>');
   w.document.close();
 }
@@ -3768,6 +3959,13 @@ function rIO(){
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">🖼 PHOTOS</h3>';
   h+='<div style="font-size:12px;color:var(--mu);margin-bottom:9px;line-height:1.6;">Replace photo 1 of many Inventory, Consignment, Framing and Sold items at once from your photo folders. Files are matched by the number at the start of the name (007 … → AST-007); you check the list before anything changes.</div>';
   h+=_ioBtn('<button class="btn bp" onclick="openBulkPhotos()">🖼 Replace photos from files</button>','photos')+'</div>';
+  if(_isBuyer()){
+    h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
+    h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">\uD83C\uDF10 PUBLIC QR PAGES — SAMPLE</h3>';
+    h+='<div style="font-size:12px;color:var(--mu);margin-bottom:9px;line-height:1.6;">In the full edition, every artwork can have its own public verification page: anyone who scans its QR sticker with a phone camera sees the photo and details (or a "private" message). The app also prints QR Verify stickers and a bilingual letter for owners. These features are not included in your edition. Here is what they look like:</div>';
+    h+='<div style="display:flex;gap:7px;flex-wrap:wrap;"><button class="btn bs" onclick="samplePublicPage()">\uD83D\uDC41 Sample public page</button><button class="btn bs" onclick="sampleQRVerify()">✔ Sample QR Verify</button><button class="btn bs" onclick="sampleQRLetter()">✉ Sample QR letter</button></div>';
+    h+='<div style="font-size:11px;color:var(--mu);margin-top:8px;line-height:1.5;">Your QR stickers work inside this app: scan them with the app\'s Scan button to open the item.</div></div>';
+  }else{
   var _pc=pubCfg(),_pn=_allItems().filter(isPublicItem).length;
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">\uD83C\uDF10 PUBLIC QR PAGES</h3>';
@@ -3779,6 +3977,7 @@ function rIO(){
   h+='<div style="margin-top:10px;">'+_ioBtn('<button class="btn bs" onclick="exportAllQRCodesCSV()">⬇ All QR codes list (CSV)</button>','qrcsv')+'</div>';
   h+='<div style="font-size:11px;color:var(--mu);margin-top:6px;line-height:1.5;">One row per item in all six lists (QR code, ID, title, list, Public/Private) to put names on the scans in Google Analytics. Keep this file private and don\'t upload it to GitHub.</div>';
   h+='<div style="font-size:10px;color:var(--mu);margin-top:8px;font-family:var(--mo);word-break:break-all;">QR address: '+esc(PUBLIC_BASE)+'?c=\u2026</div></div>';
+  }
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:7px;">INSTALL AS APP</h3>';
   h+='<div style="font-size:13px;color:var(--mu);margin-bottom:9px;line-height:1.6;">Android Chrome: menu → Install app · Windows Edge: install icon in address bar · iOS: Share → Add to Home Screen</div>';
@@ -4132,21 +4331,22 @@ function manualScan(){var v=(G("scanIn")||{value:""}).value.trim();if(v)handleSc
 
 // ===== QR sheets (QR + bold ID, 4 columns x 11 rows of 52.5mm-wide labels on A4 = 44 per page) =====
 var LIST_LABELS={table:"Inventory",consign:"Consignment",framing:"Framing",sold:"Sold",wish:"Wish List",coa:"Private COAs",list:"Inventory"};
-function printQRSheet(items,title,verify){
+function printQRSheet(items,title,verify,sample){
+  var _pay=function(a){return sample?"SAMPLE - Asset Capitalizer by JK":qrPayload(a);};
   var ids=items;
   if(!ids||!ids.length){toast("No QR codes to print","e");return;}
   var PER=44,pages=[];
   for(var i=0;i<ids.length;i+=PER)pages.push(ids.slice(i,i+PER));
   var body=pages.map(function(pg){
     return '<div class="pg">'+pg.map(function(a){return verify
-      ?'<div class="lb lbv"><div class="vt"><span>VERIFY YOUR QR</span></div><div class="q">'+qrSvg(qrPayload(a),2)+'</div></div>'
-      :'<div class="lb"><div class="q">'+qrSvg(qrPayload(a),2)+'</div><div class="idt">'+esc(_qrRef(a.id))+'</div></div>';}).join("")+'</div>';
+      ?'<div class="lb lbv"><div class="vt"><span>VERIFY YOUR QR</span></div><div class="q">'+qrSvg(_pay(a),2)+'</div></div>'
+      :'<div class="lb"><div class="q">'+qrSvg(_pay(a),2)+'</div><div class="idt">'+esc(_qrRef(a.id))+'</div></div>';}).join("")+'</div>';
   }).join("");
   var w=window.open("","_blank");
   if(!w){toast("Pop-up blocked — allow pop-ups for this site","e",5000);return;}
   _pwFix(w);w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(title||"QR codes")+'</title><style>'
    +'*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}'
-   +'body{background:#fff;font-family:Arial,Helvetica,sans-serif;width:210mm;}'
+   +'body{background:#fff;font-family:Arial,Helvetica,sans-serif;width:210mm;}'+(sample?_SAMPLE_CSS:'')
    +'.pg{width:210mm;height:297mm;display:grid;grid-template-columns:repeat(4,52.5mm);grid-template-rows:repeat(11,26.5mm);page-break-after:always;overflow:hidden;align-content:start;}'
    +'.pg:last-child{page-break-after:auto;}'
    +'.lb{width:52.5mm;height:26.5mm;display:flex;flex-direction:column;align-items:center;outline:.1mm solid #ccc;outline-offset:-.1mm;overflow:hidden;}'
@@ -4757,6 +4957,7 @@ document.addEventListener("DOMContentLoaded",function(){
     document.addEventListener("touchstart",function(e){if(view==="detail"){sx=e.touches[0].clientX;sy=e.touches[0].clientY;}},{passive:true});
     document.addEventListener("touchend",function(e){if(view!=="detail")return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>55)navDetail(dx<0?1:-1);},{passive:true});
   })();
+  try{licBoot();}catch(e){}
   var t=LS.get("acap_auth_time",0);
   if(t&&Date.now()-t<8*60*60*1000){
     isAuth=true;
