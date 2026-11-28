@@ -393,7 +393,12 @@ html[data-theme="dark"] .brand-nm em{background:linear-gradient(180deg,#fbe7a6 0
 .rsh:hover::before,.rsh:hover::after,.rsh.on::before,.rsh.on::after{opacity:1;}
 .rsh.on::before{top:0;bottom:-100vh;width:2px;opacity:.85;}
 @media (hover:none){.rsh{left:-10px;width:20px;}.rsh.rsh-r{right:-10px;}.rsh::before{left:9px;opacity:.35;}}
-.colx{margin-left:auto;margin-right:12px;padding:0 3px;}
+/* Header ✕ (session 10, Jim): pinned just inside the resize zone (7px, 10px on touch) so the title gets the space */
+.thin{position:relative;}
+.thin:has(> .colx){padding-right:18px;}
+.colx{position:absolute;right:7px;top:50%;transform:translateY(-50%);margin:0;padding:0;line-height:1;font-size:10px;}
+.colx .ico{font-size:1em!important;margin:0!important;}
+@media (hover:none){.thin:has(> .colx){padding-right:21px;}.colx{right:10px;}}
 .tbl .tdin{height:auto!important;min-height:var(--rowh,36px);white-space:normal!important;text-overflow:clip!important;}
 .tbl .tdin>span{white-space:normal!important;overflow:hidden!important;text-overflow:clip!important;word-break:normal;overflow-wrap:break-word;}
 .tbl .thlbl{white-space:normal;word-break:normal;overflow-wrap:normal;line-height:1.35;}
@@ -450,6 +455,7 @@ html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;
 .tbmenu>button{text-align:left;border:none;background:none;color:var(--tx);padding:9px 11px;border-radius:7px;font-size:13px;cursor:pointer;white-space:nowrap;}
 .tbmenu>button:hover{background:var(--hover,var(--s2));}
 .scanico{width:1.35em;height:1.35em;vertical-align:-.3em;display:inline-block;}
+.tbmenu>button.tbum{border-top:1px solid var(--b);border-radius:0 0 7px 7px;margin-top:4px;color:var(--ac);}
 .tbmenu>button.tbmk{padding-left:26px;font-size:12px;color:var(--mu);}
 .tbmx{display:flex;align-items:center;gap:8px;padding:9px 11px;border-top:1px solid var(--b);margin-top:4px;font-size:12px;color:var(--mu);font-family:var(--mo);}
 .tbmh{padding:4px 11px 7px;font-size:11px;color:var(--mu);line-height:1.5;white-space:normal;max-width:260px;}
@@ -3457,7 +3463,7 @@ function _tbSync(){
   var bf=G("bFilt");if(bf){bf.innerHTML='⚲<span class="tlb"> Filters</span>'+(n?' <b class="tbn">'+n+'</b>':'')+(_fpOpen?' ▴':' ▾');bf.classList.toggle("bp",n>0);bf.title=_fpOpen?"Hide filters":"Show filters";}
   _syncMarkBtn();
   if(ch){
-    if(chips.length){ch.style.display="";ch.innerHTML='<span class="fclbl">Filtered:</span>'+chips.map(function(c){return '<span class="fchip">'+esc(c[1])+' <button onclick="_clrOne(\''+c[0]+'\')" title="Remove this filter">✕</button></span>';}).join("")+'<button class="fclr" onclick="clearFilters()">Clear all</button>';}
+    if(chips.length){ch.style.display="";ch.innerHTML='<span class="fclbl">Filtered:</span>'+chips.map(function(c){return '<span class="fchip">'+esc(c[1])+' <button onclick="_clrOne(\''+c[0]+'\')" title="Remove this filter">✕</button></span>';}).join("")+'<button class="fclr" onclick="clearFilters()">'+(markedOnly&&chips.length===1?'Clear ★ filter':'Clear all filters')+'</button>'+(markedOnly?'<button class="fclr" onclick="unmarkAll()">☆ Unmark all</button>':'');}
     else{ch.style.display="none";ch.innerHTML="";}
   }
 }
@@ -3467,6 +3473,15 @@ function _markedOfView(){
   var v=(view==="detail"||view==="form")&&detailOrigin?detailOrigin:view;
   var arr=v==="list"?_allItems():_listArr(v);var seen={};
   return (arr||[]).filter(function(a){if(!a||!a.marked||seen[a.id])return false;seen[a.id]=1;return true;});
+}
+// ☆ Unmark all (session 10, Jim chose "both": Filtered line when Marked-only is on + bottom of Print & QR)
+function unmarkAll(){
+  var arr=_markedOfView();
+  if(!arr.length){toast("No ★ marked items in this list","i");return;}
+  var lbl=view==="list"?"all lists":(LIST_LABELS[view]||"this list");
+  if(!confirm("Remove the ★ from "+arr.length+" item"+(arr.length===1?"":"s")+" in "+lbl+"?"))return;
+  arr.forEach(function(a){delete a.marked;});
+  markedOnly=false;saveAll();render();toast("☆ "+arr.length+" item"+(arr.length===1?"":"s")+" unmarked","i");
 }
 function _printMarked(kind){
   var arr=_markedOfView();
@@ -3504,6 +3519,7 @@ function tbMenu(btn,kind){
       it.push(["✔ QR Verify (★ marked)",function(){_printMarked("verify");}]);
       if(v!=="list")it.push(["✉ QR letter (★ marked)",function(){qrLetterMarked(lk);}]);
       if(v==="list")it.push(["🖨 Print all lists",function(){printAllLists();}]);
+      it.push(["☆ Unmark all",function(){unmarkAll();}]);
     }
   }else if(kind==="view"){
     if(v!=="list"){it.push(["＋ Add column",function(){showAddCol();}]);it.push(["👁 Unhide columns",function(){showUnhide();}]);}
@@ -3520,7 +3536,7 @@ function tbMenu(btn,kind){
   window._tbItems=it.map(function(x){return x[1];});
   var m=document.createElement("div");m.id="TBM";m.className="tbmenu no-print";m.dataset.kind=kind;
   m.innerHTML=it.map(function(x,i){return '<button onclick="_tbRun('+i+')">'+x[0]+'</button>';}).join("")+extra;
-  m.querySelectorAll("button").forEach(function(b){if(/★ marked/.test(b.textContent))b.classList.add("tbmk");});
+  m.querySelectorAll("button").forEach(function(b){if(/★ marked/.test(b.textContent))b.classList.add("tbmk");if(/Unmark all/.test(b.textContent))b.classList.add("tbum");});
   document.body.appendChild(m);
   var r=btn.getBoundingClientRect(),w=m.offsetWidth,left=Math.min(r.left,window.innerWidth-w-8);
   m.style.left=Math.max(8,left)+"px";m.style.top=(r.bottom+4)+"px";
