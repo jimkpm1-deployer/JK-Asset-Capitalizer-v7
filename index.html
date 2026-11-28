@@ -1663,14 +1663,14 @@ function _legRow(key,val){
 function legUnlock(){
   var m=G("LEGPW");if(m)m.remove();
   m=document.createElement("div");m.id="LEGPW";
-  m.innerHTML='<div class="licbox" style="max-width:340px;"><div class="lict">🔓 Show Legal Info</div><div class="licrow">Enter your login password:</div>'
-   +'<input id="legPw" type="password" autocomplete="current-password" style="width:100%;padding:8px;border:1px solid var(--b);border-radius:6px;background:var(--s2);color:var(--tx);font-size:14px;" onkeydown="if(event.key===\'Enter\')legCheck()"/>'
+  m.innerHTML='<div class="licbox" style="max-width:340px;"><div class="lict">🔓 Show Legal Info</div><div class="licrow">Enter your login password or PIN:</div>'
+   +'<input id="legPw" type="password" autocomplete="off" style="width:100%;padding:8px;border:1px solid var(--b);border-radius:6px;background:var(--s2);color:var(--tx);font-size:14px;" onkeydown="if(event.key===\'Enter\')legCheck()"/>'
    +'<div id="legErr" class="licerr"></div><div class="licbtns"><button class="btn bg" onclick="G(\'LEGPW\').remove()">Cancel</button><button class="btn bok" onclick="legCheck()">Show</button></div></div>';
   document.body.appendChild(m);setTimeout(function(){var i=G("legPw");if(i)i.focus();},50);
 }
 function legCheck(){
   var v=(G("legPw")||{}).value||"";
-  if(hashStr(v)!==authCfg.p){G("legErr").textContent="Wrong password.";G("legPw").value="";return;}
+  if(hashStr(v)!==authCfg.p&&hashStr(v)!==authCfg.pin){G("legErr").textContent="Wrong password or PIN.";G("legPw").value="";return;}
   G("LEGPW").remove();_legMask=false;render();toast("Legal Info shown until the app is closed — 🔒 Hide to mask it again","i",5000);
 }
 function licReadOnly(){return _lic.state==="ro"||_lic.state==="none";}
