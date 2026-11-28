@@ -480,6 +480,23 @@ html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;
  .fpanel .sel{flex:1 1 44%;min-width:0;}
 }
 @media print{#SCRB,.tbmenu,.fchips,.fpanel{display:none!important;}}
+.aastats{display:flex;flex-direction:column;gap:5px;padding:4px 0 9px;}
+.aarow{display:flex;flex-wrap:wrap;gap:5px;}
+.aachip{font-size:11px;font-family:var(--mo);background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:4px 9px;color:var(--cc,var(--tx));cursor:pointer;box-shadow:1px 2px 3px var(--shd-soft);}
+.aachip:hover{filter:brightness(1.05);border-color:var(--cc,var(--gold));}
+.aachip.on{background:var(--filt,#f3e3b5);border-color:var(--filt-b,var(--gold));box-shadow:inset 1px 2px 3px var(--shd-soft);}
+.aasub{font-size:9px;opacity:.75;}
+.agrid.cols-4 .aphoto{height:56px;font-size:16px;}
+.agrid.cols-4 .abody{padding:5px 6px;}
+.agrid.cols-4 .aname{font-size:10.5px;margin-bottom:2px;}
+.agrid.cols-4 .aar,.agrid.cols-4 .aid,.agrid.cols-4 .aval{font-size:9px;}
+.agrid.cols-4 .acat .tag{font-size:8px;padding:1px 4px;}
+.dtot{display:grid;grid-template-columns:1fr auto auto;gap:4px 14px;align-items:baseline;}
+.dtot .dl{font-size:11px;color:var(--mu);}
+.dtot .dl b{color:var(--tx);font-size:13px;}
+.dtot .dn{font-family:var(--mo);font-size:12px;text-align:right;}
+.dtot .dv{font-family:var(--mo);font-size:13px;font-weight:700;text-align:right;}
+.dtot .dv.big{font-size:16px;color:var(--ac);}
 </style>
 </head>
 <body class="app-locked">
@@ -560,6 +577,7 @@ body.app-locked .shell * { pointer-events: none !important; }
         <option value="1">1 Column</option>
         <option value="2">2 Columns</option>
         <option value="3">3 Columns</option>
+        <option value="4">4 Columns</option>
       </select>
       <div class="sp"></div>
       <button class="btn bg" id="bPQ" onclick="tbMenu(this,'pq')">🖨<span class="tlb"> Print &amp; QR</span> ▾</button>
@@ -571,7 +589,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <select class="sel" id="fCond" onchange="doFilter()" style="display:none"></select>
       <select class="sel" id="fLoc"  onchange="doFilter()" style="display:none"></select>
       <select class="sel" id="fAsgn" onchange="doFilter()" style="display:none"></select>
-      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="framing">Framing</option><option value="sold">Sold</option><option value="wish">Wish List</option><option value="coa">Private COAs</option></select>
+      <select class="sel" id="fList" onchange="doFilter()" style="display:none"><option value="">All Lists</option><option value="pos">In Possession (Inv+Cons+Fram)</option><option value="trk">Tracked (Poss+Sold)</option><option value="inventory">Inventory</option><option value="consign">Consignment</option><option value="framing">Framing</option><option value="sold">Sold</option><option value="wish">Wish List</option><option value="coa">Private COAs</option></select>
       <select class="sel" id="fMed" onchange="doFilter()" style="display:none"><option value="">All Mediums</option></select>
       <select class="sel" id="fYear" onchange="doFilter()" style="display:none"><option value="">All Years</option></select>
       <select class="sel" id="fOwner" onchange="doFilter()" style="display:none"><option value="">All Owners</option></select>
@@ -2002,8 +2020,12 @@ function rDash(){
   var grandTotal=inPossession+soldTotal;
   function _pctPos(v){return inPossessionVal>0?' <span style="font-size:11px;opacity:.75;font-weight:500;">\u00b7 '+Math.round(v/inPossessionVal*100)+'%</span>':'';} // share of the In Possession total
   var grandVal=inPossessionVal+soldFaceVal;
-  h+='<div style="font-size:10px;color:var(--mu);font-family:var(--mo);padding:0 2px 8px;white-space:nowrap;overflow-x:auto;">Total tracked: <b>'+grandTotal+'</b> assets &nbsp;\u00b7&nbsp; face value: <b>$'+grandVal.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></div>';
-  h+='<div class="sc sc3d" style="grid-column:span 2;border-left:5px solid var(--ac);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="sl">In Possession <span style="font-size:10px;color:var(--mu);">(inv+con+framing)</span></div><div class="sv" style="font-size:13px;">'+inPossession+' items</div></div><div class="sv ac pmtog" style="font-size:16px;" onclick="togglePriceMask(event)" title="'+(_pmask?'Click to show all prices':'Click to hide all prices')+'">$'+inPossessionVal.toLocaleString(undefined,{maximumFractionDigits:0})+' <span class="pmeye">'+(_pmask?'\uD83D\uDE48':'\uD83D\uDC41')+'</span></div></div></div>';
+  var _T=_totals();
+  h+='<div class="sc sc3d" style="grid-column:span 2;border-left:5px solid var(--ac);"><div class="dtot">'
+    +'<div class="dl"><b>In Possession</b> (Inv+Cons+Fram)</div><div class="dn">'+_T.pos.n+' items</div><div class="dv big pmtog" onclick="togglePriceMask(event)" title="'+(_pmask?'Click to show all prices':'Click to hide all prices')+'">'+_money(_T.pos.v)+' <span class="pmeye">'+(_pmask?'\uD83D\uDE48':'\uD83D\uDC41')+'</span></div>'
+    +'<div class="dl"><b>Tracked</b> (Poss+Sold)</div><div class="dn">'+_T.trk.n+' items</div><div class="dv">'+_money(_T.trk.v)+'</div>'
+    +'<div class="dl"><b>All Items</b> (Track+Wish+COA fees)</div><div class="dn">'+_T.all.n+' items</div><div class="dv">'+_money(_T.all.v)+'</div>'
+    +'</div></div>';
   h+='<div class="sc sc3d" style="cursor:pointer;border-left:5px solid var(--l-inv);" onclick="goTo(\'table\')" title="Inventory"><div class="sl" style="color:var(--t-inv)">Inventory ('+total+')</div><div class="sv" style="color:var(--t-inv)">$'+val.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(val)+'</div></div>';
   h+='<div class="sc sc3d" style="cursor:pointer;border-left:5px solid var(--l-con);" onclick="goTo(\'consign\')" title="Consignment"><div class="sl" style="color:var(--t-con)">Consignment ('+conTotal+')</div><div class="sv" style="color:var(--t-con)">$'+conVal.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(conVal)+'</div></div>';
   h+='<div class="sc sc3d" style="cursor:pointer;border-left:5px solid var(--l-fram);" onclick="goTo(\'framing\')" title="Framing"><div class="sl" style="color:var(--t-fram)">Framing ('+framTotal+')</div><div class="sv" style="color:var(--t-fram)">$'+framVal.toLocaleString(undefined,{maximumFractionDigits:0})+_pctPos(framVal)+'</div></div>';
@@ -2055,6 +2077,37 @@ function rDash(){
 
 // List
 function setLM(m){listMode=m;const g=G("vtG"),t=G("vtT");if(g)g.className=m==="grid"?"on":"";if(t)t.className=m==="tbl"?"on":"";render();}
+// Totals (session 10, Jim): In Possession (Inv+Cons+Fram) → Tracked (Poss+Sold) → All Items (Track+Wish+COAs). $ = face value (currentValue); Private COAs = authenticity fees (fee).
+function _totals(){
+  function sv(arr){return arr.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);}
+  var L={inventory:assets,consign:consignAssets,framing:framingAssets,sold:soldAssets,wish:wishAssets,coa:coaAssets},t={};
+  Object.keys(L).forEach(function(k){t[k]={n:L[k].length,v:sv(L[k])};});
+  t.coa.v=coaAssets.reduce(function(s,a){return s+(parseFloat(String(a.fee||0).replace(/[^0-9.\-]/g,''))||0);},0); // Jim: COAs count their authenticity fees, not the (not owned) value
+  t.pos={n:t.inventory.n+t.consign.n+t.framing.n,v:t.inventory.v+t.consign.v+t.framing.v};
+  t.trk={n:t.pos.n+t.sold.n,v:t.pos.v+t.sold.v};
+  t.all={n:t.trk.n+t.wish.n+t.coa.n,v:t.trk.v+t.wish.v+t.coa.v};
+  return t;
+}
+function _money(v){return "$"+v.toLocaleString(undefined,{maximumFractionDigits:0});}
+// All Assets: totals + list chips that filter the view (click again or "All Items" to show everything)
+function _allAssetsStats(cur){
+  var t=_totals(),h='<div class="aastats">';
+  function chip(key,label,col,n,v,note){
+    var on=(key===""?cur==="":cur===key);
+    return '<button class="aachip'+(on?' on':'')+'" style="'+(col?'--cc:'+col+';':'')+'" onclick="setListFilter(\''+key+'\')" title="'+(key===""?'Show all lists':'Show only: '+label)+'">'+label+': <b>'+n+'</b>'+(v!==null?' · <b>'+_money(v)+'</b>':'')+(note||'')+'</button>';
+  }
+  h+='<div class="aarow">'+chip("pos","In Possession <span class=aasub>(Inv+Cons+Fram)</span>","",t.pos.n,t.pos.v)
+    +chip("trk","Tracked <span class=aasub>(Poss+Sold)</span>","",t.trk.n,t.trk.v)
+    +chip("","All Items <span class=aasub>(Track+Wish+COA fees)</span>","",t.all.n,t.all.v)+'</div>';
+  h+='<div class="aarow">'+chip("inventory","Inv","var(--t-inv)",t.inventory.n,t.inventory.v)
+    +chip("consign","Con","var(--t-con)",t.consign.n,t.consign.v)
+    +chip("framing","Fram","var(--t-fram)",t.framing.n,t.framing.v)
+    +chip("sold","Sold","var(--t-sold)",t.sold.n,t.sold.v)
+    +chip("wish","Wish","var(--t-wish)",t.wish.n,t.wish.v)
+    +chip("coa","Private COAs","var(--t-coa)",t.coa.n,t.coa.v,' <span style="opacity:.7;">fees (not owned)</span>')+'</div></div>';
+  return h;
+}
+function setListFilter(k){var el=G("fList");if(!el)return;el.value=(el.value===k&&k!=="")?"":k;doFilter();}
 function rList(){
   var f=getFS();
   // Build combined list from all sources
@@ -2066,7 +2119,8 @@ function rList(){
   var coa=coaAssets.map(function(a){return Object.assign({},a,{_src:"coa"});});
   var allItems=inv.concat(con).concat(fram).concat(sol).concat(wsh).concat(coa);
   // Apply list filter
-  if(f.list)allItems=allItems.filter(function(a){return a._src===f.list;});
+  var _LGRP={pos:["inventory","consign","framing"],trk:["inventory","consign","framing","sold"]};
+  if(f.list)allItems=allItems.filter(function(a){return _LGRP[f.list]?_LGRP[f.list].indexOf(a._src)>=0:a._src===f.list;});
   // Apply other filters (same engine as every list: search covers all fields, filters combine)
   if(_anyFilter(f)){
     var _terms=_searchTerms(f.q);
@@ -2093,26 +2147,11 @@ function rList(){
   });
   window._detailList=allItems.map(function(a){return a.id;});
   var total=allItems.length;
-  var h='<div style="margin-bottom:7px;font-family:var(--mo);font-size:11px;color:var(--mu);">'+total+' items'+(f.list?' ('+f.list+')':'')+' total</div>';
+  var _fl=G("fList"),_flTxt=_fl&&_fl.value&&_fl.options[_fl.selectedIndex]?_fl.options[_fl.selectedIndex].text:"";
+  var h='<div style="margin-bottom:7px;font-family:var(--mo);font-size:11px;color:var(--mu);">'+total+' items shown'+(_flTxt?' ('+esc(_flTxt)+')':'')+'</div>';
+  var _statsHtml=_allAssetsStats(f.list||"");
+  h+=_statsHtml;
   if(!total)return h+'<div class="empty"><div class="big">📦</div>No items match.</div>';
-  // Stats bar - always visible in All Assets view
-  var _inv=assets.length,_con=consignAssets.length,_sol=soldAssets.length,_fram=framingAssets.length,_wsh=wishAssets.length,_cn=coaAssets.length;
-  var _invV=assets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
-  var _conV=consignAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
-  var _solV=soldAssets.reduce(function(s,a){return s+parseFloat(a.soldAt||0);},0);
-  var _framV=framingAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
-  var _wshV=wishAssets.reduce(function(s,a){return s+parseFloat(a.currentValue||0);},0);
-  var _totN=_inv+_con+_fram, _posN=_inv+_con+_fram, _posV=_invV+_conV+_framV;
-  h+='<div style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 0 8px;font-size:11px;font-family:var(--mo);">';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Total: <b>'+_totN+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;">Possession: <b>'+_posN+'</b> · <b>$'+_posV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:var(--t-inv);">Inv: <b>'+_inv+'</b> · <b>$'+_invV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:var(--t-con);">Con: <b>'+_con+'</b> · <b>$'+_conV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:var(--t-fram);">Fram: <b>'+_fram+'</b> · <b>$'+_framV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:var(--t-sold);">Sold: <b>'+_sol+'</b> · <b>$'+_solV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:var(--t-wish);">Wish: <b>'+_wsh+'</b> · <b>$'+_wshV.toLocaleString(undefined,{maximumFractionDigits:0})+'</b></span>';
-  h+='<span style="background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:3px 8px;color:var(--t-coa);">Private COAs: <b>'+_cn+'</b> <span style="opacity:.7;">(not owned)</span></span>';
-  h+='</div>';
   if(listMode==="tbl"){
   h+='<div class="scrollbox" style="height:calc(100vh - 195px);overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;">';
     h+='<thead><tr style="background:var(--s2);"><th style="padding:5px 7px;text-align:left;">Name</th><th style="padding:5px 7px;text-align:left;">Artist</th><th style="padding:5px 7px;text-align:left;">Cat</th><th style="padding:5px 7px;text-align:left;">List</th><th style="padding:5px 7px;text-align:right;">Value</th></tr></thead><tbody>';
