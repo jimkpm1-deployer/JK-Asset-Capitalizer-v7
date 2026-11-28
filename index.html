@@ -1501,7 +1501,7 @@ function _fmtDates(root){
 function _fmtDsample(f){var o=_dfmt;_dfmt=f;var r=fmtDateObj(new Date());_dfmt=o;return r;}
 function _pwFix(w){try{if(w&&!w._dfx){var d=w.document,o=d.write.bind(d);d.write=function(h){o(fmtDatesHTML(h));};w._dfx=1;}}catch(e){}}
 function setDateFmt(f){_dfmt=f;LS.set("acap_datefmt_v1",f);_tbCloseMenu();render();updSidebar();toast("Date format: "+f,"s");}
-function _afterRender(){try{document.documentElement.style.setProperty("--rowh",rowH+"px");_initColResize();}catch(e){}try{_tbSync();_scrN=_scrCount();_scrUpd(false);}catch(e){}}
+function _afterRender(){if(view!=="form")_formSnap=null;else if(_formSnap===null)setTimeout(function(){if(view==="form"&&_formSnap===null)_formSnap=_formSer();},150);try{document.documentElement.style.setProperty("--rowh",rowH+"px");_initColResize();}catch(e){}try{_tbSync();_scrN=_scrCount();_scrUpd(false);}catch(e){}}
 function togglePriceMask(ev){if(ev)ev.stopPropagation();_pmask=!_pmask;document.documentElement.classList.toggle("pmask",_pmask);render();toast(_pmask?"Prices hidden":"Prices shown until the app is closed \u2014 click the amount to hide them again","i",4500);}
 function render(){
   updSidebar();
@@ -2541,7 +2541,11 @@ function editCellPhoto(aid){
 }
 
 // Hide/Unhide cols (independent per list)
-function hideCol(key,listName){listName=listName||_viewList(view);var cols=getListCols(listName).filter(function(k){return k!==key;});setListCols(listName,cols);saveAll();render();toast("Hidden — tap 👁 Unhide to restore","i",10000);}
+function hideCol(key,listName){listName=listName||_viewList(view);
+  // Session 11 (Jim): confirm before hiding a column (all lists, present and future, use hideCol)
+  var _rn=LS.get("acap_renames_v3",{})||{},_fd=(allFDs().find(function(f){return f.k===key;})||{}),_cl=_rn[key]||_fd.lbl||(key==="photo"?"Photo":key);
+  var _ln=(MV_NAMES[listName==="table"?"inventory":listName]||LIST_LABELS&&LIST_LABELS[listName]||listName);
+  if(!confirm("Hide the column \""+_cl+"\" in "+_ln+"?\n\nNo data is deleted. To show it again: View ▾ → Unhide columns."))return;var cols=getListCols(listName).filter(function(k){return k!==key;});setListCols(listName,cols);saveAll();render();toast("Hidden — tap 👁 Unhide to restore","i",10000);}
 function showUnhide(){
   var listName=_viewList(view);
   var allFds2=[{k:"photo",lbl:"Photo",sec:""}].concat(listName==="sold"?[{k:"soldAt",lbl:SOLD_NET_LBL,sec:""},{k:"soldGross",lbl:SOLD_GROSS_LBL,sec:""},{k:"soldDate",lbl:"Sold Date",sec:""}]:[]).concat(allFDs());
@@ -2764,7 +2768,13 @@ function rForm(){
   h+='<button class="btn '+(isArt(cat)?"ba":"bp")+'" onclick="submitForm()">💾 '+(editId?"Update":"Save Asset")+'</button></div></div>';
   return h;
 }
+// Session 11 (Jim): Cancel in the Add/Edit form asks only when something was typed or changed
+var _formSnap=null;
+function _formSer(){var ct=G("CT");if(!ct)return "";return [].map.call(ct.querySelectorAll("input,select,textarea"),function(e){if(e.type==="file"||e.type==="button")return "";return (e.id||e.name||"")+"="+((e.type==="checkbox"||e.type==="radio")?e.checked:e.value);}).join("\u0001");}
+function _formDirty(){return _formSnap!==null&&_formSer()!==_formSnap;}
 function cancelForm(){
+  if(_formDirty()&&!confirm("Discard your changes?\n\nWhat you typed in this form will be lost."))return;
+  _formSnap=null;
   if(editId){var id0=editId;editId=null;editMode="inventory";if(_formFrom==="list"){_formFrom=null;backFromDetail();}else{_formFrom=null;viewDetail(id0);}return;}
   editId=null;goTo(assets.length?"list":"dash");
 }
@@ -2866,7 +2876,11 @@ var PUBLIC_BASE="https://verify.jeankhalife.com/";
 var PUB_LISTS=[["table","Inventory"],["consign","Consignment"],["framing","Framing"],["sold","Sold"],["wish","Wish List"],["coa","Private COAs"]];
 var _TOK_ALPHA="abcdefghjkmnpqrstuvwxyz23456789";
 function pubCfg(){var c=LS.get("acap_pub_v3",null);return (c&&typeof c==="object")?c:{coa:true};}
-function togPub(key,on){var c=pubCfg();c[key]=!!on;LS.set("acap_pub_v3",c);render();}
+function togPub(key,on){var c=pubCfg();
+  // Session 11 (Jim): confirm before a whole list turns public / private
+  var _nm=(PUB_LISTS.find(function(p){return p[0]===key;})||[0,key])[1],_n=_listArr(key==="table"?"inventory":key).filter(function(a){return !a.pubOverride;}).length;
+  if(!confirm(on?"Make the "+_nm+" list PUBLIC?\n\n"+_n+" item(s) will show their photo and details to anyone who scans their QR, after your next \"Export only new / changed\" and upload.\nItems set to \"Force private\" stay private."
+               :"Make the "+_nm+" list PRIVATE?\n\n"+_n+" item(s) will show the \"cannot be verified\" message to anyone who scans their QR, after your next \"Export only new / changed\" and upload.\nItems set to \"Force public\" stay public.")){render();return;}c[key]=!!on;LS.set("acap_pub_v3",c);render();}
 function _allItems(){return [].concat(assets,consignAssets,framingAssets,soldAssets,coaAssets,wishAssets);}
 function _randTok(){
   var out="",n=8,i,buf;
@@ -2892,6 +2906,11 @@ function isPublicItem(a){
 }
 function setPubOverride(id,val){
   var a=_findAsset(id);if(!a)return;
+  // Session 11 (Jim): confirm before changing an item's public page setting
+  var _was=isPublicItem(a),_t=Object.assign({},a);delete _t.pubAuto;if(val)_t.pubOverride=val;else delete _t.pubOverride;var _will=isPublicItem(_t);
+  var _q=(val==="on"?"Force PUBLIC":val==="off"?"Force PRIVATE":"Follow the list setting")+" for \""+(a.name||a.id)+"\"?\n\n"
+    +(_was===_will?"Its public page stays "+(_will?"PUBLIC":"Private")+".":"Its public page will change from "+(_was?"PUBLIC":"Private")+" to "+(_will?"PUBLIC (photo and details visible to anyone who scans the QR)":"Private (\"cannot be verified\" message)")+", after your next \"Export only new / changed\" and upload.");
+  if(!confirm(_q)){render();return;}
   delete a.pubAuto;
   if(val)a.pubOverride=val;else delete a.pubOverride;
   saveAll();render();
@@ -3291,6 +3310,11 @@ function saveListEdit(btn){
   var sk=keyMap[ta.id];if(!sk){toast("Unknown list","e");return;}
   var vals=ta.value.split("\n").map(function(v){return v.trim();}).filter(Boolean);
   if(!vals.length){toast("List cannot be empty","e");return;}
+  // Session 11 (Jim): warn when a removed value is still used by items
+  var _fk={"acap_user_cats":["category",CATS],"acap_user_conds":["condition",CONDS],"acap_user_meds":["medium",MEDS],"acap_user_framed":["framed",["Yes","Old","No","N/A"]]}[sk];
+  var _old=LS.get(sk,null)||_fk[1],_gone=_old.filter(function(v){return vals.indexOf(v)<0;}),_use=[];
+  _gone.forEach(function(v){var n=_allItems().filter(function(a){return a[_fk[0]]===v;}).length;if(n)_use.push("\u2022 "+v+" ("+n+" item"+(n>1?"s":"")+")");});
+  if(_use.length&&!confirm("These values are no longer in the list but are still used by items:\n\n"+_use.join("\n")+"\n\nThe items keep their value; it just won't be offered in the pull-down any more. Save anyway?"))return;
   LS.set(sk,vals);saveAll();render();toast("List saved ✓");
 }
 function resetListDef(btn){
