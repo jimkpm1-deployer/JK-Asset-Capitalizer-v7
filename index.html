@@ -459,6 +459,7 @@ html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;
 .tbmenu>button.tbmk{padding-left:26px;font-size:12px;color:var(--mu);}
 .tbmx{display:flex;align-items:center;gap:8px;padding:9px 11px;border-top:1px solid var(--b);margin-top:4px;font-size:12px;color:var(--mu);font-family:var(--mo);}
 .tbmh{padding:4px 11px 7px;font-size:11px;color:var(--mu);line-height:1.5;white-space:normal;max-width:260px;}
+.tbmenu .mvdot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:-1px;box-shadow:inset 0 1px 1px rgba(255,255,255,.35);}
 .tbmenu .tbdf.on{font-weight:700;color:var(--ac);}
 #SCRB{position:fixed;right:16px;bottom:86px;z-index:4400;display:flex;flex-direction:column;gap:8px;opacity:0;pointer-events:none;transition:opacity .35s;}
 #SCRB.on{opacity:1;pointer-events:auto;}
@@ -3066,8 +3067,8 @@ function saveQRImg(id,fmt){
 }
 // ---- Detail view move buttons (session 11, Jim): one button per allowed move from the item's list ----
 var MV_BTN_COL={inventory:"#2f4a6d",consign:"#2f7a74",framing:"#a8741f",sold:"#7d2e3a",wish:"#4f7a3a"};
-function _detailMoveBtns(src,a){
-  var id=a.id,h="";
+function _detailMoves(src,a){
+  var id=a.id,out=[];
   MOVES.forEach(function(m){
     if(m[0]!==src||!_mvOK(m[0],m[1]))return;var t=m[1],lbl,fn;
     if(src==="wish"){lbl="\uD83D\uDCB0 Buy \u2192 "+MV_NAMES[t];fn="buyWishAsset('"+id+"'"+(t==="inventory"?"":",'"+t+"'")+")";}
@@ -3078,9 +3079,14 @@ function _detailMoveBtns(src,a){
     else if(t==="framing"){lbl="\uD83D\uDD8C Send to Framing";fn="moveToFraming('"+id+"')";}
     else if(t==="sold"){lbl="\uD83D\uDCB0 Mark as Sold";fn="moveToSold('"+id+"')";}
     if(!fn)return;
-    h+='<button class="btn dmv" style="font-size:11px;background:'+(MV_BTN_COL[t]||"#2f4a6d")+';color:#fff;" onclick="'+fn+'">'+lbl+'</button>';
+    out.push([lbl,fn,MV_BTN_COL[t]||"#2f4a6d"]);
   });
-  return h;
+  return out;
+}
+// Session 11 (Jim): all allowed moves grouped under one "Actions ▾" button (menu tbMenu kind 'mvd')
+function _detailMoveBtns(src,a){
+  var n=_detailMoves(src,a).length;if(!n)return "";
+  return '<button class="btn dmvb" style="font-size:11px;background:#2f4a6d;color:#fff;" onclick="_tbDetailId=\''+a.id+'\';tbMenu(this,\'mvd\')">⇄ Actions ▾</button>';
 }
 function rDetail(){
   var a=assets.find(function(x){return x.id===detailId;})||consignAssets.find(function(x){return x.id===detailId;})||soldAssets.find(function(x){return x.id===detailId;})||framingAssets.find(function(x){return x.id===detailId;})||coaAssets.find(function(x){return x.id===detailId;})||wishAssets.find(function(x){return x.id===detailId;});
@@ -3606,6 +3612,9 @@ function tbMenu(btn,kind){
     it.push(["⇅ Field order",function(){goTo("settings");try{if(v!=="list")setFOList(lk);}catch(e){}}]);
     if(v!=="list")extra='<div class="tbmx"><span>Row height</span><input type="range" min="26" max="100" value="'+rowH+'" oninput="setRH(this.value);document.documentElement.style.setProperty(\'--rowh\',this.value+\'px\')" style="flex:1;"/><span id="rhLbl">'+rowH+'px</span></div>'
       +'<div class="tbmh">Drag a header to reorder · drag its left edge to resize · click a cell to edit · 📷 = photo</div>';
+  }else if(kind==="mvd"){
+    var ma=_findAsset(_tbDetailId);if(!ma)return;
+    _detailMoves(_srcList(ma.id),ma).forEach(function(x){it.push(['<span class="mvdot" style="background:'+x[2]+'"></span>'+x[0],new Function(x[1])]);});
   }else if(kind==="more"){
     var dk=document.documentElement.getAttribute("data-theme")==="dark";
     it.push([dk?"☀️ Day mode":"🌙 Night mode",function(){toggleTheme();}]);
