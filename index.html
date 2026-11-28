@@ -442,7 +442,7 @@ html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;
 .topbar{flex-direction:column;align-items:stretch;gap:6px;}
 .tbr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .tbapp{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;}
-#bMore{display:none;}
+#bMore{display:inline-flex;}
 .tbr2 .srch{max-width:260px;}
 .tbn{display:inline-block;min-width:16px;padding:0 5px;border-radius:9px;background:var(--gold);color:#1d1b16;font-size:10px;line-height:15px;text-align:center;font-family:var(--mo);}
 .fpanel{padding:7px;border:1px solid var(--b);border-radius:var(--r);background:var(--s2);box-shadow:inset 1px 2px 3px var(--shd-soft);}
@@ -459,6 +459,7 @@ html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;
 .tbmenu>button.tbmk{padding-left:26px;font-size:12px;color:var(--mu);}
 .tbmx{display:flex;align-items:center;gap:8px;padding:9px 11px;border-top:1px solid var(--b);margin-top:4px;font-size:12px;color:var(--mu);font-family:var(--mo);}
 .tbmh{padding:4px 11px 7px;font-size:11px;color:var(--mu);line-height:1.5;white-space:normal;max-width:260px;}
+.tbmenu .tbdf.on{font-weight:700;color:var(--ac);}
 #SCRB{position:fixed;right:16px;bottom:86px;z-index:4400;display:flex;flex-direction:column;gap:8px;opacity:0;pointer-events:none;transition:opacity .35s;}
 #SCRB.on{opacity:1;pointer-events:auto;}
 #SCRB button{width:44px;height:44px;border-radius:50%;border:1px solid var(--b);background:var(--s);color:var(--tx);font-size:17px;box-shadow:2px 3px 6px var(--shd);cursor:pointer;}
@@ -1479,6 +1480,26 @@ function _maskMoney(root){
   while((n=w.nextNode())){var p=n.parentNode;if(p&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(p.tagName))continue;if(p&&p.isContentEditable)continue;if(n.nodeValue.indexOf("$")>=0)list.push(n);}
   list.forEach(function(t){t.nodeValue=t.nodeValue.replace(_PM_RE,"$*****");});
 }
+// ---- Date format (session 11, Jim): chosen in the ⋯ menu, applies to every date the app shows; data stays yyyy-mm-dd ----
+var DATE_FMTS=["dd-mm-yyyy","dd/mm/yyyy","mm/dd/yyyy","yyyy-mm-dd","dd MMM yyyy"];
+var _dfmt=LS.get("acap_datefmt_v1","dd-mm-yyyy")||"dd-mm-yyyy";
+var _MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var _DF_RE=/\b(\d{4})-(\d{2})-(\d{2})(?![\d-])/g;
+function _fmtD(y,m,d){if(+m<1||+m>12||+d<1||+d>31)return y+"-"+m+"-"+d;switch(_dfmt){case "dd/mm/yyyy":return d+"/"+m+"/"+y;case "mm/dd/yyyy":return m+"/"+d+"/"+y;case "yyyy-mm-dd":return y+"-"+m+"-"+d;case "dd MMM yyyy":return d+" "+_MON[+m-1]+" "+y;default:return d+"-"+m+"-"+y;}}
+function fmtDate(v){if(v==null)return "";return String(v).replace(_DF_RE,function(x,y,m,d){return _fmtD(y,m,d);});}
+function fmtDateObj(dt){function p(n){return (n<10?"0":"")+n;}return _fmtD(String(dt.getFullYear()),p(dt.getMonth()+1),p(dt.getDate()));}
+function fmtDatesHTML(html){if(_dfmt==="yyyy-mm-dd")return html;return String(html).replace(/>([^<]+)</g,function(x,t){return ">"+fmtDate(t)+"<";});}
+function _fmtDates(root){
+  if(_dfmt==="yyyy-mm-dd"||!root)return;
+  if(root.nodeType===3){var p0=root.parentNode;if(p0&&(p0.isContentEditable||/^(SCRIPT|STYLE|TEXTAREA)$/.test(p0.tagName)||(p0.closest&&p0.closest(".nodf"))))return;_DF_RE.lastIndex=0;if(_DF_RE.test(root.nodeValue)){_DF_RE.lastIndex=0;root.nodeValue=fmtDate(root.nodeValue);}_DF_RE.lastIndex=0;return;}
+  if(root.nodeType!==1||/^(SCRIPT|STYLE|TEXTAREA|INPUT|SELECT|OPTION)$/.test(root.tagName))return;
+  var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null),n,list=[];
+  while((n=w.nextNode())){var p=n.parentNode;if(p&&/^(SCRIPT|STYLE|TEXTAREA|OPTION)$/.test(p.tagName))continue;if(p&&(p.isContentEditable||(p.closest&&p.closest(".nodf"))))continue;_DF_RE.lastIndex=0;if(_DF_RE.test(n.nodeValue))list.push(n);}
+  _DF_RE.lastIndex=0;list.forEach(function(t){t.nodeValue=fmtDate(t.nodeValue);});
+}
+function _fmtDsample(f){var o=_dfmt;_dfmt=f;var r=fmtDateObj(new Date());_dfmt=o;return r;}
+function _pwFix(w){try{if(w&&!w._dfx){var d=w.document,o=d.write.bind(d);d.write=function(h){o(fmtDatesHTML(h));};w._dfx=1;}}catch(e){}}
+function setDateFmt(f){_dfmt=f;LS.set("acap_datefmt_v1",f);_tbCloseMenu();render();updSidebar();toast("Date format: "+f,"s");}
 function _afterRender(){try{document.documentElement.style.setProperty("--rowh",rowH+"px");_initColResize();}catch(e){}try{_tbSync();_scrN=_scrCount();_scrUpd(false);}catch(e){}}
 function togglePriceMask(ev){if(ev)ev.stopPropagation();_pmask=!_pmask;document.documentElement.classList.toggle("pmask",_pmask);render();toast(_pmask?"Prices hidden":"Prices shown until the app is closed \u2014 click the amount to hide them again","i",4500);}
 function render(){
@@ -1685,13 +1706,14 @@ function exportWishCSV(){
   var rows=wishAssets.map(function(a){return[a.id].concat(cols.map(function(k){return'"'+(a[k]||"").toString().replace(/"/g,"''")+'"';})).join(",");});
   dl(hdr+"\n"+rows.join("\n"),"text/csv","wishlist.csv");toast("Exported");
 }
-function buyWishAsset(id){
-  var a=wishAssets.find(function(x){return x.id===id;});if(!a)return;if(!_mvGuard("wish","inventory"))return;
+function buyWishAsset(id,dest){
+  dest=dest||"inventory";var _dn={inventory:"Inventory",consign:"Consignment",framing:"Framing"}[dest];
+  var a=wishAssets.find(function(x){return x.id===id;});if(!a)return;if(!_mvGuard("wish",dest))return;
   var price=prompt("Buy price for \""+(a.name||a.id)+"\":",a.buyPrice||a.currentValue||"");
   if(price===null)return;
-  if(!confirm("Move \""+(a.name||a.id)+"\" from Wish List to Inventory?\n\nIt will get a new Inventory ID."))return;
-  _openActionModal("BUY \u2192 ADD TO INVENTORY",false,a.location||"",function(loc){
-  var moved=Object.assign({},a);var _mp=_applyMovePrivacy(moved,"inventory",isPublicItem(a));
+  if(!confirm("Move \""+(a.name||a.id)+"\" from Wish List to "+_dn+"?\n\nIt will get a new Inventory ID."))return;
+  _openActionModal(dest==="inventory"?"BUY \u2192 ADD TO INVENTORY":"BUY \u2192 SEND TO "+_dn.toUpperCase(),false,a.location||"",function(loc){
+  var moved=Object.assign({},a);var _mp=_applyMovePrivacy(moved,dest,isPublicItem(a));
   moved.location=loc||a.location||"";
   delete moved.wishDate;delete moved.status;
   moved.prevIds=(a.prevIds||[]).concat([a.id]);
@@ -1701,6 +1723,8 @@ function buyWishAsset(id){
   if(!moved.currentValue)moved.currentValue=price||"";
   moved.purchaseDate=today();
   moved.updatedAt=today();
+  if(dest==="consign"){moved.consignDate=today();moved.status="consignment";}
+  if(dest==="framing"){moved.framingDate=today();moved.status="framing";}
   // Move photo to new ID in IndexedDB
   (async function(){
     try{
@@ -1712,12 +1736,13 @@ function buyWishAsset(id){
       else if(moved.photo2){await savePhoto2(moved.id,moved.photo2);}
     }catch(e){}
   })();
-  assets.push(moved);
+  (dest==="consign"?consignAssets:dest==="framing"?framingAssets:assets).push(moved);
   wishAssets=wishAssets.filter(function(x){return x.id!==id;});
   filtered=filtered.filter(function(x){return x.id!==id;});
+  if(view==="detail")detailId=moved.id;
   saveAll();render();
-  _privMoveToast("Purchased \u2192 "+moved.id+" added to Inventory \u2713",_mp);
-  },false,"",undefined,INV_LOCS);
+  _privMoveToast("Purchased \u2192 "+moved.id+" added to "+_dn+" \u2713",_mp);
+  },false,"",undefined,dest==="inventory"?INV_LOCS:undefined);
 }
 function sellConsignAsset(id){
   var a=consignAssets.find(function(x){return x.id===id;});if(!a)return;
@@ -2248,7 +2273,7 @@ function rTable(){
   let h='<div class="phdr" id="phdr">';
   h+='<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;">';
   h+='<span id="phdrTxt" style="font-weight:bold;">'+esc(appName)+' — Inventory</span>';
-  h+='<span style="font-size:9px;color:#555;">'+new Date().toLocaleDateString()+" · "+tblA.length+(hasFilter()?" of "+assets.length:"")+" items"+'</span></div>';
+  h+='<span style="font-size:9px;color:#555;">'+fmtDateObj(new Date())+" · "+tblA.length+(hasFilter()?" of "+assets.length:"")+" items"+'</span></div>';
   if(filterTxt)h+='<div style="font-size:9px;color:#666;margin-top:1px;">Filter: '+esc(filterTxt)+' — '+tblA.length+' of '+assets.length+' assets</div>';
   else h+='<div style="font-size:9px;color:#666;margin-top:1px;">'+tblA.length+' assets total</div>';
   h+='</div>';
@@ -2598,10 +2623,10 @@ function doPrint(){
   if(leg||ps){
     legendHtml='<div class="legbox">'+(leg?'<div><b>Legend:</b> '+esc(leg).replace(/\n/g,'<br>')+'</div>':'')+(ps?'<div style="margin-top:6px;"><b>PS:</b> '+esc(ps).replace(/\n/g,'<br>')+'</div>':'')+'</div>';
   }
-  var dateStr=new Date().toLocaleString();
+  var dateStr=fmtDateObj(new Date())+" "+new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
   var itemCount=arr.length;
   var w=window.open("","_blank");
-  w.document.write('<!DOCTYPE html><html><head><title>'+esc(title)+'</title>'
+  _pwFix(w);w.document.write('<!DOCTYPE html><html><head><title>'+esc(title)+'</title>'
     +'<style>'
     +'*{box-sizing:border-box;}'
     +'body{font-family:-apple-system,Arial,sans-serif;margin:0;padding:4px;color:#222;}'
@@ -3039,6 +3064,24 @@ function saveQRImg(id,fmt){
     },mime,0.95);
   }catch(e){toast("Save failed: "+e.message,"e");}
 }
+// ---- Detail view move buttons (session 11, Jim): one button per allowed move from the item's list ----
+var MV_BTN_COL={inventory:"#2f4a6d",consign:"#2f7a74",framing:"#a8741f",sold:"#7d2e3a",wish:"#4f7a3a"};
+function _detailMoveBtns(src,a){
+  var id=a.id,h="";
+  MOVES.forEach(function(m){
+    if(m[0]!==src||!_mvOK(m[0],m[1]))return;var t=m[1],lbl,fn;
+    if(src==="wish"){lbl="\uD83D\uDCB0 Buy \u2192 "+MV_NAMES[t];fn="buyWishAsset('"+id+"'"+(t==="inventory"?"":",'"+t+"'")+")";}
+    else if(src==="coa"){lbl="\u2B50 Add to Wish List";fn="addCOAToWish('"+id+"')";}
+    else if(src==="sold"){lbl="\u21A9 Restore to "+(a.source==="consignment"?"Consignment":"Inventory");fn="restoreAsset({getAttribute:function(){return '"+id+"';}})";}
+    else if(t==="inventory"){lbl="\u21A9 Restore to Inventory";fn="restoreToInventory('"+id+"')";}
+    else if(t==="consign"){lbl="\uD83D\uDCE6 "+(src==="inventory"?"Move":"Send")+" to Consignment";fn="moveToConsign('"+id+"')";}
+    else if(t==="framing"){lbl="\uD83D\uDD8C Send to Framing";fn="moveToFraming('"+id+"')";}
+    else if(t==="sold"){lbl="\uD83D\uDCB0 Mark as Sold";fn="moveToSold('"+id+"')";}
+    if(!fn)return;
+    h+='<button class="btn dmv" style="font-size:11px;background:'+(MV_BTN_COL[t]||"#2f4a6d")+';color:#fff;" onclick="'+fn+'">'+lbl+'</button>';
+  });
+  return h;
+}
 function rDetail(){
   var a=assets.find(function(x){return x.id===detailId;})||consignAssets.find(function(x){return x.id===detailId;})||soldAssets.find(function(x){return x.id===detailId;})||framingAssets.find(function(x){return x.id===detailId;})||coaAssets.find(function(x){return x.id===detailId;})||wishAssets.find(function(x){return x.id===detailId;});
   var _detailSrc=assets.find(function(x){return x.id===detailId;})?'inventory':consignAssets.find(function(x){return x.id===detailId;})?'consign':soldAssets.find(function(x){return x.id===detailId;})?'sold':framingAssets.find(function(x){return x.id===detailId;})?'framing':coaAssets.find(function(x){return x.id===detailId;})?'coa':'wish';
@@ -3080,12 +3123,9 @@ function rDetail(){
   h+='<div style="flex:1;"></div>';
   h+='<button class="btn bg" style="font-size:11px;" onclick="_tbDetailId=\''+a.id+'\';tbMenu(this,\'pqd\')">🖨 Print ▾</button>';
   h+='<button class="btn bs" style="font-size:11px;" onclick="editAsset(\''+a.id+'\')">✏ Edit</button>';
-  if(_detailSrc==='inventory'&&(_mvOK("inventory","sold")||_mvOK("inventory","consign")||_mvOK("inventory","framing"))){h+='<button class="btn" style="font-size:11px;background:var(--ac);color:#fff;" onclick="openMoveWin(\''+a.id+'\')">💰 Sell/Move</button>';}
+  var _mvb=_detailMoveBtns(_detailSrc,a);
   h+='<button class="btn" style="font-size:11px;'+(a.marked?"background:#c8961e;color:#000;":"background:none;border:1px solid var(--b);")+'" onclick="toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★ Marked":"☆ Mark")+'</button>';
-  if(_detailSrc==='wish'&&_mvOK("wish","inventory")){h+='<button class="btn" style="font-size:11px;background:#4f7a3a;color:#fff;" onclick="buyWishAsset(\''+a.id+'\')">💰 Buy \u2192 Inventory</button>';}
-  if(_detailSrc==='framing'&&_mvOK("framing","inventory")){h+='<button class="btn" style="font-size:11px;background:#2f4a6d;color:#fff;" onclick="restoreFramingToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
-  if(_detailSrc==='consign'&&_mvOK("consign","inventory")){h+='<button class="btn" style="font-size:11px;background:#2f4a6d;color:#fff;" onclick="restoreConsignToInventory(\''+a.id+'\')">\u21A9 Restore to Inventory</button>';}
-  if(_detailSrc==='coa'&&_mvOK("coa","wish")){h+='<button class="btn" style="font-size:11px;background:#4f7a3a;color:#fff;" onclick="addCOAToWish(\''+a.id+'\')">\u2B50 Add to Wish List</button>';}
+  h+=_mvb;
   h+='<button class="btn bd" style="font-size:11px;" onclick="confirmId=\''+a.id+'\';safeDelete(\''+_detailSrc+'\')">🗑</button></div>';
   var _srcLabels={inventory:"Inventory",consign:"Consignment",framing:"Framing / Restoration",sold:"Sold Assets",wish:"Wish List",coa:"Private COAs"};
   var _srcColors={inventory:"#2f4a6d",consign:"#2f7a74",framing:"#a8741f",sold:"#7d2e3a",wish:"#4f7a3a",coa:"#6e4a86"};
@@ -3302,7 +3342,7 @@ var IOLOG_KEY="acap_iolog_v1";
 function _ioFmt(t){
   if(!t)return '<span style="opacity:.75">Never on this device</span>';
   var d=new Date(t),now=new Date();
-  var s=d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})+", "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  var s=d.toLocaleDateString("en-GB",{weekday:"short"})+" "+fmtDateObj(d)+", "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
   var d0=new Date(now.getFullYear(),now.getMonth(),now.getDate()),d1=new Date(d.getFullYear(),d.getMonth(),d.getDate());
   var days=Math.round((d0-d1)/864e5),rel=days<=0?"today":days===1?"yesterday":days+" days ago";
   return s+' <span style="opacity:.75">('+rel+')</span>';
@@ -3571,11 +3611,12 @@ function tbMenu(btn,kind){
     it.push([dk?"☀️ Day mode":"🌙 Night mode",function(){toggleTheme();}]);
     it.push(["🧮 Calculator",function(){toggleCalc();}]);
     it.push(["🗄 Storage",function(){showStorageDiag();}]);
+    extra='<div class="tbmh" style="margin-top:4px;">📅 Date format</div>'+DATE_FMTS.map(function(f){return '<button class="tbdf'+(f===_dfmt?' on':'')+'" onclick="setDateFmt(\''+f+'\')">'+(f===_dfmt?'✓ ':'<span style="visibility:hidden">✓ </span>')+f+' <span class="nodf" style="opacity:.6;font-size:10px;">('+_fmtDsample(f)+')</span></button>';}).join("");
   }
   window._tbItems=it.map(function(x){return x[1];});
   var m=document.createElement("div");m.id="TBM";m.className="tbmenu no-print";m.dataset.kind=kind;
   m.innerHTML=it.map(function(x,i){return '<button onclick="_tbRun('+i+')">'+x[0]+'</button>';}).join("")+extra;
-  m.querySelectorAll("button").forEach(function(b){if(/★ marked/.test(b.textContent))b.classList.add("tbmk");if(/Unmark all/.test(b.textContent))b.classList.add("tbum");});
+  m.querySelectorAll("button:not(.tbdf)").forEach(function(b){if(/★ marked/.test(b.textContent))b.classList.add("tbmk");if(/Unmark all/.test(b.textContent))b.classList.add("tbum");});
   document.body.appendChild(m);
   var r=btn.getBoundingClientRect(),w=m.offsetWidth,left=Math.min(r.left,window.innerWidth-w-8);
   m.style.left=Math.max(8,left)+"px";m.style.top=(r.bottom+4)+"px";
@@ -3605,16 +3646,18 @@ var MOVES=[
   ["framing","inventory","Restore to Inventory"],["framing","consign","Send to Consignment"],["framing","sold","Mark as Sold"],
   ["sold","inventory","Restore (to Inventory, or back to Consignment if it was sold from there)"],
   ["wish","inventory","Buy → Add to Inventory (new Inventory ID)"],
+  ["wish","consign","Buy → Send to Consignment (new Inventory ID)"],["wish","framing","Buy → Send to Framing (new Inventory ID)"],
   ["coa","wish","Copy to Wish List (the record stays in Private COAs)",1]
 ];
 var MV_NAMES={inventory:"Inventory",consign:"Consignment",framing:"Framing",sold:"Sold",wish:"Wish List",coa:"Private COAs"};
 var MV_COL={inventory:"--l-inv",consign:"--l-con",framing:"--l-fram",sold:"--l-sold",wish:"--l-wish",coa:"--l-coa"};
-var _mvCfg=LS.get("acap_moves_v1",{})||{};   // only switched-OFF moves are stored: {"from>to":false}
-function _mvOK(f,t){return _mvCfg[f+">"+t]!==false;}
+var _mvCfg=LS.get("acap_moves_v1",{})||{};   // stored: switched-OFF moves {"from>to":false}; default-off moves switched ON {"from>to":true}
+var MV_DEF_OFF={"wish>consign":1,"wish>framing":1}; // session 11 (Jim): new moves start switched off
+function _mvOK(f,t){var k=f+">"+t;if(k in _mvCfg)return _mvCfg[k]!==false;return !MV_DEF_OFF[k];}
 function _srcList(id){var v=_viewOfItem(id);return v==="table"?"inventory":v;}
 function _mvGuard(f,t){if(_mvOK(f,t))return true;toast("⛔ "+(MV_NAMES[f]||f)+" → "+(MV_NAMES[t]||t)+" is switched off (Allowed Moves)","e",6000);return false;}
-function setMove(f,t,on){if(on)delete _mvCfg[f+">"+t];else _mvCfg[f+">"+t]=false;LS.set("acap_moves_v1",_mvCfg);render();toast((MV_NAMES[f])+" → "+(MV_NAMES[t])+(on?" allowed":" switched off"),on?"s":"i");}
-function resetMoves(){if(!confirm("Allow all moves again?"))return;_mvCfg={};LS.set("acap_moves_v1",_mvCfg);render();toast("All moves allowed ✓","s");}
+function setMove(f,t,on){var k=f+">"+t;if(on){if(MV_DEF_OFF[k])_mvCfg[k]=true;else delete _mvCfg[k];}else _mvCfg[k]=false;LS.set("acap_moves_v1",_mvCfg);render();toast((MV_NAMES[f])+" → "+(MV_NAMES[t])+(on?" allowed":" switched off"),on?"s":"i");}
+function resetMoves(){if(!confirm("Allow all moves again?"))return;_mvCfg={};Object.keys(MV_DEF_OFF).forEach(function(k){_mvCfg[k]=true;});LS.set("acap_moves_v1",_mvCfg);render();toast("All moves allowed ✓","s");}
 function _syncMoveWin(){[["mvSold","sold"],["mvCons","consign"],["mvFram","framing"]].forEach(function(x){var b=G(x[0]);if(b)b.style.display=_mvOK("inventory",x[1])?"":"none";});}
 function openMoveWin(id){confirmId=id;_syncMoveWin();var m=G("mConfirm");if(m)m.style.display="flex";}
 function rMoves(){
@@ -3656,7 +3699,7 @@ function printQRLetter(ids){
   var head=_QRL_HEAD.replace('<title>QR Letter</title>',function(){return '<title>'+esc('JK QR Letter - '+ids.join(' '))+'</title>';});
   var w=window.open("","_blank");
   if(!w){toast("Please allow pop-ups to print the QR letter","e",6000);return;}
-  w.document.write(head+body+'<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){window.print();},300);});<\/script></body></html>');
+  _pwFix(w);w.document.write(head+body+'<script>(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){window.print();},300);});<\/script></body></html>');
   w.document.close();
 }
 function qrLetterMarked(list){
@@ -3678,17 +3721,18 @@ function rIO(){
   h+='<input type="file" id="jsonImp" accept=".json" style="display:none" onchange="importJSON(this)"/>';
   h+='<input type="file" id="csvImp" accept=".csv" style="display:none" onchange="importCSV(this)"/></div>';
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
-  h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">🖼 PHOTOS</h3>';
-  h+='<div style="font-size:12px;color:var(--mu);margin-bottom:9px;line-height:1.6;">Replace photo 1 of many Inventory, Consignment, Framing and Sold items at once from your photo folders. Files are matched by the number at the start of the name (007 … → AST-007); you check the list before anything changes.</div>';
-  h+=_ioBtn('<button class="btn bp" onclick="openBulkPhotos()">🖼 Replace photos from files</button>','photos')+'</div>';
-  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">EXPORT</h3>';
   h+='<div style="font-size:13px;color:var(--mu);margin-bottom:11px;">'+(assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length)+' total records ('+assets.length+' inv · '+consignAssets.length+' con · '+framingAssets.length+' fram · '+soldAssets.length+' sold · '+wishAssets.length+' wish · '+coaAssets.length+' priv.coll). JSON includes all lists + photos.</div>';
   h+='<div style="display:flex;gap:7px;flex-wrap:wrap;">';
   h+=_ioBtn('<button class="btn bp" onclick="exportJSON()">💾 JSON Backup</button>','backup');
+  h+=_ioBtn('<button class="btn bp" onclick="exportAllCSV()">📊 CSV Backup — all data</button>','csvall');
   h+=_ioBtn('<button class="btn bg" onclick="exportCSV()">📊 Export CSV — Inventory</button>','csv')+'</div>';
   h+='<div style="margin-top:10px;font-size:12px;color:var(--mu);">📊 Export CSV (opens in Excel) for the other lists:</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;">'
     +[["exportConsignCSV","Consignment"],["exportFramingCSV","Framing"],["exportSoldCSV","Sold"],["exportWishCSV","Wish List"],["exportCOACSV","Private COAs"]].map(function(x){return '<button class="btn bg" onclick="'+x[0]+'()">'+x[1]+'</button>';}).join("")+'</div></div>';
+  h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
+  h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">🖼 PHOTOS</h3>';
+  h+='<div style="font-size:12px;color:var(--mu);margin-bottom:9px;line-height:1.6;">Replace photo 1 of many Inventory, Consignment, Framing and Sold items at once from your photo folders. Files are matched by the number at the start of the name (007 … → AST-007); you check the list before anything changes.</div>';
+  h+=_ioBtn('<button class="btn bp" onclick="openBulkPhotos()">🖼 Replace photos from files</button>','photos')+'</div>';
   var _pc=pubCfg(),_pn=_allItems().filter(isPublicItem).length;
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">\uD83C\uDF10 PUBLIC QR PAGES</h3>';
@@ -3728,6 +3772,19 @@ async function exportJSON(){
   var _total=assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length;
   _ioStamp("backup");
   toast("Backup complete: "+assets.length+" inv · "+consignAssets.length+" con · "+framingAssets.length+" fram · "+soldAssets.length+" sold · "+wishAssets.length+" wish · "+coaAssets.length+" priv.coll ("+_total+" total)","s",6000);
+}
+// ---- CSV backup of all data (session 11, Jim): one file, every list, every field; opens in Excel ----
+function exportAllCSV(){
+  var L=[["Inventory",assets],["Consignment",consignAssets],["Framing",framingAssets],["Sold",soldAssets],["Wish List",wishAssets],["Private COAs",coaAssets]];
+  var fds=allFDs(),renames=LS.get("acap_renames_v3",{}),keys=[],lbl={},SK={photo:1,photo2:1,id:1};
+  fds.forEach(function(f){if(SK[f.k])return;keys.push(f.k);lbl[f.k]=renames[f.k]||f.lbl;});
+  var REC={soldAt:SOLD_NET_LBL,soldGross:SOLD_GROSS_LBL,soldDate:"Sold Date",consignDate:"Consignment Date",framingDate:"Framing Date",wishDate:"Wish List Date",originalLocation:"Original Location",buyPrice:"Buy Price",status:"Status",source:"Source",createdAt:"Created",updatedAt:"Last Updated",marked:"Marked",prevIds:"Previous IDs"};
+  Object.keys(REC).forEach(function(k){if(keys.indexOf(k)<0){keys.push(k);lbl[k]=REC[k];}});
+  L.forEach(function(l){l[1].forEach(function(a){Object.keys(a).forEach(function(k){if(SK[k]||keys.indexOf(k)>=0)return;var v=a[k];if(v==null||typeof v==="object"&&!Array.isArray(v))return;keys.push(k);lbl[k]=k;});});});
+  function q(v){if(v==null)v="";if(Array.isArray(v))v=v.join(" | ");v=String(v);if(v.indexOf("data:")===0)v="[photo]";try{var lp=JSON.parse(v);if(lp&&lp.url)v=lp.url;}catch(e){}return '"'+v.replace(/"/g,'""')+'"';}
+  var rows=[["List","ID","Photo 1","Photo 2"].concat(keys.map(function(k){return lbl[k];})).map(q).join(",")],n=0;
+  L.forEach(function(l){l[1].forEach(function(a){n++;rows.push([l[0],a.id,(a.photo||_photoCache[a.id])?"yes":"",(a.photo2||_photoCache2[a.id])?"yes":""].concat(keys.map(function(k){return a[k];})).map(q).join(","));});});
+  dl("\uFEFF"+rows.join("\r\n"),"text/csv","asset_capitalizer_all_data_"+today()+".csv");_ioStamp("csvall");toast("CSV backup: "+n+" items, all lists \u2713","s");
 }
 function exportCSV(){
   var fds=allFDs(),cols=fds.map(function(f){return f.k;}),renames=LS.get("acap_renames_v3",{});
@@ -4052,7 +4109,7 @@ function printQRSheet(items,title,verify){
   }).join("");
   var w=window.open("","_blank");
   if(!w){toast("Pop-up blocked — allow pop-ups for this site","e",5000);return;}
-  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(title||"QR codes")+'</title><style>'
+  _pwFix(w);w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(title||"QR codes")+'</title><style>'
    +'*{box-sizing:border-box;margin:0;padding:0;}@page{size:A4 portrait;margin:0;}'
    +'body{background:#fff;font-family:Arial,Helvetica,sans-serif;width:210mm;}'
    +'.pg{width:210mm;height:297mm;display:grid;grid-template-columns:repeat(4,52.5mm);grid-template-rows:repeat(11,26.5mm);page-break-after:always;overflow:hidden;align-content:start;}'
@@ -4199,7 +4256,7 @@ function _openStickerWindow(arr,title,single){
   if(!arr||!arr.length){toast("No assets to print","e");return;}
   var w=window.open("","_blank");
   if(!w){toast("Pop-up blocked — allow pop-ups for this site","e",5000);return;}
-  w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+STICKER_CSS
+  _pwFix(w);w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+STICKER_CSS
     +'</style></head><body>'
     +'<div class="hint">Tap to save as PDF: <button onclick="window.print()">&#x1F4C4; Print / Save PDF</button></div>'
     +'<div class="grid">'+arr.map(_stickerCard).join("")+'</div>'
@@ -4272,7 +4329,7 @@ function printAllLists(){
     +makeTable(soldAssets,"Sold","#7d2e3a",soldCols)
     +makeTable(wishAssets,"Wish List","#4f7a3a",wishCols)
     +makeTable(coaAssets,"Private COAs (not owned \u2014 COA)","#6e4a86",coaCols);
-  w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>'
+  _pwFix(w);w.document.write('<!DOCTYPE html><html><head><title>All Lists</title><style>'
     +'body{font-family:Arial,sans-serif;font-size:9pt;padding:10px;}'
     +'table{width:100%;border-collapse:collapse;margin-bottom:20px;}'
     +'th,td{border:1px solid #ccc;padding:3px 5px;text-align:left;font-size:8pt;vertical-align:middle;}'
@@ -4589,6 +4646,8 @@ function showListAction(listType){
   } else if(listType==="wish"){
     if(title)title.textContent="WISH LIST ACTIONS";
     if(_mvOK("wish","inventory"))wrap.appendChild(mb("#4f7a3a","&#x1F4B0;","Buy \u2192 Add to Inventory",function(){buyWishAsset(id);}));
+    if(_mvOK("wish","consign"))wrap.appendChild(mb("#2f7a74","&#x1F4B0;","Buy \u2192 Send to Consignment",function(){buyWishAsset(id,"consign");}));
+    if(_mvOK("wish","framing"))wrap.appendChild(mb("#a8741f","&#x1F4B0;","Buy \u2192 Send to Framing",function(){buyWishAsset(id,"framing");}));
     wrap.appendChild(mb("#2f4a6d","&#x270F;","Edit",function(){editAsset(id);}));
   } else if(listType==="coa"){
     if(title)title.textContent="PRIVATE COLLECTION ACTIONS";
@@ -4621,7 +4680,7 @@ function safeDelete(listType, btn){
 document.addEventListener("DOMContentLoaded",function(){
   _syncThemeBtn();
   _bigIcons(document.body);
-  try{new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)_bigIcons(n);else if(n.nodeType===3&&n.parentNode)_bigIcons(n.parentNode);if(_pmask)_maskMoney(n);});});}).observe(document.body,{childList:true,subtree:true});}catch(e){}
+  try{new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1)_bigIcons(n);else if(n.nodeType===3&&n.parentNode)_bigIcons(n.parentNode);if(_pmask)_maskMoney(n);_fmtDates(n);});});}).observe(document.body,{childList:true,subtree:true});}catch(e){}
   document.documentElement.classList.toggle("pmask",_pmask);if(_pmask)_maskMoney(document.body);
   DORDER.forEach(function(k){if(!fOrder.includes(k))fOrder.push(k);});
   fOrder=fOrder.filter(function(k){return DORDER.includes(k)||customCols.find(function(c){return c.key===k;});});
