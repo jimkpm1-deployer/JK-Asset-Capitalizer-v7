@@ -449,6 +449,8 @@ html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;
 .tbmenu{position:fixed;z-index:4600;min-width:210px;max-width:92vw;background:var(--s);color:var(--tx);border:1px solid var(--b);border-radius:10px;box-shadow:3px 6px 18px var(--shd);padding:5px;display:flex;flex-direction:column;}
 .tbmenu>button{text-align:left;border:none;background:none;color:var(--tx);padding:9px 11px;border-radius:7px;font-size:13px;cursor:pointer;white-space:nowrap;}
 .tbmenu>button:hover{background:var(--hover,var(--s2));}
+.scanico{width:1.35em;height:1.35em;vertical-align:-.3em;display:inline-block;}
+.tbmenu>button.tbmk{padding-left:26px;font-size:12px;color:var(--mu);}
 .tbmx{display:flex;align-items:center;gap:8px;padding:9px 11px;border-top:1px solid var(--b);margin-top:4px;font-size:12px;color:var(--mu);font-family:var(--mo);}
 .tbmh{padding:4px 11px 7px;font-size:11px;color:var(--mu);line-height:1.5;white-space:normal;max-width:260px;}
 #SCRB{position:fixed;right:16px;bottom:86px;z-index:4400;display:flex;flex-direction:column;gap:8px;opacity:0;pointer-events:none;transition:opacity .35s;}
@@ -523,7 +525,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <h2 id="pgTit">Dashboard</h2>
       <div class="sp"></div>
       <span class="tbapp no-print">
-      <button class="btn bg no-print" id="bScan"   style="display:none" onclick="openScanner()">🔍<span class="tlb"> Scan</span></button>
+      <button class="btn bg no-print" id="bScan"   style="display:none" onclick="openScanner()"><svg class="scanico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><rect x="7" y="7" width="4" height="4" rx=".5"/><rect x="13" y="7" width="4" height="4" rx=".5"/><rect x="7" y="13" width="4" height="4" rx=".5"/><path d="M14 14h3v3M14 17h.01"/></svg><span class="tlb"> Scan</span></button>
       <button class="btn bok no-print" id="bSaveNow" onclick="saveAll();toast('Saved ✓')">💾<span class="tlb"> Save</span></button>
       <button class="btn bg no-print" id="bTheme" onclick="toggleTheme()" title="Night mode">🌙</button>
       <button class="btn bg no-print" id="bCalc" onclick="toggleCalc()" title="Calculator">🧮</button>
@@ -571,7 +573,7 @@ body.app-locked .shell * { pointer-events: none !important; }
       <button class="btn bg" id="bFClr" onclick="clearFilters()">✕ Clear all</button>
       </div>
       <div class="fchips no-print" id="FCH" style="display:none"></div>
-      <div style="display:none"><button class="btn bg no-print" id="bPrint"  style="display:none" onclick="openPrintDlg()">🖨 Print</button> <button class="btn bg no-print" id="bAddCol" style="display:none" onclick="showAddCol()">＋ Col</button> <button class="btn bg no-print" id="bUnhide" style="display:none" onclick="showUnhide()">👁 Unhide</button> <button class="btn bg no-print" id="bBC"     style="display:none" onclick="printStickers()">🖨 Stickers</button> <button class="btn bg no-print" id="bBCpdf"  style="display:none" onclick="stickersPDF()">📄 PDF</button> <button class="btn bg no-print" id="bStickerList" style="display:none" onclick="printCurrentListStickers()">🏷 Stickers</button> <button class="btn bg no-print" id="bBCList" style="display:none" onclick="qrSheetsClick()">▣ List QRs</button> <button class="btn bg no-print" id="bPrintAll" style="display:none" onclick="printAllLists()">🖨 All Lists</button></div>
+      <div style="display:none"><button class="btn bg no-print" id="bPrint"  style="display:none" onclick="openPrintDlg()">🖨 Print</button> <button class="btn bg no-print" id="bAddCol" style="display:none" onclick="showAddCol()">＋ Col</button> <button class="btn bg no-print" id="bUnhide" style="display:none" onclick="showUnhide()">👁 Unhide</button> <button class="btn bg no-print" id="bBC"     style="display:none" onclick="printStickers()">🖨 Stickers</button> <button class="btn bg no-print" id="bBCpdf"  style="display:none" onclick="stickersPDF()">📄 PDF</button> <button class="btn bg no-print" id="bStickerList" style="display:none" onclick="printCurrentListStickers()">🏷 Stickers</button> <button class="btn bg no-print" id="bBCList" style="display:none" onclick="qrSheetsClick()">▣ QR Stickers</button> <button class="btn bg no-print" id="bPrintAll" style="display:none" onclick="printAllLists()">🖨 All Lists</button></div>
     </div>
     <div class="content" id="CT"><div class="empty"><div class="big">⬡</div>Loading…</div></div>
   </div>
@@ -699,7 +701,7 @@ body.app-locked .shell * { pointer-events: none !important; }
   <div class="mdl" style="max-width:350px;">
     <div class="mhd"><h3>PRINT SETTINGS</h3><button class="mcls" onclick="closeM('mPrint')">✕</button></div>
     <div class="mbd">
-      <div class="fr" style="border:none;padding:0;margin-bottom:9px;"><label>Page Size</label><select id="pSize"><option value="a4 landscape">A4 Landscape</option><option value="a4 portrait">A4 Portrait</option><option value="a3 landscape">A3 Landscape</option><option value="a3 portrait">A3 Portrait</option></select></div>
+      <div class="fr" style="border:none;padding:0;margin-bottom:9px;"><label>Page Size</label><select id="pSize"><option value="a4 portrait" selected>A4 Portrait</option><option value="a4 landscape">A4 Landscape</option><option value="a3 landscape">A3 Landscape</option><option value="a3 portrait">A3 Portrait</option></select></div>
       <div class="fr" style="border:none;padding:0;margin-bottom:9px;"><label>Font Size</label><select id="pFont"><option value="7pt">Small (7pt)</option><option value="8pt" selected>Normal (8pt)</option><option value="10pt">Large (10pt)</option></select></div>
       <div class="fr" style="border:none;padding:0;margin-bottom:9px;"><label>Include Photos</label><select id="pPhotos"><option value="1">Yes</option><option value="0">No — text only</option></select></div>
       <div class="fr" style="border:none;padding:0;"><label>Report Title</label><input type="text" id="pTitle" value="Asset Inventory"/></div>
@@ -1259,7 +1261,7 @@ function _applyViewChrome(v){
   var _bs=G("bScan");if(_bs)_bs.style.display=(v==="form")?"none":"";
   var bStk=G("bStickerList");if(bStk)bStk.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
   var bBL=G("bBCList");if(bBL)bBL.style.display=(v==="list"||v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa")?"":"none";
-  if(bBL)bBL.textContent=(v==="list"||v==="table")?"\u25A3 QR Sheets":"\u25A3 List QRs";
+  if(bBL)bBL.textContent="\u25A3 QR Stickers";
   var bPA=G("bPrintAll");if(bPA)bPA.style.display=v==="list"?"":"none";
   try{_tbCloseMenu();_tbSync();}catch(e){}
   var ct=G("CT");if(ct){ct.classList.toggle("tbl-view",v==="table"||v==="sold"||v==="consign"||v==="framing"||v==="wish"||v==="coa");}
@@ -2508,7 +2510,7 @@ function openPrintDlg(){
   var pt=G("pTitle");if(pt)pt.value=titles[view]||"Asset Inventory";
 }
 function doPrint(){
-  var sz=(G("pSize")||{value:"a4 landscape"}).value;
+  var sz=(G("pSize")||{value:"a4 portrait"}).value;
   var fs=(G("pFont")||{value:"8pt"}).value;
   var showP=(G("pPhotos")||{value:"1"}).value==="1";
   var title=(G("pTitle")||{value:appName}).value||appName;
@@ -3031,7 +3033,7 @@ function rDetail(){
   h+='<span style="font-size:10px;font-family:var(--mo);color:var(--mu);">'+(_di+1)+'/'+_dl.length+'</span>';
   h+='<button class="btn bg" style="font-size:11px;'+ (_di>=_dl.length-1?'opacity:.35;':'')+'" onclick="navDetail(1)">›</button>';
   h+='<div style="flex:1;"></div>';
-  h+='<button class="btn bg" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Label</button>';
+  h+='<button class="btn bg" style="font-size:11px;" onclick="_tbDetailId=\''+a.id+'\';tbMenu(this,\'pqd\')">🖨 Print ▾</button>';
   h+='<button class="btn bs" style="font-size:11px;" onclick="editAsset(\''+a.id+'\')">✏ Edit</button>';
   if(_detailSrc==='inventory'&&(_mvOK("inventory","sold")||_mvOK("inventory","consign")||_mvOK("inventory","framing"))){h+='<button class="btn" style="font-size:11px;background:var(--ac);color:#fff;" onclick="openMoveWin(\''+a.id+'\')">💰 Sell/Move</button>';}
   h+='<button class="btn" style="font-size:11px;'+(a.marked?"background:#c8961e;color:#000;":"background:none;border:1px solid var(--b);")+'" onclick="toggleMark(\''+a.id+'\')" title="'+(a.marked?"Unmark":"Mark")+'">'+(a.marked?"★ Marked":"☆ Mark")+'</button>';
@@ -3067,10 +3069,10 @@ function rDetail(){
   h+='<div class="bcs"><div>';
   h+='<div style="font-family:var(--mo);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:5px;font-weight:600;">QR Code</div>';
   h+=qrImgTag(qrPayload(a),"width:110px;height:110px;display:block;border:1px solid var(--b);border-radius:4px;")+'</div>';
-  h+='<div style="flex:1;padding-left:11px;"><div style="font-size:12px;color:var(--mu);margin-bottom:5px;">Scan the sticker with the app\'s 🔍 Scan button.</div>';
-  h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🖨 Print Label</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'jpeg\')">⬇ QR JPEG</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'png\')">⬇ PNG</button> <button class="btn bs" style="font-size:11px;" title="Bilingual letter for the owner with this ID" onclick="printQRLetter([\''+a.id+'\'])">\u2709 QR Letter</button>'
+  h+='<div style="flex:1;padding-left:11px;"><div style="font-size:12px;color:var(--mu);margin-bottom:5px;">Scan the sticker with the app\'s Scan button.</div>';
+  h+='<button class="btn bs" style="font-size:11px;" onclick="printBC(\''+a.id+'\')">🏷 Label Sticker</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'jpeg\')">⬇ QR JPEG</button> <button class="btn bs" style="font-size:11px;" onclick="saveQRImg(\''+a.id+'\',\'png\')">⬇ PNG</button> <button class="btn bs" style="font-size:11px;" title="Bilingual letter for the owner with this ID" onclick="printQRLetter([\''+a.id+'\'])">\u2709 QR Letter</button>'
     +'<div style="margin-top:8px;font-size:11px;color:var(--mu);">\uD83C\uDF10 Public page: <b>'+(isPublicItem(a)?'PUBLIC':'Private')+'</b> <select class="sel" style="font-size:11px;" onchange="setPubOverride(\''+a.id+'\',this.value)"><option value=""'+(!a.pubOverride?' selected':'')+'>Follow list setting</option><option value="on"'+(a.pubOverride==="on"?' selected':'')+'>Force public</option><option value="off"'+(a.pubOverride==="off"?' selected':'')+'>Force private</option></select></div>'
-    +((a.photo2||_photoCache2[a.id])?'<div style="margin-top:6px;font-size:11px;color:var(--mu);">\uD83D\uDDBC Default photo (stickers &amp; public page): <select class="sel" style="font-size:11px;" onchange="setPubPhoto(\''+a.id+'\',this.value)"><option value="1"'+(a.pubPhoto!=="2"?' selected':'')+'>Photo 1</option><option value="2"'+(a.pubPhoto==="2"?' selected':'')+'>Photo 2</option></select></div>':'')+'</div></div>';
+    +((a.photo2||_photoCache2[a.id])?'<div style="margin-top:6px;font-size:11px;color:var(--mu);">\uD83D\uDDBC Default photo (Label Stickers &amp; public page): <select class="sel" style="font-size:11px;" onchange="setPubPhoto(\''+a.id+'\',this.value)"><option value="1"'+(a.pubPhoto!=="2"?' selected':'')+'>Photo 1</option><option value="2"'+(a.pubPhoto==="2"?' selected':'')+'>Photo 2</option></select></div>':'')+'</div></div>';
   h+='<div class="dgrid">';
   sOrd.forEach(function(sec){
     var rows=sMap[sec].map(function(fd){var v=fv(fd,fd.k==="__marked"?"★ Yes":a[fd.k]);return v?'<div class="df"><span class="dl">'+fd.lbl+'</span><span class="dv">'+v+'</span></div>':"";}).join("");
@@ -3459,6 +3461,20 @@ function _tbSync(){
     else{ch.style.display="none";ch.innerHTML="";}
   }
 }
+var _tbDetailId=null;
+// ★ marked printing (session 10, Jim): Label Stickers / QR Stickers / QR Verify for the marked items of the current list (All Assets: all lists)
+function _markedOfView(){
+  var v=(view==="detail"||view==="form")&&detailOrigin?detailOrigin:view;
+  var arr=v==="list"?_allItems():_listArr(v);var seen={};
+  return (arr||[]).filter(function(a){if(!a||!a.marked||seen[a.id])return false;seen[a.id]=1;return true;});
+}
+function _printMarked(kind){
+  var arr=_markedOfView();
+  if(!arr.length){toast("Mark the items with ★ first (tap the ☆ on their row)","e",4500);return;}
+  var lbl=LIST_LABELS[view]||"List";
+  if(kind==="label")_openStickerWindow(arr,lbl+" Label Stickers (marked)",false);
+  else printQRSheet(arr,lbl+(kind==="verify"?" QR Verify":" QR Stickers")+" (marked)",kind==="verify");
+}
 function tbAdd(){
   var v=view;
   if(v==="consign")newConsignAsset();else if(v==="framing")newFramingAsset();else if(v==="wish")newWishAsset();else if(v==="coa")newCOAAsset();else newAsset();
@@ -3469,15 +3485,26 @@ function _tbRun(i){var f=(window._tbItems||[])[i];_tbCloseMenu();if(f)setTimeout
 function tbMenu(btn,kind){
   var open=G("TBM");if(open){var same=open.dataset.kind===kind;_tbCloseMenu();if(same)return;}
   var v=view,lk=_tbLK(v),it=[],extra="";
-  if(kind==="pq"){
-    if(v!=="list")it.push(["🖨 Print list",function(){openPrintDlg();}]);
-    it.push(["🏷 Stickers",function(){printCurrentListStickers();}]);
-    if(v==="list"){it.push(["🏷 Stickers — Inventory",function(){printStickers();}]);it.push(["📄 Stickers PDF — Inventory",function(){stickersPDF();}]);}
-    it.push(["▣ QR sheets",function(){qrSheetsClick();}]);
-    if(v!=="list")it.push(["✉ QR letter (★ marked)",function(){qrLetterMarked(lk);}]);
-    var csv={table:"exportCSV",consign:"exportConsignCSV",framing:"exportFramingCSV",sold:"exportSoldCSV",wish:"exportWishCSV",coa:"exportCOACSV"}[v];
-    if(csv)it.push(["📊 Export CSV",function(){window[csv]();}]);
-    if(v==="list")it.push(["🖨 Print all lists",function(){printAllLists();}]);
+  if(kind==="pq"||kind==="pqd"){
+    var one=kind==="pqd"?_findAsset(_tbDetailId):null;
+    if(kind==="pqd"){
+      if(!one)return;
+      it.push(["🏷 Label Sticker",function(){printBC(one.id);}]);
+      it.push(["▣ QR Sticker",function(){printQRSheet([one],"QR Sticker "+_qrRef(one.id),0);}]);
+      it.push(["✔ QR Verify",function(){printQRSheet([one],"QR Verify "+_qrRef(one.id),1);}]);
+      it.push(["✉ QR letter",function(){printQRLetter([one.id]);}]);
+    }else{
+      if(v!=="list")it.push(["🖨 Print list",function(){openPrintDlg();}]);
+      it.push(["🏷 Label Stickers",function(){printCurrentListStickers();}]);
+      if(v==="list")it.push(["🏷 Label Stickers — Inventory",function(){printStickers();}]);
+      it.push(["🏷 Label Stickers (★ marked)",function(){_printMarked("label");},1]);
+      it.push(["▣ QR Stickers",function(){qrSheetsClick(0);}]);
+      it.push(["▣ QR Stickers (★ marked)",function(){_printMarked("qr");}]);
+      it.push(["✔ QR Verify",function(){qrSheetsClick(1);}]);
+      it.push(["✔ QR Verify (★ marked)",function(){_printMarked("verify");}]);
+      if(v!=="list")it.push(["✉ QR letter (★ marked)",function(){qrLetterMarked(lk);}]);
+      if(v==="list")it.push(["🖨 Print all lists",function(){printAllLists();}]);
+    }
   }else if(kind==="view"){
     if(v!=="list"){it.push(["＋ Add column",function(){showAddCol();}]);it.push(["👁 Unhide columns",function(){showUnhide();}]);}
     it.push(["▦ Manage columns",function(){goTo("cols");try{if(v!=="list")setColsSettingsList(lk);}catch(e){}}]);
@@ -3493,6 +3520,7 @@ function tbMenu(btn,kind){
   window._tbItems=it.map(function(x){return x[1];});
   var m=document.createElement("div");m.id="TBM";m.className="tbmenu no-print";m.dataset.kind=kind;
   m.innerHTML=it.map(function(x,i){return '<button onclick="_tbRun('+i+')">'+x[0]+'</button>';}).join("")+extra;
+  m.querySelectorAll("button").forEach(function(b){if(/★ marked/.test(b.textContent))b.classList.add("tbmk");});
   document.body.appendChild(m);
   var r=btn.getBoundingClientRect(),w=m.offsetWidth,left=Math.min(r.left,window.innerWidth-w-8);
   m.style.left=Math.max(8,left)+"px";m.style.top=(r.bottom+4)+"px";
@@ -3603,7 +3631,9 @@ function rIO(){
   h+='<div style="font-size:13px;color:var(--mu);margin-bottom:11px;">'+(assets.length+soldAssets.length+consignAssets.length+framingAssets.length+wishAssets.length+coaAssets.length)+' total records ('+assets.length+' inv · '+consignAssets.length+' con · '+framingAssets.length+' fram · '+soldAssets.length+' sold · '+wishAssets.length+' wish · '+coaAssets.length+' priv.coll). JSON includes all lists + photos.</div>';
   h+='<div style="display:flex;gap:7px;flex-wrap:wrap;">';
   h+=_ioBtn('<button class="btn bp" onclick="exportJSON()">💾 JSON Backup</button>','backup');
-  h+=_ioBtn('<button class="btn bg" onclick="exportCSV()">📊 Export CSV</button>','csv')+'</div></div>';
+  h+=_ioBtn('<button class="btn bg" onclick="exportCSV()">📊 Export CSV — Inventory</button>','csv')+'</div>';
+  h+='<div style="margin-top:10px;font-size:12px;color:var(--mu);">📊 Export CSV (opens in Excel) for the other lists:</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;">'
+    +[["exportConsignCSV","Consignment"],["exportFramingCSV","Framing"],["exportSoldCSV","Sold"],["exportWishCSV","Wish List"],["exportCOACSV","Private COAs"]].map(function(x){return '<button class="btn bg" onclick="'+x[0]+'()">'+x[1]+'</button>';}).join("")+'</div></div>';
   var _pc=pubCfg(),_pn=_allItems().filter(isPublicItem).length;
   h+='<div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:15px;margin-bottom:11px;">';
   h+='<h3 style="font-family:var(--mo);font-size:11px;letter-spacing:.06em;margin-bottom:5px;">\uD83C\uDF10 PUBLIC QR PAGES</h3>';
@@ -3955,13 +3985,15 @@ function manualScan(){var v=(G("scanIn")||{value:""}).value.trim();if(v)handleSc
 
 // ===== QR sheets (QR + bold ID, 4 columns x 11 rows of 52.5mm-wide labels on A4 = 44 per page) =====
 var LIST_LABELS={table:"Inventory",consign:"Consignment",framing:"Framing",sold:"Sold",wish:"Wish List",coa:"Private COAs",list:"Inventory"};
-function printQRSheet(items,title){
+function printQRSheet(items,title,verify){
   var ids=items;
   if(!ids||!ids.length){toast("No QR codes to print","e");return;}
   var PER=44,pages=[];
   for(var i=0;i<ids.length;i+=PER)pages.push(ids.slice(i,i+PER));
   var body=pages.map(function(pg){
-    return '<div class="pg">'+pg.map(function(a){return '<div class="lb"><div class="q">'+qrSvg(qrPayload(a),2)+'</div><div class="idt">'+esc(a.id)+'</div></div>';}).join("")+'</div>';
+    return '<div class="pg">'+pg.map(function(a){return verify
+      ?'<div class="lb lbv"><div class="vt"><span>VERIFY YOUR QR</span></div><div class="q">'+qrSvg(qrPayload(a),2)+'</div></div>'
+      :'<div class="lb"><div class="q">'+qrSvg(qrPayload(a),2)+'</div><div class="idt">'+esc(_qrRef(a.id))+'</div></div>';}).join("")+'</div>';
   }).join("");
   var w=window.open("","_blank");
   if(!w){toast("Pop-up blocked — allow pop-ups for this site","e",5000);return;}
@@ -3973,19 +4005,22 @@ function printQRSheet(items,title){
    +'.lb{width:52.5mm;height:26.5mm;display:flex;flex-direction:column;align-items:center;outline:.1mm solid #ccc;outline-offset:-.1mm;overflow:hidden;}'
    +'.q{width:20mm;height:20mm;margin-top:.4mm;}.q svg{width:100%;height:100%;display:block;}'
    +'.idt{font-size:11pt;font-weight:900;line-height:5.6mm;height:5.6mm;color:#000;white-space:nowrap;letter-spacing:.2mm;}'
+   +'.lbv{flex-direction:row;justify-content:center;align-items:center;gap:0;}.lbv .q{margin-top:0;}'
+   +'.vt{height:17mm;display:flex;align-items:center;justify-content:center;margin-right:-.6mm;}'
+   +'.vt span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:6.6pt;font-weight:900;color:#000;white-space:nowrap;letter-spacing:.15mm;line-height:1;}'
    +'.hint{position:fixed;top:0;left:0;right:0;background:#1a1a18;color:#ece7d9;padding:10px;font-family:monospace;font-size:12px;text-align:center;z-index:9;}'
    +'.hint button{background:#9a3b2c;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:13px;}'
    +'@media screen{body{margin-top:44px;}.pg{border-bottom:1px dashed #999;}}'
    +'@media print{.hint{display:none!important;}}'
    +'</style></head><body>'
-   +'<div class="hint">'+ids.length+' QR codes · '+pages.length+' A4 page(s) · print at <b>100% / Actual size</b>: <button onclick="window.print()">&#x1F4C4; Print / Save PDF</button></div>'
+   +'<div class="hint">'+ids.length+(verify?' QR Verify':' QR Stickers')+' · '+pages.length+' A4 page(s) · print at <b>100% / Actual size</b>: <button onclick="window.print()">&#x1F4C4; Print / Save PDF</button></div>'
    +body
-   +'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},600);};<\/sc'+'ript>'
+   +'<scr'+'ipt>window.onload=function(){document.querySelectorAll(".vt span").forEach(function(s){var f=6.6;while(s.getBoundingClientRect().height>s.parentNode.getBoundingClientRect().height&&f>4){f-=.2;s.style.fontSize=f+"pt";}});setTimeout(function(){window.print();},600);};<\/sc'+'ript>'
    +'</body></html>');
   w.document.close();
 }
-function qrSheetsClick(){
-  if(view!=="list"&&view!=="table"){printListQRs();return;}
+function qrSheetsClick(verify){
+  if(view!=="list"&&view!=="table"){printListQRs(verify);return;}
   var n1=(hasFilter()?viewItems(view):_listArr(view)).length,seen={},n2=0;
   _allItems().forEach(function(a){if(a&&a.id&&!seen[a.id]){seen[a.id]=1;n2++;}});
   var old=G("qrChoice");if(old)old.remove();
@@ -3993,25 +4028,25 @@ function qrSheetsClick(){
   o.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px;";
   o.onclick=function(e){if(e.target===o)o.remove();};
   o.innerHTML='<div style="background:var(--s,#fff);color:var(--t,#222);border-radius:10px;max-width:340px;width:100%;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.4);">'
-    +'<div style="font-weight:700;font-size:14px;margin-bottom:12px;">Print QR sheet for\u2026</div>'
+    +'<div style="font-weight:700;font-size:14px;margin-bottom:12px;">Print '+(verify?'QR Verify':'QR Stickers')+' for\u2026</div>'
     +'<div style="display:flex;flex-direction:column;gap:8px;">'
-    +'<button class="btn bp" style="justify-content:center;padding:9px;" onclick="document.getElementById(\'qrChoice\').remove();printListQRs()">This list only ('+n1+(hasFilter()?', filtered':'')+')</button>'
-    +'<button class="btn bs" style="justify-content:center;padding:9px;" onclick="document.getElementById(\'qrChoice\').remove();printAllQRs()">All lists ('+n2+')</button>'
+    +'<button class="btn bp" style="justify-content:center;padding:9px;" onclick="document.getElementById(\'qrChoice\').remove();printListQRs('+(verify?1:0)+')">This list only ('+n1+(hasFilter()?', filtered':'')+')</button>'
+    +'<button class="btn bs" style="justify-content:center;padding:9px;" onclick="document.getElementById(\'qrChoice\').remove();printAllQRs('+(verify?1:0)+')">All lists ('+n2+')</button>'
     +'<button class="btn bg" style="justify-content:center;padding:9px;" onclick="document.getElementById(\'qrChoice\').remove()">Cancel</button></div></div>';
   document.body.appendChild(o);
 }
-function printListQRs(){
+function printListQRs(verify){
   var v=(view==="detail"||view==="form")&&detailOrigin?detailOrigin:view;
   var arr=_listArr(v);
   if(hasFilter())arr=viewItems(v);
   var ids=arr.slice();
-  toast((LIST_LABELS[v]||"List")+": "+ids.length+" QR code(s)"+(hasFilter()?" (filtered)":""),"i",2500);
-  printQRSheet(ids,(LIST_LABELS[v]||"List")+" QR codes");
+  toast((LIST_LABELS[v]||"List")+": "+ids.length+(verify?" QR Verify":" QR Stickers")+(hasFilter()?" (filtered)":""),"i",2500);
+  printQRSheet(ids,(LIST_LABELS[v]||"List")+(verify?" QR Verify":" QR Stickers"),verify);
 }
-function printAllQRs(){
+function printAllQRs(verify){
   var seen={},ids=[];
   [assets,consignAssets,framingAssets,soldAssets,wishAssets,coaAssets].forEach(function(arr){(arr||[]).forEach(function(a){if(a&&a.id&&!seen[a.id]){seen[a.id]=1;ids.push(a);}});});
-  printQRSheet(ids,"All lists QR codes");
+  printQRSheet(ids,verify?"All lists QR Verify":"All lists QR Stickers",verify);
 }
 
 // ===== Scan: related items in other lists =====
@@ -4110,26 +4145,26 @@ function _openStickerWindow(arr,title,single){
   var w=window.open("","_blank");
   if(!w){toast("Pop-up blocked — allow pop-ups for this site","e",5000);return;}
   w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>'+STICKER_CSS
-    +(single?'body{display:flex;align-items:center;justify-content:center;min-height:100vh;}':'')+'</style></head><body>'
+    +'</style></head><body>'
     +'<div class="hint">Tap to save as PDF: <button onclick="window.print()">&#x1F4C4; Print / Save PDF</button></div>'
-    +(single?arr.map(_stickerCard).join(""):'<div class="grid">'+arr.map(_stickerCard).join("")+'</div>')
+    +'<div class="grid">'+arr.map(_stickerCard).join("")+'</div>'
     +'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},600);};<\/sc'+'ript></body></html>');
   w.document.close();
 }
-function printBC(id){var a=_findAsset(id);if(!a)return;_openStickerWindow([a],"Sticker",true);}
+function printBC(id){var a=_findAsset(id);if(!a)return;_openStickerWindow([a],"Label Sticker "+a.id,true);}
 function stickersPDF(){toast("In print dialog → choose Save as PDF","i",6000);setTimeout(printStickers,400);}
-function printStickers(){_openStickerWindow(assets,"Stickers",false);}
+function printStickers(){_openStickerWindow(assets,"Label Stickers",false);}
 function printCurrentListStickers(){
   var arr=_listArr(view);
   if(hasFilter())arr=viewItems(view);
   if(!arr.length){toast("No assets to print","e");return;}
-  var from=prompt("Stickers FROM # (1-"+arr.length+"):","1");
+  var from=prompt("Label Stickers FROM # (1-"+arr.length+"):","1");
   if(from===null)return;
   var to=prompt("TO # (1-"+arr.length+"):",""+arr.length);
   if(to===null)return;
   var f=Math.max(1,parseInt(from)||1),t=Math.min(arr.length,parseInt(to)||arr.length);
   if(f>t){toast("Invalid range","e");return;}
-  _openStickerWindow(arr.slice(f-1,t),"Stickers",false);
+  _openStickerWindow(arr.slice(f-1,t),"Label Stickers",false);
 }
 
 // PWA
