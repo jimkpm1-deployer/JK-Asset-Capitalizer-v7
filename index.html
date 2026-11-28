@@ -467,6 +467,8 @@ html[data-theme="dark"] img.ph,html[data-theme="dark"] .bcs img{background:#fff;
 .btn.actbtn:hover{background:#a3dcf2!important;}
 /* Licence (session 11) */
 .brand-own{display:block;font-size:10.5px;font-style:italic;font-weight:600;color:var(--mu);line-height:1.1;margin-top:1px;}
+#LEGPW{position:fixed;inset:0;z-index:100000;background:rgba(10,9,7,.6);display:flex;align-items:center;justify-content:center;padding:14px;}
+#LEGPW .licbox{background:var(--s);color:var(--tx);border:1px solid var(--b);border-radius:12px;width:100%;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.45);font-size:13px;}#LEGPW .lict{font-family:var(--mo);font-weight:700;margin-bottom:8px;}#LEGPW .licerr{color:#b42318;font-size:12px;min-height:16px;margin:4px 0;}#LEGPW .licbtns{display:flex;gap:8px;justify-content:flex-end;}
 #LIC{position:fixed;inset:0;z-index:100000;background:rgba(10,9,7,.72);display:flex;align-items:center;justify-content:center;padding:14px;}
 #LIC .licbox{background:var(--s);color:var(--tx);border:1px solid var(--b);border-radius:12px;max-width:440px;width:100%;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.45);font-size:13px;}
 #LIC .lict{font-family:var(--mo);font-weight:700;font-size:13px;margin-bottom:10px;}
@@ -1646,6 +1648,31 @@ function _editionBrand(){
   var nm=document.querySelector(".brand-nm");if(nm&&ACAP_EDITION.owner&&!document.getElementById("brOwner"))nm.insertAdjacentHTML("beforeend",'<span id="brOwner" class="brand-own">for '+esc(ACAP_EDITION.owner)+'</span>');
   if(ACAP_EDITION.owner)document.title=ACAP_EDITION.owner+" — Asset Capitalizer";
 }
+// ---- Legal Info (was "Legend", session 11, Jim): hidden by default every time the app opens; the login password shows it.
+// While hidden it is also left out of Print list and the Inventory CSV. JSON backups always keep it. PS is not affected.
+var _legMask=true;
+// Trial keys (1-month / 1-week): Legal Info is a non-editable SAMPLE and is never printed or exported (Jim).
+function _isTrial(){return !!(typeof _lic!=="undefined"&&_lic.info&&(_lic.info.p==="m1"||_lic.info.p==="w1"));}
+function _legOff(){return _legMask||_isTrial();}
+function _legRow(key,val){
+  var lb='<span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:80px;white-space:nowrap;">Legal Info:</span>';
+  if(_isTrial())return '<div class="legrow" style="display:flex;align-items:flex-start;gap:7px;">'+lb+'<div style="flex:1;position:relative;padding:6px 8px;border:1px dashed var(--b);border-radius:var(--r);font-size:12px;color:var(--mu);line-height:1.5;background:var(--s2);overflow:hidden;">Sample: \u201cAll artworks are sold with a certificate of authenticity. Prices exclude VAT and shipping. Information confidential.\u201d<br><b>Available in the full version</b> (not editable, printed or exported in the trial).<span style="position:absolute;right:10px;top:50%;transform:translateY(-50%) rotate(-12deg);font:700 20px Arial,sans-serif;color:rgba(190,30,30,.28);letter-spacing:.1em;">SAMPLE</span></div></div>';
+  if(_legMask)return '<div class="legrow" style="display:flex;align-items:center;gap:7px;">'+lb+'<span style="flex:1;font-size:12px;color:var(--mu);">🔒 Hidden (also left out of printing)</span><button class="btn bg no-print" style="font-size:11px;" onclick="legUnlock()">🔓 Show</button></div>';
+  return '<div class="legrow" style="display:flex;align-items:flex-start;gap:7px;">'+lb+'<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);-webkit-text-fill-color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legal info…" onchange="LS.set(\''+key+'\',this.value)">'+esc(val)+'</textarea><button class="btn bg no-print" style="font-size:11px;" onclick="_legMask=true;render();toast(\'Legal Info hidden\',\'i\')">🔒 Hide</button></div>';
+}
+function legUnlock(){
+  var m=G("LEGPW");if(m)m.remove();
+  m=document.createElement("div");m.id="LEGPW";
+  m.innerHTML='<div class="licbox" style="max-width:340px;"><div class="lict">🔓 Show Legal Info</div><div class="licrow">Enter your login password:</div>'
+   +'<input id="legPw" type="password" autocomplete="current-password" style="width:100%;padding:8px;border:1px solid var(--b);border-radius:6px;background:var(--s2);color:var(--tx);font-size:14px;" onkeydown="if(event.key===\'Enter\')legCheck()"/>'
+   +'<div id="legErr" class="licerr"></div><div class="licbtns"><button class="btn bg" onclick="G(\'LEGPW\').remove()">Cancel</button><button class="btn bok" onclick="legCheck()">Show</button></div></div>';
+  document.body.appendChild(m);setTimeout(function(){var i=G("legPw");if(i)i.focus();},50);
+}
+function legCheck(){
+  var v=(G("legPw")||{}).value||"";
+  if(hashStr(v)!==authCfg.p){G("legErr").textContent="Wrong password.";G("legPw").value="";return;}
+  G("LEGPW").remove();_legMask=false;render();toast("Legal Info shown until the app is closed — 🔒 Hide to mask it again","i",5000);
+}
 function licReadOnly(){return _lic.state==="ro"||_lic.state==="none";}
 function _licWrap(){
   if(_licWrapped)return;_licWrapped=true;
@@ -1780,9 +1807,8 @@ function rConsign(){
   h+='</tbody></table></div></div>';
   var leg=LS.get("acap_consign_legend",""),ps=LS.get("acap_consign_ps","");
   h+='<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px;">';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">Legend:</span>';
-  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legend notes…" onchange="LS.set(\'acap_consign_legend\',this.value)">'+esc(leg)+'</textarea></div>';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">PS:</span>';
+  h+=_legRow('acap_consign_legend',leg);
+  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:80px;">PS:</span>';
   h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Post-script notes…" onchange="LS.set(\'acap_consign_ps\',this.value)">'+esc(ps)+'</textarea></div>';
   h+='</div><div style="height:200px;" class="no-print"></div>';
   return h;
@@ -1845,9 +1871,8 @@ function rFraming(){
   h+='</tbody></table></div></div>';
   var leg=LS.get("acap_framing_legend",""),ps=LS.get("acap_framing_ps","");
   h+='<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px;">';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">Legend:</span>';
-  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legend notes…" onchange="LS.set(\'acap_framing_legend\',this.value)">'+esc(leg)+'</textarea></div>';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">PS:</span>';
+  h+=_legRow('acap_framing_legend',leg);
+  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:80px;">PS:</span>';
   h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Post-script notes…" onchange="LS.set(\'acap_framing_ps\',this.value)">'+esc(ps)+'</textarea></div>';
   h+='</div><div style="height:200px;" class="no-print"></div>';
   return h;
@@ -2019,9 +2044,8 @@ function rCOA(){
   h+='</tbody></table></div></div>';
   var leg=LS.get("acap_coa_legend",""),ps=LS.get("acap_coa_ps","");
   h+='<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px;">';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">Legend:</span>';
-  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legend notes\u2026" onchange="LS.set(\'acap_coa_legend\',this.value)">'+esc(leg)+'</textarea></div>';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">PS:</span>';
+  h+=_legRow('acap_coa_legend',leg);
+  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:80px;">PS:</span>';
   h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Post-script notes\u2026" onchange="LS.set(\'acap_coa_ps\',this.value)">'+esc(ps)+'</textarea></div>';
   h+='</div><div style="height:200px;" class="no-print"></div>';
   return h;
@@ -2124,9 +2148,8 @@ function rSold(){
   }
   var leg=LS.get("acap_sold_legend",""),ps=LS.get("acap_sold_ps","");
   h+='<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px;">';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">Legend:</span>';
-  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legend notes…" onchange="LS.set(\'acap_sold_legend\',this.value)">'+esc(leg)+'</textarea></div>';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">PS:</span>';
+  h+=_legRow('acap_sold_legend',leg);
+  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:80px;">PS:</span>';
   h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Post-script notes…" onchange="LS.set(\'acap_sold_ps\',this.value)">'+esc(ps)+'</textarea></div>';
   h+='</div><div style="height:200px;" class="no-print"></div>';
   return h;
@@ -2508,9 +2531,8 @@ function rTable(){
   h+='</tbody></table></div>';
   var leg=LS.get("acap_tbl_legend",""),ps=LS.get("acap_tbl_ps","");
   h+='<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px;">';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">Legend:</span>';
-  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);-webkit-text-fill-color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legend notes…" onchange="LS.set(\'acap_tbl_legend\',this.value)">'+esc(leg)+'</textarea></div>';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">PS:</span>';
+  h+=_legRow('acap_tbl_legend',leg);
+  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:80px;">PS:</span>';
   h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);-webkit-text-fill-color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Post-script notes…" onchange="LS.set(\'acap_tbl_ps\',this.value)">'+esc(ps)+'</textarea></div>';
   h+='</div><div style="height:200px;" class="no-print"></div>';
   return h;
@@ -2574,9 +2596,8 @@ function rWish(){
   h+='</tbody></table></div></div>';
   var leg=LS.get("acap_wish_legend",""),ps=LS.get("acap_wish_ps","");
   h+='<div style="margin-top:11px;display:flex;flex-direction:column;gap:7px;">';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">Legend:</span>';
-  h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Legend notes\u2026" onchange="LS.set(\'acap_wish_legend\',this.value)">'+esc(leg)+'</textarea></div>';
-  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:62px;">PS:</span>';
+  h+=_legRow('acap_wish_legend',leg);
+  h+='<div style="display:flex;align-items:flex-start;gap:7px;"><span style="font-family:var(--mo);font-size:12px;font-weight:600;padding-top:5px;min-width:80px;">PS:</span>';
   h+='<textarea rows="2" style="flex:1;padding:5px 7px;border:1px solid var(--b);border-radius:var(--r);font-size:13px;font-family:var(--sa);color:var(--tx);background:var(--s);outline:none;resize:vertical;" placeholder="Post-script notes\u2026" onchange="LS.set(\'acap_wish_ps\',this.value)">'+esc(ps)+'</textarea></div>';
   h+='</div><div style="height:200px;" class="no-print"></div>';
   return h;
@@ -2811,9 +2832,9 @@ function doPrint(){
     });
     tbody+='</tr>';
   });
-  var legendHtml='';
+  var legendHtml='';if(_legOff())leg="";
   if(leg||ps){
-    legendHtml='<div class="legbox">'+(leg?'<div><b>Legend:</b> '+esc(leg).replace(/\n/g,'<br>')+'</div>':'')+(ps?'<div style="margin-top:6px;"><b>PS:</b> '+esc(ps).replace(/\n/g,'<br>')+'</div>':'')+'</div>';
+    legendHtml='<div class="legbox">'+(leg?'<div><b>Legal Info:</b> '+esc(leg).replace(/\n/g,'<br>')+'</div>':'')+(ps?'<div style="margin-top:6px;"><b>PS:</b> '+esc(ps).replace(/\n/g,'<br>')+'</div>':'')+'</div>';
   }
   var dateStr=fmtDateObj(new Date())+" "+new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
   var itemCount=arr.length;
@@ -4026,7 +4047,7 @@ function exportCSV(){
   var rows=assets.map(function(a){return[a.id,a.createdAt||""].concat(cols.map(function(c){var v=a[c]||"";if(c==="photo"&&v&&v.startsWith("data:"))v="[photo]";try{var lp=JSON.parse(v);if(lp.url)v=lp.url;}catch{}return'"'+String(v).replace(/"/g,'""')+'"';})).join(",");});
   var leg2=LS.get("acap_tbl_legend",""),ps2=LS.get("acap_tbl_ps","");
   var footer="";
-  if(leg2)footer+="\n\"Legend: "+leg2.replace(/"/g,'')+"\"";
+  if(leg2&&!_legOff())footer+="\n\"Legal Info: "+leg2.replace(/"/g,'')+"\"";
   if(ps2)footer+="\n\"PS: "+ps2.replace(/"/g,'')+"\"";
   dl(hdr+"\n"+rows.join("\n")+footer,"text/csv","assets.csv");_ioStamp("csv");toast("CSV exported");
 }
